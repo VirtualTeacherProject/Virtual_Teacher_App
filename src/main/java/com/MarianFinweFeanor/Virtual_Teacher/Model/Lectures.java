@@ -23,7 +23,7 @@ public class Lectures {
 
     @ManyToOne
     @JoinColumn(name = "course_id", nullable = false) // Links to the course table
-    private Courses course;
+    private Course course;
 
     //Getters and Setters
 
