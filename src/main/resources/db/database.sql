@@ -1,14 +1,14 @@
-CREATE TABLE IF NOT EXISTS users
+create table IF NOT EXISTS users
 (
-    email           varchar(20) not null,
+    email           varchar(20)                          not null,
     user_id         int auto_increment
         primary key,
-    password        varchar(20) not null,
-    first_name      varchar(20) not null,
-    last_name       varchar(20) not null,
-    profile_picture varchar(40) not null,
-    role            varchar(15) not null,
-    status          varchar(20) not null,
+    password        varchar(20)                          not null,
+    first_name      varchar(20)                          not null,
+    last_name       varchar(20)                          not null,
+    profile_picture varchar(40)                          not null,
+    role            enum ('TEACHER', 'STUDENT', 'ADMIN') not null,
+    status          varchar(20)                          not null,
     constraint user_pk
         unique (email)
 );
