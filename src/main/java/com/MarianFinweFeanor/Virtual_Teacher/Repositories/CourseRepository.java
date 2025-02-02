@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
-    List<Course> findByStatus(String status);  // ✅ Custom query to find courses by status
+    List<Course> findByStatus(String status);  // 
 }

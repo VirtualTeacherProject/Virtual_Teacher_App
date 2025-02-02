@@ -29,8 +29,10 @@ public class User {
     @Column(nullable = false, length = 20)
     private String role;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 15) //this changed from 20 to 15 for testing
     private String status;
+
+
 
     //Getters and Setters
     public Long getUserId() {
