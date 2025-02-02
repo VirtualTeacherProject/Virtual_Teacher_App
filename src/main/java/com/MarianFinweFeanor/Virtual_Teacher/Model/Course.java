@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table (name = "courses")
@@ -66,6 +67,19 @@ public class Course {
 
     public User getTeacher() { return teacher; }
     public void setTeacher(User teacher) { this.teacher = teacher; }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(courseId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Course course = (Course) obj;
+        return courseId == course.courseId;
+    }
 
 
 }

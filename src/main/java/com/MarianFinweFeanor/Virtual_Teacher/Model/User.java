@@ -3,6 +3,8 @@ package com.MarianFinweFeanor.Virtual_Teacher.Model;
 import jakarta.persistence.*;
 import org.springframework.scheduling.support.SimpleTriggerContext;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "users") // Use "users" instead of "user" because The user table name is conflicting
 // with the SQL reserved keyword USER.
@@ -29,10 +31,8 @@ public class User {
     @Column(nullable = false, length = 20)
     private String role;
 
-    @Column(nullable = false, length = 15) //this changed from 20 to 15 for testing
+    @Column(nullable = false, length = 20)
     private String status;
-
-
 
     //Getters and Setters
     public Long getUserId() {
@@ -99,4 +99,16 @@ public class User {
         this.status = status;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        User user = (User) obj;
+        return userId == user.userId;
+    }
 }

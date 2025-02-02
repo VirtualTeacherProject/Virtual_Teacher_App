@@ -2,6 +2,8 @@ package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "assignments")
 public class Assignment {
@@ -16,7 +18,7 @@ public class Assignment {
 
     @ManyToOne
     @JoinColumn(name = "lecture_id", nullable = false)
-    private Lectures lecture; // References the Lecture entity
+    private Lecture lecture; // References the Lecture entity
 
     @Column(nullable = false, length = 255)
     private String submissionFilePath; // Path to the  assignment file
@@ -41,11 +43,11 @@ public class Assignment {
         this.student = student;
     }
 
-    public Lectures getLecture() {
+    public Lecture getLecture() {
         return lecture;
     }
 
-    public void setLecture(Lectures lecture) {
+    public void setLecture(Lecture lecture) {
         this.lecture = lecture;
     }
 
@@ -63,6 +65,19 @@ public class Assignment {
 
     public void setGrade(Double grade) {
         this.grade = grade;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(assignmentId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Assignment assignment = (Assignment) obj;
+        return assignmentId == assignment.assignmentId;
     }
 }
 
