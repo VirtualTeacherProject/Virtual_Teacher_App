@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Model;
 import jakarta.persistence.*;
 import org.springframework.scheduling.support.SimpleTriggerContext;
 
+import javax.management.relation.Role;
 import java.util.Objects;
 
 @Entity
@@ -28,8 +29,9 @@ public class User {
     @Column(nullable = true, length = 40)
     private String profilePicture;
 
+    @Enumerated(EnumType.STRING)  //  Stores Enum as a String
     @Column(nullable = false, length = 20)
-    private String role;
+    private Role role;
 
     @Column(nullable = false, length = 20)
     private String status;
@@ -83,13 +85,15 @@ public class User {
         this.profilePicture = profilePicture;
     }
 
-    public String getRole() {
-        return role;
-    }
+//    public String getRole() {
+//        return role;
+//    }
+//
+//    public void setRole(String role) {
+//        this.role = role;
+//    }
 
-    public void setRole(String role) {
-        this.role = role;
-    }
+
 
     public String getStatus() {
         return status;

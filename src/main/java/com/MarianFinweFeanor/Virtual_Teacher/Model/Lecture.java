@@ -41,6 +41,7 @@ public class Lecture {
         Lecture lecture = (Lecture) obj;
         return lectureId == lecture.lectureId;
     }
+    // this compares by ID
 
 
 }
