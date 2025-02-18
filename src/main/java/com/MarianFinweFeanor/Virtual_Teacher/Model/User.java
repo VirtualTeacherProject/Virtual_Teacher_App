@@ -1,9 +1,7 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
-import org.springframework.scheduling.support.SimpleTriggerContext;
 
-import javax.management.relation.Role;
 import java.util.Objects;
 
 @Entity
@@ -14,16 +12,16 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 30)
     private String email;
 
     @Column(nullable = false, length = 20)
     private String password;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 30)
     private String firstName;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 30)
     private String lastName;
 
     @Column(nullable = true, length = 40)
@@ -31,7 +29,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)  //  Stores Enum as a String
     @Column(nullable = false, length = 20)
-    private Role role;
+    private UserRole role;
 
     @Column(nullable = false, length = 20)
     private String status;
@@ -85,13 +83,13 @@ public class User {
         this.profilePicture = profilePicture;
     }
 
-//    public String getRole() {
-//        return role;
-//    }
-//
-//    public void setRole(String role) {
-//        this.role = role;
-//    }
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
 
 
 

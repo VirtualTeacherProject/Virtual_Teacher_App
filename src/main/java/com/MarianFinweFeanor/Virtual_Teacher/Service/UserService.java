@@ -1,5 +1,6 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
+import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
@@ -11,11 +12,25 @@ import java.util.Optional;
 @Service
 public class UserService {
 
+    //@Autowired
+    private final UserRepository userRepository;
+
     @Autowired
-    private UserRepository userRepository;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     // Create or Update a user
-    public User saveUser(User user) {
+    public User saveUser(User user)
+    {
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Email already in use!");
+        }
+
+        // If `role` is null, assign default role as STUDENT
+        if (user.getRole() == null) {
+            user.setRole(UserRole.STUDENT);
+        }
         return userRepository.save(user);
     }
 
