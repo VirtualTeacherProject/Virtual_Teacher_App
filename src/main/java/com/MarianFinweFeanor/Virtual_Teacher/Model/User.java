@@ -10,9 +10,10 @@ import java.util.Objects;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long userId;
 
-    @Column(nullable = false, length = 30)
+    @Column(name = "email", nullable = false, length = 30) //do so for the rest of the names
     private String email;
 
     @Column(nullable = false, length = 20)
