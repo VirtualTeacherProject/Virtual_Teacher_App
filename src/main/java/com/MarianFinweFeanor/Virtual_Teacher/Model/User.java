@@ -16,23 +16,23 @@ public class User {
     @Column(name = "email", nullable = false, length = 30) //do so for the rest of the names
     private String email;
 
-    @Column(nullable = false, length = 20)
+    @Column(name ="password",nullable = false, length = 20)
     private String password;
 
-    @Column(nullable = false, length = 30)
+    @Column(name="first_name",nullable = false, length = 30)
     private String firstName;
 
-    @Column(nullable = false, length = 30)
+    @Column(name="last_name",nullable = false, length = 30)
     private String lastName;
 
-    @Column(nullable = true, length = 40)
+    @Column(name="profile_picture",nullable = true, length = 40)
     private String profilePicture;
 
     @Enumerated(EnumType.STRING)  //  Stores Enum as a String
-    @Column(nullable = false, length = 20)
+    @Column(name="role",nullable = false, length = 20)
     private UserRole role;
 
-    @Column(nullable = false, length = 20)
+    @Column(name="status",nullable = false, length = 20)
     private String status;
 
     //Getters and Setters
