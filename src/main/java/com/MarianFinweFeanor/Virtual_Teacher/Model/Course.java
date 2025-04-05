@@ -10,21 +10,22 @@ import java.util.Objects;
 public class Course {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @Column (name = "course_id")
     private Long courseId;
 
-    @Column (nullable = false, length = 30)
+    @Column (name="title",nullable = false, length = 30)
     private String title;
 
-    @Column (nullable = false, length = 40)
+    @Column (name="topic",nullable = false, length = 40)
     private String topic;
 
-    @Column (length = 1000)
+    @Column (name="description",length = 1000)
     private String description;
 
-    @Column(nullable = false)
+    @Column(name="column_name",nullable = false) //look up maybe wrong name
     private LocalDateTime startDate;
 
-    @Column(nullable = false, length = 20)
+    @Column(name="status",nullable = false, length = 20)
     private String status;
 
     @ManyToOne

@@ -1,3 +1,120 @@
+//package com.MarianFinweFeanor.Virtual_Teacher.Model;
+//
+//import jakarta.persistence.*;
+//
+//import java.util.Objects;
+//
+//@Entity
+//@Table(name = "users") // Use "users" instead of "user" because The user table name is conflicting
+//// with the SQL reserved keyword USER.
+//public class User {
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @Column(name = "user_id")
+//    private Long userId;
+//
+//    @Column(name = "email", nullable = false, length = 30) //do so for the rest of the names
+//    private String email;
+//
+//    @Column(name ="password",nullable = false, length = 20)
+//    private String password;
+//
+//    @Column(name="first_name",nullable = false, length = 30)
+//    private String firstName;
+//
+//    @Column(name="last_name",nullable = false, length = 30)
+//    private String lastName;
+//
+//    @Column(name="profile_picture",nullable = true, length = 40)
+//    private String profilePicture;
+//
+//    @Enumerated(EnumType.STRING)  //  Stores Enum as a String
+//    @Column(name="role",nullable = false, length = 20)
+//    private UserRole role;
+//
+//    @Column(name="status",nullable = false, length = 20)
+//    private String status;
+//
+//    //Getters and Setters
+//    public Long getUserId() {
+//        return userId;
+//    }
+//
+//    public void setUserId(Long userId) {
+//        this.userId = userId;
+//    }
+//
+//    public String getEmail() {
+//        return email;
+//    }
+//
+//    public void setEmail(String email) {
+//        this.email = email;
+//    }
+//
+//    public String getPassword() {
+//        return password;
+//    }
+//
+//    public void setPassword(String password) {
+//        this.password = password;
+//    }
+//
+//    public String  getFirstName() {
+//        return firstName;
+//    }
+//
+//    public void setFirstName(String firstName) {
+//        this.firstName = firstName;
+//    }
+//
+//    public String getLastName() {
+//        return lastName;
+//    }
+//
+//    public void setLastName(String lastName) {
+//        this.lastName = lastName;
+//    }
+//
+//    public String getProfilePicture() {
+//        return profilePicture;
+//    }
+//
+//    public void setProfilePicture(String profilePicture) {
+//        this.profilePicture = profilePicture;
+//    }
+//
+//    public UserRole getRole() {
+//        return role;
+//    }
+//
+//    public void setRole(UserRole role) {
+//        this.role = role;
+//    }
+//
+//
+//
+//    public String getStatus() {
+//        return status;
+//    }
+//
+//    public void setStatus(String status) {
+//        this.status = status;
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return Objects.hash(userId);
+//    }
+//
+//    @Override
+//    public boolean equals(Object obj) {
+//        if (this == obj) return true;
+//        if (obj == null || getClass() != obj.getClass()) return false;
+//        User user = (User) obj;
+//        return userId == user.userId;
+//    }
+//}
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
@@ -5,37 +122,36 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "users") // Use "users" instead of "user" because The user table name is conflicting
-// with the SQL reserved keyword USER.
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "email", nullable = false, length = 30) //do so for the rest of the names
+    @Column(name = "email", nullable = false, length = 20, unique = true)
     private String email;
 
-    @Column(name ="password",nullable = false, length = 20)
+    @Column(name = "password", nullable = false, length = 20)
     private String password;
 
-    @Column(name="first_name",nullable = false, length = 30)
+    @Column(name = "first_name", nullable = false, length = 20)
     private String firstName;
 
-    @Column(name="last_name",nullable = false, length = 30)
+    @Column(name = "last_name", nullable = false, length = 20)
     private String lastName;
 
-    @Column(name="profile_picture",nullable = true, length = 40)
+    @Column(name = "profile_picture", nullable = true, length = 40)
     private String profilePicture;
 
-    @Enumerated(EnumType.STRING)  //  Stores Enum as a String
-    @Column(name="role",nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
 
-    @Column(name="status",nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    //Getters and Setters
+    // Getters and Setters
     public Long getUserId() {
         return userId;
     }
@@ -60,7 +176,7 @@ public class User {
         this.password = password;
     }
 
-    public String  getFirstName() {
+    public String getFirstName() {
         return firstName;
     }
 
@@ -92,8 +208,6 @@ public class User {
         this.role = role;
     }
 
-
-
     public String getStatus() {
         return status;
     }
@@ -112,6 +226,6 @@ public class User {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         User user = (User) obj;
-        return userId == user.userId;
+        return Objects.equals(userId, user.userId);
     }
 }

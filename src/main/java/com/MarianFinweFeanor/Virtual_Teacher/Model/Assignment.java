@@ -10,20 +10,20 @@ public class Assignment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "assignment_id")
     private Long assignmentId;
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private User student; // References the User entity
-
     @ManyToOne
     @JoinColumn(name = "lecture_id", nullable = false)
     private Lecture lecture; // References the Lecture entity
 
-    @Column(nullable = false, length = 255)
+    @Column(name="submission_file_path",nullable = false, length = 255)
     private String submissionFilePath; // Path to the  assignment file
 
-    @Column(nullable = false)
+    @Column(name="grade",nullable = false)
     private Double grade; // Grade for the assignment
 
     // Getters and Setters
