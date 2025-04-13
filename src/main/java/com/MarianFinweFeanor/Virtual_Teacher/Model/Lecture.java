@@ -1,47 +1,34 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
-
+@Data
+@NoArgsConstructor
 @Entity
 @Table(name = "lectures")
 public class Lecture {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "lecture_id")
     private Long lectureId;
 
-    @Column(nullable = false, length = 50)
+    @Column(name="title",nullable = false, length = 50)
     private String title;
 
-    @Column(nullable = false, length = 300)
+    @Column(name="description",nullable = false, length = 300)
     private String description;
 
-    @Column(nullable = false)
+    @Column(name="video_url",nullable = false)
     private String videoUrl;
 
-    @Column(nullable = false)
+    @Column(name="assignment_file_path",nullable = false)
     private String assignmentFilePath;
 
     @ManyToOne
-    @JoinColumn(name = "course_id", nullable = false) // Links to the course table
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
-
-    //Getters and Setters
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lectureId);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Lecture lecture = (Lecture) obj;
-        return lectureId == lecture.lectureId;
-    }
-    // this compares by ID
-
 
 }
