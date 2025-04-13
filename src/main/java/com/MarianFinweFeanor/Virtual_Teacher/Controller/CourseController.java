@@ -27,7 +27,8 @@ public class CourseController {
             Course saveCourse = courseService.createCourse(course);
             return ResponseEntity.status(HttpStatus.CREATED).body(saveCourse);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
         }
     }
 
