@@ -57,4 +57,9 @@ public class CourseController {
 
 
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course updatedCourse) {
+        Course course = courseService.updateCourse(id, updatedCourse);
+        return ResponseEntity.ok(course);
+    }
 }
