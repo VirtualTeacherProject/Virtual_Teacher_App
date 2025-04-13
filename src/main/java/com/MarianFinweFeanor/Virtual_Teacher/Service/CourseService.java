@@ -1,7 +1,9 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,14 +13,30 @@ import java.util.Optional;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final UserRepository userRepository; // Add this
 
     // Constructor Injection
-    public CourseService(CourseRepository courseRepository) {
+    public CourseService(CourseRepository courseRepository, UserRepository userRepository) {
         this.courseRepository = courseRepository;
+        this.userRepository = userRepository;
     }
 
     //  1. Create a New Course
     public Course createCourse(Course course) {
+        Long teacherId = course.getTeacher().getUserId();
+
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found with ID: " + teacherId));
+
+        course.setTeacher(teacher); // Attach managed entity
+
+        System.out.println("DEBUG - Title: " + course.getTitle());
+        System.out.println("DEBUG - Topic: " + course.getTopic());
+        System.out.println("DEBUG - Description: " + course.getDescription());
+        System.out.println("DEBUG - StartDate: " + course.getStartDate());
+        System.out.println("DEBUG - Status: " + course.getStatus());
+        System.out.println("DEBUG - Teacher ID: " + course.getTeacher().getUserId());
+
         return courseRepository.save(course);
     }
 

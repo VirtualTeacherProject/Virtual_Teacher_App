@@ -30,7 +30,7 @@ public class Course {
 
     @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)
-    @JsonIgnore
+    //@JsonIgnore
     private User teacher;
 
     //Getters and Setters
