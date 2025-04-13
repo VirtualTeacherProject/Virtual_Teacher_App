@@ -1,9 +1,12 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
-
+@Data
+@NoArgsConstructor
 @Entity
 @Table(name = "lectures")
 public class Lecture {
@@ -25,24 +28,7 @@ public class Lecture {
     private String assignmentFilePath;
 
     @ManyToOne
-    @JoinColumn(name = "course_id", nullable = false) // Links to the course table
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
-
-    //Getters and Setters
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lectureId);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Lecture lecture = (Lecture) obj;
-        return lectureId == lecture.lectureId;
-    }
-    // this compares by ID
-
 
 }

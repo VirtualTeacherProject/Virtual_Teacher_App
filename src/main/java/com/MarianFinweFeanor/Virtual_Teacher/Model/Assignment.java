@@ -1,9 +1,13 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
+@Data
+@NoArgsConstructor
 @Entity
 @Table(name = "assignments")
 public class Assignment {
@@ -25,59 +29,5 @@ public class Assignment {
 
     @Column(name="grade",nullable = false)
     private Double grade; // Grade for the assignment
-
-    // Getters and Setters
-    public Long getAssignmentId() {
-        return assignmentId;
-    }
-
-    public void setAssignmentId(Long assignmentId) {
-        this.assignmentId = assignmentId;
-    }
-
-    public User getStudent() {
-        return student;
-    }
-
-    public void setStudent(User student) {
-        this.student = student;
-    }
-
-    public Lecture getLecture() {
-        return lecture;
-    }
-
-    public void setLecture(Lecture lecture) {
-        this.lecture = lecture;
-    }
-
-    public String getSubmissionFilePath() {
-        return submissionFilePath;
-    }
-
-    public void setSubmissionFilePath(String submissionFilePath) {
-        this.submissionFilePath = submissionFilePath;
-    }
-
-    public Double getGrade() {
-        return grade;
-    }
-
-    public void setGrade(Double grade) {
-        this.grade = grade;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(assignmentId);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Assignment assignment = (Assignment) obj;
-        return assignmentId == assignment.assignmentId;
-    }
 }
 
