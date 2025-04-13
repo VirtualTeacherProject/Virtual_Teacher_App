@@ -22,6 +22,7 @@ public class CourseServiceImpl implements CourseService{
     }
 
     //  1. Create a New Course
+    @Override
     public Course createCourse(Course course) {
         Long teacherId = course.getTeacher().getUserId();
 
@@ -41,16 +42,19 @@ public class CourseServiceImpl implements CourseService{
     }
 
     // 2. Get a Course by ID
+    @Override
     public Optional<Course> getCourseById(Long id) {
         return courseRepository.findById(id);
     }
 
     // 3. Get All Courses
+    @Override
     public List<Course> getAllCourses() {
         return courseRepository.findAll();
     }
 
     // 4. Update a Course
+    @Override
     public Course updateCourse(Long id, Course updatedCourse) {
         return courseRepository.findById(id)
                 .map(course -> {
@@ -65,6 +69,7 @@ public class CourseServiceImpl implements CourseService{
     }
 
     // 5. Delete a Course
+    @Override
     public void deleteCourse(Long id) {
         if (courseRepository.existsById(id)) {
             courseRepository.deleteById(id);
@@ -74,6 +79,7 @@ public class CourseServiceImpl implements CourseService{
     }
 
     //  6. Get Courses by Status (e.g., Published, Draft)
+    @Override
     public List<Course> getCoursesByStatus(String status) {
         return courseRepository.findByStatus(status);
     }
