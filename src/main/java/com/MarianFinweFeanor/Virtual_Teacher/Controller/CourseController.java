@@ -1,4 +1,4 @@
- package com.MarianFinweFeanor.Virtual_Teacher.Controller;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
@@ -22,7 +22,7 @@ public class CourseController {
 
     //Create or Update a course
     @PostMapping
-    public ResponseEntity<?> createUser(@RequestBody Course course) {
+    public ResponseEntity<?> createCourse(@RequestBody Course course) {
         try {
             Course saveCourse = courseService.createCourse(course);
             return ResponseEntity.status(HttpStatus.CREATED).body(saveCourse);

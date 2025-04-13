@@ -15,11 +15,10 @@ create table IF NOT EXISTS users
 
 CREATE TABLE IF NOT EXISTS courses
 (
-    course_id   int auto_increment
-        primary key,
+    course_id   int auto_increment primary key,
     title       varchar(30) not null,
-    topic       varchar(40) null,
-    description varchar(60) not null,
+    topic       varchar(40) not null,
+    description varchar(1000) not null,
     start_date timestamp    not null,
     status      varchar(20) not null,
     teacher_id  int         not null,
