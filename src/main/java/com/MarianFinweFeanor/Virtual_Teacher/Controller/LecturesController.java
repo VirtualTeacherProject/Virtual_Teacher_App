@@ -27,13 +27,31 @@ public class LecturesController {
     }
     @PostMapping
     public Lecture createLecture(@RequestBody Lecture lecture) {
-        return lectureService.saveLectures(lecture);
+        try {
+            return lectureService.createLectures(lecture);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Error creating lecture", e);
+        }
+
+    }
+    @PutMapping("/{id}")
+    public Lecture updateLecture(@PathVariable Long id, @RequestBody Lecture updatedLecture) {
+        try {
+            return lectureService.updateLecture(id, updatedLecture);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Error updating lecture", e);
+        }
+    }
+    @DeleteMapping("/{id}")
+    public void deleteLecture(@PathVariable Long id) {
+        try {
+            lectureService.delete(id);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting lecture", e);
+        }
     }
 
-    // 2. Get a Lecture by ID
-    // 3. Get All Lectures
-    // 4. Update a Lecture
-    // 5. Delete a Lecture
-    // 6. Get Lectures by Course ID
-    // 7. Get Lectures by Status (e.g., Published, Draft)
 }
