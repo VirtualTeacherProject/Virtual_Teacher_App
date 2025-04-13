@@ -37,4 +37,5 @@ public class Course {
     @JoinColumn(name = "teacher_id", nullable = false)
     private User teacher;
 
+
 }
