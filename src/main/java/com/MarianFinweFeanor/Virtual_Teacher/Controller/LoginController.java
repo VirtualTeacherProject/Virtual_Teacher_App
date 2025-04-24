@@ -7,13 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class LoginController {
 
     @GetMapping("/login")
-    public String loginPage() {
-        return "login"; // maps to login.html or login.jsp in templates
-    }
+    public String loginPage() { return "login"; }
 
-    @GetMapping("/home")
-    public String homePage() {
-        return "home"; // // post-login landing page
-    }
+    @GetMapping("/register")
+    public String registerPage() { return "register"; }
 
 }

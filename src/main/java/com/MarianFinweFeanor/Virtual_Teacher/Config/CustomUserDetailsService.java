@@ -30,8 +30,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(userName);
         if (user != null) {
             // Single role
+            System.out.println("Login attempt for user: " + user.getEmail());
+
+//            List<GrantedAuthority> authorities = List.of(
+//                    new SimpleGrantedAuthority(user.getRole().name())
+//            );
             List<GrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority(user.getRole().name())
+                    new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
             );
 
             return new org.springframework.security.core.userdetails.User(

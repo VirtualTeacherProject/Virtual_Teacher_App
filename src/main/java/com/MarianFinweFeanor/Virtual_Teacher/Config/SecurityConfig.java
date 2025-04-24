@@ -7,6 +7,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
@@ -20,7 +22,13 @@ public class SecurityConfig {
 
     @Autowired
     public SecurityConfig(CustomUserDetailsService userDetailsService) {
+
         this.userDetailsService = userDetailsService;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return NoOpPasswordEncoder.getInstance();
     }
 
     @Bean
@@ -33,6 +41,12 @@ public class SecurityConfig {
                                 antMatcher("/register"),
                                 antMatcher("/h2-console/**"))
                         .permitAll()
+                        .requestMatchers(
+                                antMatcher("/users/**"),
+                                antMatcher("/courses/**"),
+                                antMatcher("/lectures/**")
+                        ).hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+                        // or permitAll() for dev
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login
