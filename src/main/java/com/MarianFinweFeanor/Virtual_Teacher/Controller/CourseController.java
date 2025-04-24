@@ -17,8 +17,11 @@ import static org.springframework.http.ResponseEntity.ok;
 @RequestMapping("/api/courses")
 public class CourseController {
 
+    private final CourseService courseService;
     @Autowired
-    private CourseService courseService;
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
+    }
 
     //Create or Update a course
     @PostMapping
@@ -54,5 +57,10 @@ public class CourseController {
         return ResponseEntity.noContent().build();
 
 
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course updatedCourse) {
+        Course course = courseService.updateCourse(id, updatedCourse);
+        return ResponseEntity.ok(course);
     }
 }

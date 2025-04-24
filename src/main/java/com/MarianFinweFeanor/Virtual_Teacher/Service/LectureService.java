@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LectureService {
-    Lecture saveLectures(Lecture lectures);
+    Lecture createLectures(Lecture lectures);
 
     // Get all lectures
     List<Lecture> getAllLectures();
@@ -16,4 +16,6 @@ public interface LectureService {
 
 
     void delete(long id);
+
+    Lecture updateLecture(Long id, Lecture updatedLecture);
 }
