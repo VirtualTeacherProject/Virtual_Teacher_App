@@ -5,6 +5,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,21 +26,28 @@ public class LectureServiceImpl implements LectureService {
     public Lecture createLectures(Lecture lecture) {
         Long courseId = lecture.getCourse().getCourseId();
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Course not found with ID: " + courseId));
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
         lecture.setCourse(course); // Attach managed entity
         return lectureRepository.save(lecture);
+        //TODO FILTERING EXCEPTION HANDLING CHECK IF LECTURE WITH THE SAME NAME EXISTS
     }
 
 
     // Get all lectures
     @Override
     public List<Lecture> getAllLectures() {
+        if(lectureRepository.count() == 0) {
+            throw new EntityNotFoundException("Lectures", "database");
+        }
         return lectureRepository.findAll();
     }
 
     // Get a lecture by ID
     @Override
     public Optional<Lecture> getLecturesById(Long lectureId) {
+        if(!lectureRepository.existsById(lectureId)) {
+            throw new EntityNotFoundException("Lecture", lectureId);
+        }
         return lectureRepository.findById(lectureId);
     }
 
@@ -47,7 +55,7 @@ public class LectureServiceImpl implements LectureService {
     @Override
     public void delete(long id) {
         if (!lectureRepository.existsById(id)) {
-            throw new RuntimeException("Lecture not found with ID: " + id);
+            throw new EntityNotFoundException("Lecture", id);
         }else {
             lectureRepository.deleteById(id);
         }
@@ -62,6 +70,6 @@ public class LectureServiceImpl implements LectureService {
                     lecture.setAssignmentFilePath(updatedLecture.getAssignmentFilePath());
                     return lectureRepository.save(lecture);
                 })
-                .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", id));
     }
 }

@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.Optional;
 public class CourseServiceImpl implements CourseService{
 
     private final CourseRepository courseRepository;
-    private final UserRepository userRepository; // Add this
+    private final UserRepository userRepository;
 
     // Constructor Injection
     public CourseServiceImpl(CourseRepository courseRepository, UserRepository userRepository) {
@@ -27,16 +28,11 @@ public class CourseServiceImpl implements CourseService{
         Long teacherId = course.getTeacher().getUserId();
 
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found with ID: " + teacherId));
+                .orElseThrow(() -> new EntityNotFoundException("User", teacherId));
 
         course.setTeacher(teacher); // Attach managed entity
+        // todo Check if the course already exists after looking up filtering
 
-        System.out.println("DEBUG - Title: " + course.getTitle());
-        System.out.println("DEBUG - Topic: " + course.getTopic());
-        System.out.println("DEBUG - Description: " + course.getDescription());
-        System.out.println("DEBUG - StartDate: " + course.getStartDate());
-        System.out.println("DEBUG - Status: " + course.getStatus());
-        System.out.println("DEBUG - Teacher ID: " + course.getTeacher().getUserId());
 
         return courseRepository.save(course);
     }
@@ -44,12 +40,18 @@ public class CourseServiceImpl implements CourseService{
     // 2. Get a Course by ID
     @Override
     public Optional<Course> getCourseById(Long id) {
+        if (!courseRepository.existsById(id)) {
+            throw new EntityNotFoundException("Course", id);
+        }
         return courseRepository.findById(id);
     }
 
     // 3. Get All Courses
     @Override
     public List<Course> getAllCourses() {
+        if(courseRepository.count() == 0) {
+            throw new EntityNotFoundException("Courses", "database");
+        }
         return courseRepository.findAll();
     }
 
@@ -65,7 +67,7 @@ public class CourseServiceImpl implements CourseService{
                     course.setStatus(updatedCourse.getStatus());
                     return courseRepository.save(course);
                 })
-                .orElseThrow(() -> new RuntimeException("Course not found with ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
     }
 
     // 5. Delete a Course
@@ -74,13 +76,14 @@ public class CourseServiceImpl implements CourseService{
         if (courseRepository.existsById(id)) {
             courseRepository.deleteById(id);
         } else {
-            throw new RuntimeException("Course not found with ID: " + id);
+            throw new EntityNotFoundException("Course", id);
         }
     }
 
     //  6. Get Courses by Status (e.g., Published, Draft)
     @Override
     public List<Course> getCoursesByStatus(String status) {
+        //todo look up filtering and exception handling
         return courseRepository.findByStatus(status);
     }
 }
