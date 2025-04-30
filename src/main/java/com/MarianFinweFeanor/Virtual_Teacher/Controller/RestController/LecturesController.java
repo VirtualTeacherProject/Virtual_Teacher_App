@@ -1,7 +1,7 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Controller;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;

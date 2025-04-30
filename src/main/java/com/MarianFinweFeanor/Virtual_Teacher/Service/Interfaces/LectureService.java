@@ -1,4 +1,4 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Service;
+package com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 

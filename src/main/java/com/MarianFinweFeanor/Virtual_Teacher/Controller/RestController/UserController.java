@@ -1,11 +1,11 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Controller;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.UserService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 
 import java.util.List;
 
