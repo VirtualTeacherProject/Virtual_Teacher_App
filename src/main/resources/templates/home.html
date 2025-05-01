@@ -1,13 +1,20 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.w3.org/1999/xhtml">
-<head><title>Home</title></head>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Home - Virtual Teacher</title>
+</head>
 <body>
-<h1>Login Successful, Welcome!</h1>
-<div style="text-align: right;">
-    Logged in as <b th:text="${#authentication.principal.username}"></b>
+
+<div style="text-align: right;" sec:authorize="isAuthenticated()">
+    Logged in as <b sec:authentication="name">[username]</b> |
     <a href="/profile">My Profile</a> |
     <a href="/logout">Logout</a>
 </div>
+
+<h1>Login Successful, Welcome!</h1>
+<p>This is your dashboard. Choose a section from the navigation bar to get started.</p>
 
 </body>
 </html>

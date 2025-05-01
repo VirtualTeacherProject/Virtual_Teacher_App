@@ -66,59 +66,59 @@ public class SecurityConfig {
 //                .build();
 //    }
 
-//    @Bean
-////    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-////        return http
-////                .csrf().disable()
-////                .authorizeHttpRequests(auth -> auth
-////                        .requestMatchers(
-////                                new AntPathRequestMatcher("/"),
-////                                new AntPathRequestMatcher("/login"),
-////                                new AntPathRequestMatcher("/register"),
-////                                new AntPathRequestMatcher("/h2-console/**")
-////                        ).permitAll()
-////
-////                        //  Allow registration form POST submission
-////                        .requestMatchers(new AntPathRequestMatcher("/api/users", "POST")).permitAll()
-////
-////                        .requestMatchers(new AntPathRequestMatcher("/add-lecture")).hasRole("TEACHER")
-////
-////
-////                        .requestMatchers(
-////                                new AntPathRequestMatcher("/users/**"),
-////                                new AntPathRequestMatcher("/courses/**"),
-////                                new AntPathRequestMatcher("/lectures/**")
-////                        ).hasAnyRole("STUDENT", "TEACHER", "ADMIN")
-////
-////                        .anyRequest().authenticated()
-////                )
-////                .formLogin(login -> login
-////                        .loginPage("/login")
-////                        .defaultSuccessUrl("/home", true)
-////                        .permitAll()
-////                )
-////                .logout(logout -> logout
-////                        .logoutUrl("/logout")
-////                        .logoutSuccessUrl("/")
-////                        .permitAll()
-////                )
-////                .headers(headers -> headers.frameOptions().disable()) // required for H2 console
-////                .build();
-////    }
-
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf().disable()
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()  // 🔓 Allow all endpoints without authentication
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/"),
+                                new AntPathRequestMatcher("/login"),
+                                new AntPathRequestMatcher("/register"),
+                                new AntPathRequestMatcher("/h2-console/**")
+                        ).permitAll()
+
+                        //  Allow registration form POST submission
+                        .requestMatchers(new AntPathRequestMatcher("/api/users", "POST")).permitAll()
+
+                        .requestMatchers(new AntPathRequestMatcher("/add-lecture")).hasRole("TEACHER")
+
+
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/users/**"),
+                                new AntPathRequestMatcher("/courses/**"),
+                                new AntPathRequestMatcher("/lectures/**")
+                        ).hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+
+                        .anyRequest().authenticated()
                 )
-                .formLogin().disable()         // 🚫 Disable form login
-                .logout().disable()           // 🚫 Disable logout
-                .headers(headers -> headers.frameOptions().disable()) // needed for H2 console
+                .formLogin(login -> login
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/home", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .permitAll()
+                )
+                .headers(headers -> headers.frameOptions().disable()) // required for H2 console
                 .build();
     }
+
+
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        return http
+//                .csrf().disable()
+//                .authorizeHttpRequests(auth -> auth
+//                        .anyRequest().permitAll()  // 🔓 Allow all endpoints without authentication
+//                )
+//                .formLogin().disable()         // 🚫 Disable form login
+//                .logout().disable()           // 🚫 Disable logout
+//                .headers(headers -> headers.frameOptions().disable()) // needed for H2 console
+//                .build();
+//    }
 
 
 

@@ -29,9 +29,6 @@ public class CustomUserDetailsService implements UserDetailsService {
             // Single role
             System.out.println("Login attempt for user: " + user.getEmail());
 
-//            List<GrantedAuthority> authorities = List.of(
-//                    new SimpleGrantedAuthority(user.getRole().name())
-//            );
             List<GrantedAuthority> authorities = List.of(
                     new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
             );

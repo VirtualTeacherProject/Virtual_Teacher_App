@@ -9,6 +9,9 @@ public interface UserService {
     // Create or Update a user
     User saveUser(User user);
 
+    User findByEmail(String email);
+
+
     // Get all users
     List<User> getAllUsers();
 
