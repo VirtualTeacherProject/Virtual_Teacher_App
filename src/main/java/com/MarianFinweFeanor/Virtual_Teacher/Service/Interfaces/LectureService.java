@@ -14,7 +14,6 @@ public interface LectureService {
     // Get a lecture by ID
     Optional<Lecture> getLecturesById(Long lectureId);
 
-
     void delete(long id);
 
     Lecture updateLecture(Long id, Lecture updatedLecture);

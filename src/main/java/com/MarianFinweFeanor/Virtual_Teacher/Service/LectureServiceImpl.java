@@ -23,6 +23,11 @@ public class LectureServiceImpl implements LectureService {
         this.lectureRepository = lectureRepository;
         this.courseRepository = courseRepository;
     }
+
+    public Lecture saveLecture(Lecture lecture) {
+        return lectureRepository.save(lecture);
+    }
+
     @Override
     public Lecture createLectures(Lecture lecture) {
         Long courseId = lecture.getCourse().getCourseId();
