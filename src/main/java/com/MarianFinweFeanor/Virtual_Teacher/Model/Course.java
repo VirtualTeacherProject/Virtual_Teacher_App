@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -36,6 +37,9 @@ public class Course {
     @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)
     private User teacher;
+
+    @ManyToMany(mappedBy = "courses")
+    private Set<User> users;
 
 
 }

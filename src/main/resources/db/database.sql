@@ -1,4 +1,4 @@
-create table IF NOT EXISTS users
+create table users
 (
     email           varchar(20)                          not null,
     user_id         int auto_increment
@@ -13,20 +13,21 @@ create table IF NOT EXISTS users
         unique (email)
 );
 
-CREATE TABLE IF NOT EXISTS courses
+create table courses
 (
-    course_id   int auto_increment primary key,
-    title       varchar(30) not null,
-    topic       varchar(40) not null,
+    course_id   int auto_increment
+        primary key,
+    title       varchar(30)   not null,
+    topic       varchar(40)   not null,
     description varchar(1000) not null,
-    start_date timestamp    not null,
-    status      varchar(20) not null,
-    teacher_id  int         not null,
+    start_date  timestamp     not null,
+    status      varchar(20)   not null,
+    teacher_id  int           not null,
     constraint courses_user_user_id_fk
         foreign key (teacher_id) references users (user_id)
 );
 
-CREATE TABLE IF NOT EXISTS enrollments
+create table enrollments
 (
     course_id         int         not null,
     enrollment_id     int auto_increment
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS enrollments
         foreign key (student_id) references users (user_id)
 );
 
-CREATE TABLE IF NOT EXISTS lectures
+create table lectures
 (
     lecture_id           int auto_increment
         primary key,
@@ -53,7 +54,7 @@ CREATE TABLE IF NOT EXISTS lectures
         foreign key (course_id) references courses (course_id)
 );
 
-CREATE TABLE IF NOT EXISTS assignments
+create table assignments
 (
     assignment_id        int auto_increment
         primary key,
@@ -67,9 +68,10 @@ CREATE TABLE IF NOT EXISTS assignments
         foreign key (student_id) references users (user_id)
 );
 
-CREATE TABLE IF NOT EXISTS ratings
+create table ratings
 (
-    rating_id  INT AUTO_INCREMENT PRIMARY KEY,
+    rating_id  int auto_increment
+        primary key,
     course_id  int          not null,
     student_id int          not null,
     rating     int          not null,
@@ -78,4 +80,15 @@ CREATE TABLE IF NOT EXISTS ratings
         foreign key (course_id) references courses (course_id),
     constraint ratings_user_user_id_fk
         foreign key (student_id) references users (user_id)
+);
+
+create table user_courses
+(
+    user_id   int not null,
+    course_id int not null,
+    primary key (user_id, course_id),
+    constraint user_courses_course_fk
+        foreign key (course_id) references courses (course_id),
+    constraint user_courses_user_fk
+        foreign key (user_id) references users (user_id)
 );

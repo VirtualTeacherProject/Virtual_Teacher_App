@@ -122,6 +122,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Objects;
+import java.util.Set;
+
 @Data
 @NoArgsConstructor
 @Entity
@@ -153,4 +155,13 @@ public class User {
 
     @Column(name = "status", nullable = false, length = 20)
     private String status;
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_courses",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private Set<Course> courses;
+
 }
