@@ -1,5 +1,6 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,8 +32,8 @@ public class UserController {
             User savedUser = userService.saveUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
         }
-        catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        catch (EntityDuplicateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
 
