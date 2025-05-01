@@ -1,7 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
 <head><title>Home</title></head>
 <body>
 <h1>Login Successful, Welcome!</h1>
+<div style="text-align: right;">
+    Logged in as <b th:text="${#authentication.principal.username}"></b>
+    <a href="/profile">My Profile</a> |
+    <a href="/logout">Logout</a>
+</div>
+
 </body>
 </html>
