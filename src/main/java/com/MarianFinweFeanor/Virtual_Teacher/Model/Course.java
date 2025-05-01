@@ -39,6 +39,7 @@ public class Course {
     private User teacher;
 
     @ManyToMany(mappedBy = "courses")
+    @JsonIgnore
     private Set<User> users;
 
 

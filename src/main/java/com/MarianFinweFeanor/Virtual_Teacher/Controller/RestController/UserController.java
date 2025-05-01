@@ -1,11 +1,13 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -44,9 +46,13 @@ public class UserController {
     // Get a user by ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return userService.getUserById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
     }
 
     // Delete a user by ID

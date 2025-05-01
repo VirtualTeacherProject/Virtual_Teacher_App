@@ -117,6 +117,7 @@
 //}
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -157,6 +158,7 @@ public class User {
     private String status;
 
     @ManyToMany
+    @JsonIgnore
     @JoinTable(
             name = "user_courses",
             joinColumns = @JoinColumn(name = "user_id"),
