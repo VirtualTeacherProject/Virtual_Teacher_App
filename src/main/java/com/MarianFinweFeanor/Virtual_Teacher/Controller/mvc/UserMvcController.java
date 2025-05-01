@@ -1,4 +1,4 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Controller;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 
 @Controller
-public class UserFormController {
+public class UserMvcController {
 
     private final UserService userService;
 
     @Autowired
-    public UserFormController(UserService userService) {
+    public UserMvcController(UserService userService) {
         this.userService = userService;
     }
 

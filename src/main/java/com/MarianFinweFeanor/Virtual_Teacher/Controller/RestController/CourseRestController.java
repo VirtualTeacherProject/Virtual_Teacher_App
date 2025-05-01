@@ -13,11 +13,11 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping("/api/courses")
-public class CourseController {
+public class CourseRestController {
 
     private final CourseService courseService;
     @Autowired
-    public CourseController(CourseService courseService) {
+    public CourseRestController(CourseService courseService) {
         this.courseService = courseService;
     }
 

@@ -1,4 +1,4 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Controller;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import java.security.Principal;
 
 @Controller
-public class ProfileController {
+public class ProfileMvcController {
 
     private final UserService userService;
 
     @Autowired
-    public ProfileController(UserService userService) {
+    public ProfileMvcController(UserService userService) {
         this.userService = userService;
     }
 

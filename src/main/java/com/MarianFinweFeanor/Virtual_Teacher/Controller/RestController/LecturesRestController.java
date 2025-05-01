@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/lectures")
-public class LecturesController {
+public class LecturesRestController {
     private final LectureService lectureService;
     @Autowired
-    public LecturesController(LectureService lectureService) {
+    public LecturesRestController(LectureService lectureService) {
         this.lectureService = lectureService;
     }
     @GetMapping
