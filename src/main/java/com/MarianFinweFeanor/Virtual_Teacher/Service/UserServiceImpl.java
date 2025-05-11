@@ -22,11 +22,12 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
     }
 
-    public Optional <User> findByEmail(String email) {
-        //todo check how it works
-
-        return Optional.ofNullable(userRepository.findByEmail(email).orElseThrow(()
-                -> new EntityNotFoundException("User", email)));
+    @Override
+    public User findByEmail(String email) {
+        if(!userRepository.existsByEmail(email)) {
+            throw new EntityNotFoundException("User", email);
+        }
+        return userRepository.findByEmail(email);
 
     }
 
