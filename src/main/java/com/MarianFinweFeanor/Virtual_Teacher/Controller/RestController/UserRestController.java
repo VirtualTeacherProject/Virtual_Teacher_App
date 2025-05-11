@@ -55,6 +55,15 @@ public class UserRestController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
+    @GetMapping("/email/{email}")
+    public ResponseEntity<User> getByEmail(@PathVariable String email) {
+        try {
+            User user = userService.findByEmail(email);
+            return ResponseEntity.ok(user);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
 
     // Delete a user by ID
     @DeleteMapping("/{id}")
