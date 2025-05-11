@@ -25,7 +25,7 @@ public class ProfileMvcController {
     @GetMapping("/profile")
     public String showProfile(Model model, Principal principal) {
         String email = principal.getName();  // Logged-in user's email
-        Optional<User> user = userService.findByEmail(email);  // You need this method in UserService
+        User user = userService.findByEmail(email);  // You need this method in UserService
         model.addAttribute("user", user);
         return "profile"; // maps to profile
     }
