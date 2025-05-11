@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.security.Principal;
+import java.util.Optional;
 
 @Controller
 public class ProfileMvcController {
@@ -24,7 +25,7 @@ public class ProfileMvcController {
     @GetMapping("/profile")
     public String showProfile(Model model, Principal principal) {
         String email = principal.getName();  // Logged-in user's email
-        User user = userService.findByEmail(email);  // You need this method in UserService
+        Optional<User> user = userService.findByEmail(email);  // You need this method in UserService
         model.addAttribute("user", user);
         return "profile"; // maps to profile
     }

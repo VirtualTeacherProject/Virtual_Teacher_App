@@ -9,7 +9,7 @@ public interface UserService {
     // Create or Update a user
     User saveUser(User user);
 
-    User findByEmail(String email);
+    Optional <User> findByEmail(String email);
 
 
     // Get all users
