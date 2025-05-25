@@ -36,12 +36,25 @@ public class UserRestController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
+//    @PutMapping
+//    public ResponseEntity<User> updateUser(@RequestBody User user) {
+//        try {
+//            User updatedUser = userService.updateUser(user);
+//            return ResponseEntity.ok(updatedUser);
+//        } catch (EntityNotFoundException e) {
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+//        }
+//    }
 
     // Get all users
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return ok(users);
+        try{
+            List<User> users = userService.getAllUsers();
+            return ok(users);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
     }
 
     // Get a user by ID
@@ -68,8 +81,12 @@ public class UserRestController {
     // Delete a user by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        try{
         userService.deleteUserById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build();}
+        catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
 
     }
 }
