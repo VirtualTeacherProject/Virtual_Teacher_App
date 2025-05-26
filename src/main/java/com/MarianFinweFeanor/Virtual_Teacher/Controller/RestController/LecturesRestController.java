@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -54,7 +55,7 @@ public class LecturesRestController {
             return lectureService.updateLecture(id, updatedLecture);
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(
-                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+                    HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
     @DeleteMapping("/{id}")
@@ -63,7 +64,7 @@ public class LecturesRestController {
             lectureService.delete(id);
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(
-                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+                    HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
 
