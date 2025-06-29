@@ -4,7 +4,9 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
+import com.MarianFinweFeanor.Virtual_Teacher.util.UserSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
@@ -46,16 +48,26 @@ public class UserServiceImpl implements UserService {
         }
         return userRepository.save(user);
     }
+    @Override
+    public User updateUser(User user) //todo
+    {
+        return userRepository.save(user);
+    }
 
 
     // Get all users
     @Override
-    public List<User> getAllUsers() {
-        if(userRepository.count() == 0) {
+    public List<User> getAllUsers(String firstName, String lastName, String email) {
+        Specification<User> spec = Specification
+                .where(UserSpecification.hasFirstName(firstName))
+                .and(UserSpecification.hasLastName(lastName))
+                .and(UserSpecification.hasEmail(email));
+        List<User> users = userRepository.findAll(spec);
+        if(users.isEmpty()) {
             throw new EntityNotFoundException("Users","database");
         }
 
-        return userRepository.findAll();
+        return users;
     }
 
     // Get a user by ID

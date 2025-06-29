@@ -25,6 +25,26 @@ public class UserRestController {
         this.userService = userService;
     }
 
+    /*   Filter by:
+    - first name
+    -last name
+    -full name
+    -email
+
+    Sort by:
+
+     */
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers(@RequestParam(required = false) String firstName,
+                                                  @RequestParam(required = false) String lastName,
+                                                  @RequestParam(required = false) String email) {
+        try {
+            List<User> users = userService.getAllUsers(firstName, lastName, email);
+            return ok(users);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
     //Create or Update a user
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody User user) {
@@ -46,16 +66,6 @@ public class UserRestController {
 //        }
 //    }
 
-    // Get all users
-    @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        try{
-            List<User> users = userService.getAllUsers();
-            return ok(users);
-        } catch (EntityNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
-    }
 
     // Get a user by ID
     @GetMapping("/{id}")
