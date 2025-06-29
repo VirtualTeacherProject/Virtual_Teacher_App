@@ -15,6 +15,7 @@ import java.util.Properties;
 @Configuration
 @PropertySource("classpath:application.properties")
 public class HibernateConfig {
+// this section commented out because of database migration
 
 //    private final String dbUrl, dbUsername, dbPassword;
 //

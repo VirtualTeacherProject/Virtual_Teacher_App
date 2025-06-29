@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.Optional;
@@ -30,10 +31,32 @@ public class ProfileMvcController {
         return "profile"; // maps to profile
     }
 
+//    @PostMapping("/profile")
+//    public String updateProfile(@ModelAttribute User user) {
+//        userService.saveUser(user); // assumes saveUser() updates if ID exists
+//        return "redirect:/home";
+//    }
+
     @PostMapping("/profile")
-    public String updateProfile(@ModelAttribute User user) {
-        userService.saveUser(user); // assumes saveUser() updates if ID exists
-        return "redirect:/home";
+    public String updateProfile(@ModelAttribute("user") User formUser,
+                                Principal principal,
+                                RedirectAttributes attrs) {
+        // 1) Fetch the real user from the DB
+        User existing = userService.findByEmail(principal.getName());
+
+        // 2) Copy only the updatable fields
+        existing.setFirstName(formUser.getFirstName());
+        existing.setLastName(formUser.getLastName());
+        existing.setProfilePicture(formUser.getProfilePicture());
+        existing.setStatus(formUser.getStatus());
+
+        // 3) Save via a dedicated update method
+        userService.updateUser(existing);
+
+        // 4) Flash a success message and stay on /profile
+        attrs.addFlashAttribute("successMessage", "Profile updated!");
+        return "redirect:/profile";
     }
+
 }
 

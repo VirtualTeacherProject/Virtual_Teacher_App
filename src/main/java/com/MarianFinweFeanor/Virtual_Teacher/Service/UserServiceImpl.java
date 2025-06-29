@@ -10,11 +10,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -25,6 +27,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User findByEmail(String email) {
         if(!userRepository.existsByEmail(email)) {
             throw new EntityNotFoundException("User","email", email);
@@ -48,15 +51,11 @@ public class UserServiceImpl implements UserService {
         }
         return userRepository.save(user);
     }
-    @Override
-    public User updateUser(User user) //todo
-    {
-        return userRepository.save(user);
-    }
 
 
     // Get all users
     @Override
+    @Transactional(readOnly = true)
     public List<User> getAllUsers(String firstName, String lastName, String email) {
         Specification<User> spec = Specification
                 .where(UserSpecification.hasFirstName(firstName))
@@ -72,6 +71,7 @@ public class UserServiceImpl implements UserService {
 
     // Get a user by ID
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> getUserById(Long userId) {
         if(!userRepository.existsById(userId)) {
             throw new EntityNotFoundException("User", userId);
@@ -88,5 +88,9 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(userId);
     }
 
-
+    @Override
+    @Transactional
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
 }

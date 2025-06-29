@@ -7,6 +7,10 @@
 <body>
 <h2>My Profile</h2>
 
+<div th:if="${successMessage}" style="color: green; margin-bottom: 1em;">
+    <p th:text="${successMessage}"></p>
+</div>
+
 <form th:action="@{/profile}" method="post" th:object="${user}">
     <label>Email (read-only):</label><br>
     <input type="text" th:field="*{email}" readonly /><br><br>
