@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class LoginMvcController {
 
     @GetMapping("/login")
-    public String loginPage() { return "login"; }
+    public String loginPage() {
+        // check if person is logged in,
+        // if so, 302 redirect to /home
+        return "login";
+    }
 
 
 
