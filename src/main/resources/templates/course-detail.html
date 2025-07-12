@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${course.title}">Course Detail</title>
+</head>
+<body>
+<h1 th:text="${course.title}">Course Title</h1>
+<p th:text="${course.description}">Course description...</p>
+
+<div th:if="${msg}" style="color:green;">
+    <p th:text="${msg}"></p>
+</div>
+
+<!-- If not enrolled, show “Enroll”; else show “Unenroll” -->
+<div th:if="${!enrolled}">
+    <form th:action="@{/courses/{id}/enroll(id=${course.courseId})}" method="post">
+        <button type="submit">Enroll</button>
+    </form>
+</div>
+<div th:if="${enrolled}">
+    <p>You’re already enrolled in this course.</p>
+    <form th:action="@{/courses/{id}/unenroll(id=${course.courseId})}" method="post">
+        <button type="submit">Unenroll</button>
+    </form>
+</div>
+
+<p>
+    <a th:href="@{/courses}">All Courses</a> |
+    <a th:href="@{/courses/my-courses}">My Courses</a> |
+    <a th:href="@{/home}">Home</a>
+</p>
+</body>
+</html>

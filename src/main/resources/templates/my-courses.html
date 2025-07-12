@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>My Courses</title>
+</head>
+<body>
+<h1>My Enrolled Courses</h1>
+
+<div th:if="${enrolledCourses.isEmpty()}">
+    <p>You’re not enrolled in any courses yet.</p>
+</div>
+<ul th:if="${!enrolledCourses.isEmpty()}">
+    <li th:each="c : ${enrolledCourses}">
+        <a th:href="@{/courses/{id}(id=${c.courseId})}"
+           th:text="${c.title}">
+            Course Title
+        </a>
+    </li>
+</ul>
+
+<p>
+    <a th:href="@{/courses}">All Courses</a> |
+    <a th:href="@{/home}">Home</a>
+</p>
+</body>
+</html>

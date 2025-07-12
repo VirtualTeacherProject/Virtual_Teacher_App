@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>All Courses</title>
+</head>
+<body>
+<h1>Available Courses</h1>
+
+<ul>
+    <li th:each="c : ${courses}">
+        <span th:text="${c.title}">Course Title</span>
+        <span th:if="${enrolledIds.contains(c.courseId)}" style="color:green;">
+        (Enrolled)
+      </span>
+        <span th:if="${!enrolledIds.contains(c.courseId)}">
+        <a th:href="@{/courses/{id}(id=${c.courseId})}">
+          Details &amp; Enroll
+        </a>
+      </span>
+    </li>
+</ul>
+
+<p>
+    <a th:href="@{/home}">Home</a> |
+    <a th:href="@{/courses/my-courses}">My Courses</a>
+</p>
+</body>
+</html>
