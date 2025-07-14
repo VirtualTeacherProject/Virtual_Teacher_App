@@ -122,6 +122,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -164,6 +165,19 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "course_id")
     )
-    private Set<Course> courses;
+    private Set<Course> courses = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User)) return false;
+        User other = (User) o;   // cast to User
+        return userId != null && userId.equals(other.getUserId());
+    }
+
+    @Override
+    public int hashCode() {
+        return (userId != null ? userId.hashCode() : 0);
+    }
 
 }

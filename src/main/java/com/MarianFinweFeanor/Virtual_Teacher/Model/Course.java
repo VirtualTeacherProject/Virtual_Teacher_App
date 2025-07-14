@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,7 +41,20 @@ public class Course {
 
     @ManyToMany(mappedBy = "courses")
     @JsonIgnore
-    private Set<User> users;
+    private Set<User> users = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Course)) return false;
+        Course other = (Course) o;   // cast to Course
+        return courseId != null && courseId.equals(other.getCourseId());
+    }
+
+    @Override
+    public int hashCode() {
+        return (courseId != null ? courseId.hashCode() : 0);
+    }
 
 
 }
