@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title th:text="${course.title} + ' – Lectures'">Lectures</title></head>
+<body>
+<h1 th:text="${course.title}">Course Title</h1>
+<ul th:each="lec : ${lectures}">
+    <li>
+        <a th:href="@{/courses/{cid}/lectures/{lid}(cid=${course.courseId},lid=${lec.id})}"
+           th:text="${lec.title}">Lecture Title</a>
+    </li>
+</ul>
+<p><a th:href="@{/courses/{id}(id=${course.courseId})}">Back to Course</a></p>
+</body>
+</html>

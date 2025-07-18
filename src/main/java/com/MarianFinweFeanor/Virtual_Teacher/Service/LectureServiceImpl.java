@@ -9,6 +9,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,15 @@ public class LectureServiceImpl implements LectureService {
         lecture.setCourse(course); // Attach managed entity
         return lectureRepository.save(lecture);
         //TODO FILTERING EXCEPTION HANDLING CHECK IF LECTURE WITH THE SAME NAME EXISTS
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Lecture> getByCourseId(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+        return lectureRepository.findAllByCourse(course);
+        // or, if you prefer: lectureRepository.findAllByCourse_CourseId(courseId)
     }
 
 

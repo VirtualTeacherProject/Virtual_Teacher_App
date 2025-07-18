@@ -6,6 +6,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeMvcController {
 
-    @GetMapping("/home")
-    public String home() { return "home"; }
+    /**
+     * Show the “home” template for both the root (/) and /home.
+     * Anonymous users will see the landing section;
+     * authenticated users see the dashboard section.
+     */
+    @GetMapping({"/", "/home"})
+    public String home() {
+        return "home";
+    }
 }

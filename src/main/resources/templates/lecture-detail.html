@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title th:text="${lecture.title}">Lecture</title></head>
+<body>
+<h1 th:text="${lecture.title}">Lecture Title</h1>
+<p th:text="${lecture.content}">Lecture Content / Video embed</p>
+
+<div th:if="${enrolled}">
+    <h2>Submit Assignment</h2>
+    <form th:action="@{/courses/{cid}/lectures/{lid}/assignments}"
+          th:object="${new Assignment()}"
+          method="post" enctype="multipart/form-data"
+          th:replace="this">
+        <input type="file" name="file"/><br/><br/>
+        <textarea name="comment" placeholder="Notes…"></textarea><br/><br/>
+        <button type="submit">Upload</button>
+    </form>
+
+    <h3>Your Submissions</h3>
+    <ul th:each="a : ${submissions}">
+        <li>
+            <a th:href="@{/api/assignments/{id}/download(id=${a.id})}"
+               th:text="${#dates.format(a.submittedAt, 'yyyy-MM-dd HH:mm')}">
+                Submission Date
+            </a>
+            – Status: <span th:text="${a.status}">PENDING</span>
+        </li>
+    </ul>
+</div>
+
+<p><a th:href="@{/courses/{cid}/lectures(cid=${lecture.course.courseId})}">
+    Back to Lectures
+</a></p>
+</body>
+</html>

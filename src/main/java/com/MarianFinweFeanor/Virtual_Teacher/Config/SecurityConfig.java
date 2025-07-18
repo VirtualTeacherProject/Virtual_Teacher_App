@@ -3,9 +3,12 @@ package com.MarianFinweFeanor.Virtual_Teacher.Config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
@@ -18,6 +21,7 @@ import static org.springframework.security.web.util.matcher.AntPathRequestMatche
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private CustomUserDetailsService userDetailsService;
@@ -34,62 +38,60 @@ public class SecurityConfig {
         return NoOpPasswordEncoder.getInstance();
     }
 
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        return http
-//                .csrf().disable()
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers(antMatcher("/"),
-//                                antMatcher("/login"),
-//                                antMatcher("/register"),
-//                                antMatcher("/h2-console/**"))
-//                        .permitAll()
-//                        .requestMatchers(
-//                                antMatcher("/users/**"),
-//                                antMatcher("/courses/**"),
-//                                antMatcher("/lectures/**")
-//                        ).hasAnyRole("STUDENT", "TEACHER", "ADMIN")
-//                        // or permitAll() for dev
-//                        .anyRequest().authenticated()
-//                )
-//                .formLogin(login -> login
-//                        .loginPage("/login")
-//                        .defaultSuccessUrl("/home", true)
-//                        .permitAll()
-//                )
-//                .logout(logout -> logout
-//                        .logoutUrl("/logout")
-//                        .logoutSuccessUrl("/")
-//                        .permitAll()
-//                )
-//                .headers(headers -> headers.frameOptions().disable()) // required for H2 console
-//                .build();
-//    }
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        AuthenticationManagerBuilder auth =
+                http.getSharedObject(AuthenticationManagerBuilder.class);
+        auth.userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder());
+        return auth.build();
+    }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf().disable()
                 .authorizeHttpRequests(auth -> auth
+                        // 1) Public: home, login, register, H2 console
                         .requestMatchers(
-                                new AntPathRequestMatcher("/"),
-                                new AntPathRequestMatcher("/login"),
-                                new AntPathRequestMatcher("/register"),
-                                new AntPathRequestMatcher("/h2-console/**")
+                                new AntPathRequestMatcher("/", "GET"),
+                                new AntPathRequestMatcher("/login", "GET"),
+                                new AntPathRequestMatcher("/home", "GET"),
+                                new AntPathRequestMatcher("/register", "GET"),
+                                new AntPathRequestMatcher("/h2-console/**", "GET")
                         ).permitAll()
 
-                        //  Allow registration form POST submission
-                        .requestMatchers(new AntPathRequestMatcher("/api/users", "POST")).permitAll()
-
-                        .requestMatchers(new AntPathRequestMatcher("/add-lecture")).hasRole("TEACHER")
-
-
+                        // 2) Public: browse courses & lectures (GET only)
                         .requestMatchers(
-                                new AntPathRequestMatcher("/users/**"),
-                                new AntPathRequestMatcher("/courses/**"),
-                                new AntPathRequestMatcher("/lectures/**")
-                        ).hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+                                new AntPathRequestMatcher("/courses", "GET"),
+                                new AntPathRequestMatcher("/courses/**", "GET"),
+                                new AntPathRequestMatcher("/courses/*/lectures", "GET"),
+                                new AntPathRequestMatcher("/courses/*/lectures/**", "GET")
+                        ).permitAll()
 
+                        // 3) Public: user registration POST
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/api/users", "POST")
+                        ).permitAll()
+
+                        // 4) Teacher-only: add lectures
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "GET"),
+                                new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST")
+                        ).hasRole("TEACHER")
+
+                        // 5) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/courses/*/enroll", "POST"),
+                                new AntPathRequestMatcher("/courses/*/lectures/*/assignments", "POST")
+                        ).hasAnyRole("STUDENT","TEACHER","ADMIN")
+
+
+                        // 6) Secure all other API endpoints
+                        .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
+
+                        // 7) Everything else (e.g. /home, /profile) needs login
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login
@@ -105,23 +107,6 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions().disable()) // required for H2 console
                 .build();
     }
-
-
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        return http
-//                .csrf().disable()
-//                .authorizeHttpRequests(auth -> auth
-//                        .anyRequest().permitAll()  // 🔓 Allow all endpoints without authentication
-//                )
-//                .formLogin().disable()         // 🚫 Disable form login
-//                .logout().disable()           // 🚫 Disable logout
-//                .headers(headers -> headers.frameOptions().disable()) // needed for H2 console
-//                .build();
-//    }
-
-
-
 
 }
 

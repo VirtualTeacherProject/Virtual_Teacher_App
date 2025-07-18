@@ -31,11 +31,6 @@ public class ProfileMvcController {
         return "profile"; // maps to profile
     }
 
-//    @PostMapping("/profile")
-//    public String updateProfile(@ModelAttribute User user) {
-//        userService.saveUser(user); // assumes saveUser() updates if ID exists
-//        return "redirect:/home";
-//    }
 
     @PostMapping("/profile")
     public String updateProfile(@ModelAttribute("user") User formUser,

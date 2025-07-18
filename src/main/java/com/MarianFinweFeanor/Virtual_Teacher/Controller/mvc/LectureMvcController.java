@@ -1,34 +1,134 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
 
 
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureServiceImpl;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.Model;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.security.Principal;
+import java.util.List;
 
 @Controller
 public class LectureMvcController {
 
-    @Autowired
-    private LectureServiceImpl lectureService;
+    private final LectureService lectureService;
+    private final UserService userService;    // for checking “enrolled”
+    private final CourseService courseService;  // for breadcrumb back to course
+    private final AssignmentService assignmentService;
 
+    @Autowired
+    public LectureMvcController(LectureService      lectureService,
+                                UserService         userService,
+                                CourseService       courseService,
+                                AssignmentService   assignmentService) {
+        this.lectureService   = lectureService;
+        this.userService      = userService;
+        this.courseService    = courseService;
+        this.assignmentService = assignmentService;
+    }
+
+
+    // — Teacher-only: show “Add Lecture” form —
     @GetMapping("/add-lecture")
     @PreAuthorize("hasRole('TEACHER')")
-    public String showForm(Model model) {
-        model.addAttribute("lecture", new Lecture());
+    public String showAddForm(@PathVariable Long courseId, Model model) {
+        Lecture lec = new Lecture();
+        lec.setCourse(courseService.getCourseById(courseId).orElseThrow());
+        model.addAttribute("lecture", lec);
         return "add-lecture";
     }
 
+    // — Teacher-only: handle “Add Lecture” submit —
     @PostMapping("/add-lecture")
-    public String submitForm(@ModelAttribute Lecture lecture) {
-        lectureService.saveLecture(lecture);
-        return "redirect:/home";
+    @PreAuthorize("hasRole('TEACHER')")
+    public String submitAdd(@ModelAttribute Lecture lecture) {
+        lectureService.createLectures(lecture);
+        return "redirect:/courses/" + lecture.getCourse().getCourseId() + "/lectures";
     }
+
+
+
+    // — 1️⃣ List lectures for everyone —
+    @GetMapping("")
+    public String listLectures(@PathVariable Long courseId,
+                               Model model,
+                               Principal principal) {
+        var course   = courseService.getCourseById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+        var lectures = lectureService.getByCourseId(courseId);
+
+        boolean enrolled = principal != null &&
+                userService.getEnrolledCourses(principal.getName())
+                        .stream()
+                        .map(Course::getCourseId)
+                        .anyMatch(id -> id.equals(courseId));
+
+        model.addAttribute("course", course);
+        model.addAttribute("lectures", lectures);
+        model.addAttribute("enrolled", enrolled);
+        return "lectures";
+    }
+
+    // — 2️⃣ Lecture detail + assignment-upload form —
+    @GetMapping("/{lecId}")
+    public String lectureDetail(@PathVariable Long courseId,
+                                @PathVariable Long lecId,
+                                Model model,
+                                Principal principal) {
+        var lecture = lectureService.getLecturesById(lecId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lecId));
+
+        boolean enrolled = principal != null &&
+                userService.getEnrolledCourses(principal.getName())
+                        .stream()
+                        .map(Course::getCourseId)
+                        .anyMatch(id -> id.equals(courseId));
+
+        List<Assignment> subs = List.of();
+        if (enrolled) {
+            subs = assignmentService
+                    .getSubmissionsByLectureAndUser(lecId, principal.getName());
+        }
+
+        model.addAttribute("courseId",    courseId);
+        model.addAttribute("lecture",     lecture);
+        model.addAttribute("enrolled",    enrolled);
+        model.addAttribute("submissions", subs);
+        model.addAttribute("newAssignment", new Assignment());
+        return "lecture-detail";
+    }
+
+    // — 3️Handle file-upload (students only) —
+    @PostMapping("/{lecId}/assignments")
+    @PreAuthorize("hasAnyRole('STUDENT','TEACHER','ADMIN')")
+    public String uploadAssignment(@PathVariable Long courseId,
+                                   @PathVariable Long lecId,
+                                   @RequestParam("file") MultipartFile file,
+                                   @RequestParam("comment") String comment,
+                                   Principal principal,
+                                   RedirectAttributes ra) {
+        try {
+            assignmentService.submit(principal.getName(), lecId, file, comment);
+            ra.addFlashAttribute("msg", "Assignment submitted!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "Upload failed: " + e.getMessage());
+        }
+        return "redirect:/courses/" + courseId + "/lectures/" + lecId;
+    }
+
 }
 
