@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <title th:text="${course.title}">Course Detail</title>
@@ -12,15 +12,30 @@
     <p th:text="${msg}"></p>
 </div>
 
-<!-- If not enrolled, show “Enroll”; else show “Unenroll” -->
-<div th:if="${!enrolled}">
-    <form th:action="@{/courses/{id}/enroll(id=${course.courseId})}" method="post">
+<!-- Add-Lecture here too -->
+<div sec:authorize="hasRole('TEACHER')">
+    <a class="btn btn-primary"
+       th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
+        + Add Lecture
+    </a>
+</div>
+
+<!-- Only students who aren’t enrolled get the Enroll button -->
+<!-- only students who are NOT enrolled get “Enroll” -->
+<div xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+     sec:authorize="hasRole('STUDENT')"
+     th:if="${!enrolled}">
+    <form th:action="@{/courses/{id}/enroll(id=${course.courseId})}"
+          method="post">
         <button type="submit">Enroll</button>
     </form>
 </div>
-<div th:if="${enrolled}">
-    <p>You’re already enrolled in this course.</p>
-    <form th:action="@{/courses/{id}/unenroll(id=${course.courseId})}" method="post">
+
+<!-- only students who ARE enrolled get “Unenroll” -->
+<div sec:authorize="hasRole('STUDENT')"
+     th:if="${enrolled}">
+    <form th:action="@{/courses/{id}/unenroll(id=${course.courseId})}"
+          method="post">
         <button type="submit">Unenroll</button>
     </form>
 </div>
@@ -29,6 +44,9 @@
     <a th:href="@{/courses}">All Courses</a> |
     <a th:href="@{/courses/my-courses}">My Courses</a> |
     <a th:href="@{/home}">Home</a>
+    <a th:href="@{/courses/{c}/lectures(c=${course.courseId})}">
+        View Lectures &rarr;
+    </a>
 </p>
 </body>
 </html>

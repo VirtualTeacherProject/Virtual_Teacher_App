@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <title>Add Lecture</title>
 </head>
 <body>
 <h2>Add New Lecture</h2>
-<form method="post" action="/add-lecture">
+<form th:action="@{/courses/{c}/lectures/add-lecture(c=${lecture.course.courseId})}"
+      method="post" th:object="${lecture}">
     <label>Title:</label><br>
     <input type="text" name="title" required><br><br>
 
@@ -23,5 +24,11 @@
 
     <button type="submit">Add Lecture</button>
 </form>
+
+<p>
+    <a th:href="@{/courses/{c}/lectures(c=${lecture.course.courseId})}">
+        &larr; Back to Lectures
+    </a>
+</p>
 </body>
 </html>

@@ -1,14 +1,38 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title th:text="${course.title} + ' – Lectures'">Lectures</title></head>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${course.title} + ' – Lectures'">Lectures</title>
+</head>
 <body>
 <h1 th:text="${course.title}">Course Title</h1>
-<ul th:each="lec : ${lectures}">
-    <li>
-        <a th:href="@{/courses/{cid}/lectures/{lid}(cid=${course.courseId},lid=${lec.id})}"
-           th:text="${lec.title}">Lecture Title</a>
+
+<div sec:authorize="hasRole('TEACHER')">
+    <a class="btn btn-primary"
+       th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
+        + Add Lecture
+    </a>
+</div>
+
+<ul>
+    <li th:each="lec : ${lectures}">
+        <!-- link to lecture detail -->
+        <a th:href="@{/courses/{c}/lectures/{l}(c=${course.courseId},l=${lec.lectureId})}"
+           th:text="${lec.title}">Lecture title</a>
+
+        <!-- edit button, teachers only -->
+        <span sec:authorize="hasRole('TEACHER')">
+      <a class="btn btn-sm btn-outline-secondary"
+         th:href="@{/courses/{c}/lectures/{l}/edit(c=${course.courseId},l=${lec.lectureId})}">
+        ✎ Edit
+      </a>
+    </span>
     </li>
 </ul>
-<p><a th:href="@{/courses/{id}(id=${course.courseId})}">Back to Course</a></p>
+
+<p>
+    <a th:href="@{/courses/{c}(c=${course.courseId})}">&larr; Back to Course</a> |
+    <a th:href="@{/home}">Home</a>
+</p>
 </body>
 </html>

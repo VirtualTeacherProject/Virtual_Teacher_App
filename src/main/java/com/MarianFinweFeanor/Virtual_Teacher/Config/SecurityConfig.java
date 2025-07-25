@@ -59,7 +59,7 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/login", "GET"),
                                 new AntPathRequestMatcher("/home", "GET"),
                                 new AntPathRequestMatcher("/register", "GET"),
-                                new AntPathRequestMatcher("/h2-console/**", "GET")
+                                new AntPathRequestMatcher("/h2-console/**")
                         ).permitAll()
 
                         // 2) Public: browse courses & lectures (GET only)
@@ -72,19 +72,22 @@ public class SecurityConfig {
 
                         // 3) Public: user registration POST
                         .requestMatchers(
-                                new AntPathRequestMatcher("/api/users", "POST")
+                                new AntPathRequestMatcher("/api/users", "POST"),
+                                new AntPathRequestMatcher("/register", "POST")
                         ).permitAll()
 
                         // 4) Teacher-only: add lectures
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "GET"),
-                                new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST")
+                                new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST"),
+                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST")
                         ).hasRole("TEACHER")
 
                         // 5) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses/*/enroll", "POST"),
                                 new AntPathRequestMatcher("/courses/*/lectures/*/assignments", "POST")
+
                         ).hasAnyRole("STUDENT","TEACHER","ADMIN")
 
 

@@ -1,35 +1,44 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head><meta charset="UTF-8"><title th:text="${lecture.title}">Lecture</title></head>
 <body>
 <h1 th:text="${lecture.title}">Lecture Title</h1>
-<p th:text="${lecture.content}">Lecture Content / Video embed</p>
+<p th:text="${lecture.description}">Description…</p>
 
-<div th:if="${enrolled}">
+<!-- 1) Show assignment form only if the user is enrolled -->
+<div sec:authorize="isAuthenticated() and ${enrolled}">
     <h2>Submit Assignment</h2>
-    <form th:action="@{/courses/{cid}/lectures/{lid}/assignments}"
-          th:object="${new Assignment()}"
+    <form th:action="@{/courses/{c}/lectures/{l}/assignments(c=${courseId},l=${lecture.lecId})}"
           method="post" enctype="multipart/form-data"
-          th:replace="this">
-        <input type="file" name="file"/><br/><br/>
-        <textarea name="comment" placeholder="Notes…"></textarea><br/><br/>
+          th:object="${newAssignment}">
+        <input type="file" name="file" required/><br/><br/>
+        <textarea th:field="*{comment}" placeholder="Any notes…"></textarea><br/><br/>
         <button type="submit">Upload</button>
     </form>
+    <div th:if="${msg}" style="color:green;" th:text="${msg}"></div>
+</div>
 
-    <h3>Your Submissions</h3>
-    <ul th:each="a : ${submissions}">
-        <li>
-            <a th:href="@{/api/assignments/{id}/download(id=${a.id})}"
-               th:text="${#dates.format(a.submittedAt, 'yyyy-MM-dd HH:mm')}">
-                Submission Date
-            </a>
-            – Status: <span th:text="${a.status}">PENDING</span>
+<!-- 2) Show existing submissions & grades -->
+<div sec:authorize="isAuthenticated() and ${enrolled}">
+    <h2>Your Submissions</h2>
+    <ul>
+        <li th:each="sub : ${submissions}">
+            <a th:href="@{/files/assignments/{id}(id=${sub.assignmentId})}"
+               th:text="${sub.submissionFilePath}">Download</a>
+            <span th:text="${sub.grade != null ? 'Grade: ' + sub.grade : 'Not yet graded'}"></span>
         </li>
     </ul>
 </div>
 
-<p><a th:href="@{/courses/{cid}/lectures(cid=${lecture.course.courseId})}">
-    Back to Lectures
-</a></p>
+<div xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+     sec:authorize="hasRole('TEACHER')">
+    <a class="btn btn-secondary"
+       th:href="@{/courses/{c}/lectures/{l}/edit(c=${courseId},l=${lecture.lectureId})}">
+        ✎ Edit Lecture
+    </a>
+</div>
+
+<p><a th:href="@{/courses/{c}/lectures(c=${courseId})}">← Back to Lectures</a></p>
 </body>
 </html>

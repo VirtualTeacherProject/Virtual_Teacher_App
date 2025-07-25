@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 
 @Controller
+@RequestMapping("/courses/{courseId}/lectures")
 public class LectureMvcController {
 
     private final LectureService lectureService;
@@ -60,6 +62,30 @@ public class LectureMvcController {
         return "redirect:/courses/" + lecture.getCourse().getCourseId() + "/lectures";
     }
 
+    // — Teacher-only: show “Edit Lecture” form —
+    @GetMapping("/{lecId}/edit")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String showEditForm(@PathVariable Long courseId,
+                               @PathVariable Long lecId,
+                               Model model) {
+        Lecture lecture = lectureService.getLecturesById(lecId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lecId));
+        model.addAttribute("lecture", lecture);
+        return "edit-lecture";
+    }
+
+    // — Teacher-only: handle “Edit Lecture” submit —
+    @PostMapping("/{lecId}/edit")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String submitEdit(@PathVariable Long courseId,
+                             @PathVariable Long lecId,
+                             @ModelAttribute Lecture updated,
+                             RedirectAttributes ra) {
+        lectureService.updateLecture(lecId, updated);
+        ra.addFlashAttribute("msg", "Lecture updated!");
+        return "redirect:/courses/" + courseId + "/lectures/" + lecId;
+    }
+
 
 
     // — 1️⃣ List lectures for everyone —
@@ -82,6 +108,8 @@ public class LectureMvcController {
         model.addAttribute("enrolled", enrolled);
         return "lectures";
     }
+
+
 
     // — 2️⃣ Lecture detail + assignment-upload form —
     @GetMapping("/{lecId}")
@@ -129,6 +157,8 @@ public class LectureMvcController {
         }
         return "redirect:/courses/" + courseId + "/lectures/" + lecId;
     }
+
+
 
 }
 

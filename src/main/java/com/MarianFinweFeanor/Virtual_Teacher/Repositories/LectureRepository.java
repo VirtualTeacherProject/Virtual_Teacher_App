@@ -10,6 +10,10 @@ import java.util.List;
 @Repository
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
+    // either...
     List<Lecture> findAllByCourse(Course course);
+    // …or, if you prefer ID-based lookup…
+    // List<Lecture> findByCourse_CourseId(Long courseId);
+
 
 }
