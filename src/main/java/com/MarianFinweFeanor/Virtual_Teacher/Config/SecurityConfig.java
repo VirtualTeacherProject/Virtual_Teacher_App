@@ -80,7 +80,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "GET"),
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST"),
-                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST")
+                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST"),
+                                new AntPathRequestMatcher("/courses/add", "POST"),
+                                new AntPathRequestMatcher("/courses/*/edit", "POST")
                         ).hasRole("TEACHER")
 
                         // 5) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit

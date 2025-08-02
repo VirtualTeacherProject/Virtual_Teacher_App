@@ -1,32 +1,38 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head><meta charset="UTF-8"><title th:text="${lecture.title}">Lecture</title></head>
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${lecture.title}">Lecture</title>
+</head>
 <body>
 <h1 th:text="${lecture.title}">Lecture Title</h1>
 <p th:text="${lecture.description}">Description…</p>
 
 <!-- 1) Show assignment form only if the user is enrolled -->
-<div sec:authorize="isAuthenticated() and ${enrolled}">
+<div sec:authorize="isAuthenticated()" th:if="${enrolled}">
     <h2>Submit Assignment</h2>
-    <form th:action="@{/courses/{c}/lectures/{l}/assignments(c=${courseId},l=${lecture.lecId})}"
-          method="post" enctype="multipart/form-data"
-          th:object="${newAssignment}">
+    <form th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/assignments|}"
+          method="post" enctype="multipart/form-data">
         <input type="file" name="file" required/><br/><br/>
-        <textarea th:field="*{comment}" placeholder="Any notes…"></textarea><br/><br/>
+        <textarea name="comment" placeholder="Any notes…"></textarea><br/><br/>
         <button type="submit">Upload</button>
     </form>
     <div th:if="${msg}" style="color:green;" th:text="${msg}"></div>
 </div>
 
 <!-- 2) Show existing submissions & grades -->
-<div sec:authorize="isAuthenticated() and ${enrolled}">
+<div sec:authorize="isAuthenticated()" th:if="${enrolled}">
     <h2>Your Submissions</h2>
     <ul>
         <li th:each="sub : ${submissions}">
-            <a th:href="@{/files/assignments/{id}(id=${sub.assignmentId})}"
-               th:text="${sub.submissionFilePath}">Download</a>
-            <span th:text="${sub.grade != null ? 'Grade: ' + sub.grade : 'Not yet graded'}"></span>
+            <a th:href="@{|/files/assignments/${sub.assignmentId}|}"
+               th:text="${#strings.substringAfterLast(sub.submissionFilePath,'/')}">
+                Download
+            </a>
+            <span th:text="${sub.grade != null
+                        ? 'Grade: ' + sub.grade
+                        : 'Not yet graded'}"></span>
         </li>
     </ul>
 </div>
@@ -34,10 +40,17 @@
 <div xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      sec:authorize="hasRole('TEACHER')">
     <a class="btn btn-secondary"
-       th:href="@{/courses/{c}/lectures/{l}/edit(c=${courseId},l=${lecture.lectureId})}">
+       th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/edit|}">
         ✎ Edit Lecture
     </a>
 </div>
+
+<!--&lt;!&ndash; 3) Teacher edit button: only for TEACHER role &ndash;&gt;-->
+<!--<div sec:authorize="hasRole('TEACHER')">-->
+<!--    <a th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/edit|}">-->
+<!--        ✎ Edit Lecture-->
+<!--    </a>-->
+<!--</div>-->
 
 <p><a th:href="@{/courses/{c}/lectures(c=${courseId})}">← Back to Lectures</a></p>
 </body>

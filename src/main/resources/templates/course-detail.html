@@ -1,15 +1,25 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head>
     <meta charset="UTF-8">
     <title th:text="${course.title}">Course Detail</title>
 </head>
+
 <body>
 <h1 th:text="${course.title}">Course Title</h1>
 <p th:text="${course.description}">Course description...</p>
 
 <div th:if="${msg}" style="color:green;">
     <p th:text="${msg}"></p>
+</div>
+
+<!-- Only teachers see this -->
+<div sec:authorize="hasRole('TEACHER')">
+    <a class="btn btn-secondary"
+       th:href="@{/courses/{id}/edit(id=${course.courseId})}">
+        ✎ Edit Course
+    </a>
 </div>
 
 <!-- Add-Lecture here too -->

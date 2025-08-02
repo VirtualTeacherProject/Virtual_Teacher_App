@@ -10,20 +10,20 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
-import lombok.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-
-
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.List;
 import java.util.UUID;
 
-// src/main/java/…/service/impl/AssignmentServiceImpl.java
 @Service
 @Transactional
 public class AssignmentServiceImpl implements AssignmentService {
@@ -36,22 +36,27 @@ public class AssignmentServiceImpl implements AssignmentService {
     //@Value("${app.upload.dir:${java.io.tmpdir}}")
     //private String uploadDir;
 
-    /**
-     * @param uploadDirPath directory path from config (or tmpdir by default)
-     */
+//    /**
+////     * @param uploadDirPath directory path from config (or tmpdir by default)
+////     */
 
     @Autowired
     public AssignmentServiceImpl(AssignmentRepository assignmentRepo,
                                  UserService           userService,
                                  LectureRepository     lectureRepository,
-                                 @org.springframework.beans.factory.annotation.Value(
-                                         "${app.upload.dir:${java.io.tmpdir}}"
-                                 ) String uploadDirPath) {
+                                 @Value("${app.upload.dir}") String uploadDirStr) throws IOException {
         this.assignmentRepo     = assignmentRepo;
         this.userService        = userService;
         this.lectureRepository  = lectureRepository;
-        this.uploadDir          = Paths.get(uploadDirPath);
+        //this.uploadDir          = Paths.get(uploadDirPath);
+
+        Path base = Paths.get(uploadDirStr);
+        if (!Files.exists(base)) {
+            Files.createDirectories(base);
+        }
+        this.uploadDir = base;
     }
+
 
     @Override
     public void submit(String userEmail, Long lectureId,
@@ -82,6 +87,18 @@ public class AssignmentServiceImpl implements AssignmentService {
         a.setSubmissionFilePath(target.toString());
         a.setGrade(null);       // pending
         assignmentRepo.save(a);
+    }
+
+    // add a helper to load the file:
+    public Resource loadAssignmentFile(Long assignmentId) throws MalformedURLException {
+        Assignment assignment = assignmentRepo.findById(assignmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Assignment", assignmentId));
+        Path target = Paths.get(assignment.getSubmissionFilePath());
+        Resource resource = new UrlResource(target.toUri());
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new RuntimeException("Could not read file: " + target);
+        }
+        return resource;
     }
 
     @Override

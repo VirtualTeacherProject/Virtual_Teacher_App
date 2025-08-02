@@ -1,17 +1,16 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.UserServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
@@ -62,6 +61,49 @@ public class EnrollmentMvcController {
         model.addAttribute("courses", all);
         model.addAttribute("enrolledIds", enrolledIds);
         return "courses";
+    }
+
+    //  — Teacher: show “Add Course” form —
+    @GetMapping("/add")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String showAddCourseForm(Model model) {
+        model.addAttribute("course", new Course());
+        return "add-course";
+    }
+
+    //  — Teacher: handle “Add Course” submit —
+    @PostMapping("/add")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String submitAddCourse(@ModelAttribute Course course,
+                                  Principal principal,
+                                  RedirectAttributes ra) {
+        // set logged‑in teacher as owner
+        User me = userService.findByEmail(principal.getName());
+        course.setTeacher(me);
+        courseService.createCourse(course);
+        ra.addFlashAttribute("msg", "Course created!");
+        return "redirect:/courses";
+    }
+
+    //  — Teacher: show “Edit Course” form —
+    @GetMapping("/{id}/edit")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String showEditCourseForm(@PathVariable Long id, Model model) {
+        Course c = courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+        model.addAttribute("course", c);
+        return "edit-course";
+    }
+
+    //  — Teacher: handle “Edit Course” submit —
+    @PostMapping("/{id}/edit")
+    @PreAuthorize("hasRole('TEACHER')")
+    public String submitEditCourse(@PathVariable Long id,
+                                   @ModelAttribute Course updated,
+                                   RedirectAttributes ra) {
+        courseService.updateCourse(id, updated);
+        ra.addFlashAttribute("msg", "Course updated!");
+        return "redirect:/courses/" + id;
     }
 
 

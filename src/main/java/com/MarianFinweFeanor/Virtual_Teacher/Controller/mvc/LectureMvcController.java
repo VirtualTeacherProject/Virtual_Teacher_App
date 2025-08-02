@@ -63,32 +63,33 @@ public class LectureMvcController {
     }
 
     // — Teacher-only: show “Edit Lecture” form —
-    @GetMapping("/{lecId}/edit")
+    @GetMapping("/{lectureId}/edit")
     @PreAuthorize("hasRole('TEACHER')")
     public String showEditForm(@PathVariable Long courseId,
-                               @PathVariable Long lecId,
+                               @PathVariable Long lectureId,
                                Model model) {
-        Lecture lecture = lectureService.getLecturesById(lecId)
-                .orElseThrow(() -> new EntityNotFoundException("Lecture", lecId));
+        Lecture lecture = lectureService.getLecturesById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
         model.addAttribute("lecture", lecture);
         return "edit-lecture";
     }
 
     // — Teacher-only: handle “Edit Lecture” submit —
-    @PostMapping("/{lecId}/edit")
+    @PostMapping("/{lectureId}/edit")
     @PreAuthorize("hasRole('TEACHER')")
     public String submitEdit(@PathVariable Long courseId,
-                             @PathVariable Long lecId,
+                             @PathVariable Long lectureId,
                              @ModelAttribute Lecture updated,
                              RedirectAttributes ra) {
-        lectureService.updateLecture(lecId, updated);
+        lectureService.updateLecture(lectureId, updated);
         ra.addFlashAttribute("msg", "Lecture updated!");
-        return "redirect:/courses/" + courseId + "/lectures/" + lecId;
+        return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
     }
 
 
 
     // — 1️⃣ List lectures for everyone —
+    // now handles GET /courses/{courseId}/lectures
     @GetMapping("")
     public String listLectures(@PathVariable Long courseId,
                                Model model,
@@ -112,13 +113,13 @@ public class LectureMvcController {
 
 
     // — 2️⃣ Lecture detail + assignment-upload form —
-    @GetMapping("/{lecId}")
+    @GetMapping("/{lectureId}")
     public String lectureDetail(@PathVariable Long courseId,
-                                @PathVariable Long lecId,
+                                @PathVariable Long lectureId,
                                 Model model,
                                 Principal principal) {
-        var lecture = lectureService.getLecturesById(lecId)
-                .orElseThrow(() -> new EntityNotFoundException("Lecture", lecId));
+        var lecture = lectureService.getLecturesById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
 
         boolean enrolled = principal != null &&
                 userService.getEnrolledCourses(principal.getName())
@@ -129,7 +130,7 @@ public class LectureMvcController {
         List<Assignment> subs = List.of();
         if (enrolled) {
             subs = assignmentService
-                    .getSubmissionsByLectureAndUser(lecId, principal.getName());
+                    .getSubmissionsByLectureAndUser(lectureId, principal.getName());
         }
 
         model.addAttribute("courseId",    courseId);
@@ -141,24 +142,22 @@ public class LectureMvcController {
     }
 
     // — 3️Handle file-upload (students only) —
-    @PostMapping("/{lecId}/assignments")
+    @PostMapping("/{lectureId}/assignments")
     @PreAuthorize("hasAnyRole('STUDENT','TEACHER','ADMIN')")
     public String uploadAssignment(@PathVariable Long courseId,
-                                   @PathVariable Long lecId,
+                                   @PathVariable Long lectureId,
                                    @RequestParam("file") MultipartFile file,
                                    @RequestParam("comment") String comment,
                                    Principal principal,
                                    RedirectAttributes ra) {
         try {
-            assignmentService.submit(principal.getName(), lecId, file, comment);
+            assignmentService.submit(principal.getName(), lectureId, file, comment);
             ra.addFlashAttribute("msg", "Assignment submitted!");
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Upload failed: " + e.getMessage());
         }
-        return "redirect:/courses/" + courseId + "/lectures/" + lecId;
+        return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
     }
-
-
 
 }
 
