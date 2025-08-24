@@ -85,7 +85,11 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/courses/*/edit", "POST")
                         ).hasRole("TEACHER")
 
-                        // 5) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit
+                        // 5) only teachers/admins can see list of enrolled students
+                        .requestMatchers(new AntPathRequestMatcher("/courses/*/students", "GET"))
+                        .hasAnyRole("TEACHER","ADMIN")
+
+                        // 6) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses/*/enroll", "POST"),
                                 new AntPathRequestMatcher("/courses/*/lectures/*/assignments", "POST")
@@ -93,10 +97,10 @@ public class SecurityConfig {
                         ).hasAnyRole("STUDENT","TEACHER","ADMIN")
 
 
-                        // 6) Secure all other API endpoints
+                        // 7) Secure all other API endpoints
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
 
-                        // 7) Everything else (e.g. /home, /profile) needs login
+                        // 8) Everything else (e.g. /home, /profile) needs login
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login

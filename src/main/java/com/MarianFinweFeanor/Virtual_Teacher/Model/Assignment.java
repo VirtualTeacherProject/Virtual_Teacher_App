@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Data
@@ -29,5 +30,12 @@ public class Assignment {
 
     @Column(name="grade",nullable = false)
     private Double grade; // Grade for the assignment
+
+    @Column(name="comment", length = 500)
+    private String comment;              // optional note from student
+
+    @Column(name="submitted_at", nullable = false)
+    private LocalDateTime submittedAt;   // when the file was uploaded
+
 }
 

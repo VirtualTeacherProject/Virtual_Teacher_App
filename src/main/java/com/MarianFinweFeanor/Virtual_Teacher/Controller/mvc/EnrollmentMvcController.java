@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.UserServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
@@ -25,12 +26,15 @@ public class EnrollmentMvcController {
 
     private final UserService userService;        // interface
     private final CourseService courseService;    // interface
+    private final EnrollmentService enrollmentService;
 
     // <-- constructor injection
     public EnrollmentMvcController(UserService userService,
-                                   CourseService courseService) {
+                                   CourseService courseService,
+                                   EnrollmentService enrollmentService) {
         this.userService = userService;
         this.courseService = courseService;
+        this.enrollmentService = enrollmentService;
     }
 
     /**
@@ -47,15 +51,19 @@ public class EnrollmentMvcController {
         List<Course> all = courseService.getAllCourses();
 
 
-        // 2) Determine which ones this user is enrolled in—if they’re logged in
-        Set<Long> enrolledIds = new HashSet<>();
-        if (principal != null) {
-            // Only call getEnrolledCourses(...) when we know we have an authenticated user
-            enrolledIds = userService.getEnrolledCourses(principal.getName())
-                    .stream()
-                    .map(Course::getCourseId)
-                    .collect(Collectors.toSet());
-        }
+//        // 2) Determine which ones this user is enrolled in—if they’re logged in
+//        Set<Long> enrolledIds = new HashSet<>();
+//        if (principal != null) {
+//            // Only call getEnrolledCourses(...) when we know we have an authenticated user
+//            enrolledIds = userService.getEnrolledCourses(principal.getName())
+//                    .stream()
+//                    .map(Course::getCourseId)
+//                    .collect(Collectors.toSet());
+//        }
+
+        Set<Long> enrolledIds = (principal == null)
+                ? java.util.Collections.emptySet()
+                : enrollmentService.getEnrolledCourseIds(principal.getName());
 
         // 3) Add to the model for Thymeleaf to render “(Enrolled)” badges
         model.addAttribute("courses", all);
@@ -136,6 +144,18 @@ public class EnrollmentMvcController {
         return "course-detail";
     }
 
+    @GetMapping("/{id}/students")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    public String courseStudents(@PathVariable Long id, Model model) {
+        var course = courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        var students = enrollmentService.getStudentsInCourse(id); // service queries exactly what we need
+        model.addAttribute("course", course);
+        model.addAttribute("students", students);
+        return "course-students"; // create this template
+    }
+
 
     @PostMapping("/{id}/enroll")
     public String enroll(@PathVariable("id") Long id,
@@ -143,15 +163,12 @@ public class EnrollmentMvcController {
                          RedirectAttributes ra) {
         String email = principal.getName();
         // check if already enrolled
-        boolean already = userService.getEnrolledCourses(email)
-                .stream()
-                .map(Course::getCourseId)
-                .anyMatch(cid -> cid.equals(id));
+        boolean already = enrollmentService.isEnrolled(email, id);
 
-        if (already) {
+        if (enrollmentService.isEnrolled(email, id)) {
             ra.addFlashAttribute("msg", "You’re already enrolled in this course.");
         } else {
-            userService.enrollInCourse(email, id);
+            enrollmentService.enroll(email, id);
             ra.addFlashAttribute("msg", "Enrolled successfully!");
         }
         return "redirect:/courses/" + id;
@@ -161,7 +178,7 @@ public class EnrollmentMvcController {
     public String unenroll(@PathVariable("id") Long id,
                            Principal principal,
                            RedirectAttributes ra) {
-        userService.unenrollFromCourse(principal.getName(), id);
+        enrollmentService.unenroll(principal.getName(), id);
         ra.addFlashAttribute("msg", "You have been unenrolled.");
         return "redirect:/courses/" + id;
     }

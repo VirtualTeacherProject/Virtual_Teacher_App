@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head><meta charset="UTF-8"><title th:text="'Students - ' + ${course.title}">Students</title></head>
+<body>
+<h1 th:text="'Students in ' + ${course.title}">Students</h1>
+
+<table>
+    <thead><tr><th>Name</th><th>Email</th></tr></thead>
+    <tbody>
+    <tr th:each="s : ${students}">
+        <td th:text="${s.firstName + ' ' + s.lastName}">Name</td>
+        <td th:text="${s.email}">email@example.com</td>
+    </tr>
+    </tbody>
+</table>
+
+<p><a th:href="@{/courses/{id}(id=${course.courseId})}">← Back to course</a></p>
+</body>
+</html>

@@ -125,6 +125,7 @@ import lombok.NoArgsConstructor;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -158,14 +159,28 @@ public class User {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @ManyToMany
+//    @ManyToMany
+//    @JsonIgnore
+//    @JoinTable(
+//            name = "user_courses",
+//            joinColumns = @JoinColumn(name = "user_id"),
+//            inverseJoinColumns = @JoinColumn(name = "course_id")
+//    )
+
+
+    // --- Enrollments owned by this student ---
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
-    @JoinTable(
-            name = "user_courses",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "course_id")
-    )
-    private Set<Course> courses = new HashSet<>();
+    private Set<Enrollment> enrollments = new HashSet<>();
+
+    // ---------- Helpers ----------
+    /** Convenience: the set of Courses the user is enrolled in. */
+    public Set<Course> getCourses() {
+        return enrollments.stream()
+                .map(Enrollment::getCourse)   // requires Enrollment#getCourse()
+                .collect(java.util.stream.Collectors.toSet());
+    }
 
     @Override
     public boolean equals(Object o) {

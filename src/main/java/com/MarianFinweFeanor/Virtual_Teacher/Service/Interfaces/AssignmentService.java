@@ -15,6 +15,8 @@ public interface AssignmentService {
      */
     List<Assignment> getSubmissionsByLectureAndUser(Long lectureId, String userEmail);
 
+    List <Assignment> getMySubmissions(String userEmail);
+
     /**
      * (Optional) find one submission by its ID.
      */

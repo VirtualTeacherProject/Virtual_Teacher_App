@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -85,6 +86,8 @@ public class AssignmentServiceImpl implements AssignmentService {
         a.setStudent(student);
         a.setLecture(lecture);
         a.setSubmissionFilePath(target.toString());
+        a.setComment(comment);
+        a.setSubmittedAt(LocalDateTime.now());
         a.setGrade(null);       // pending
         assignmentRepo.save(a);
     }
@@ -104,7 +107,14 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     @Transactional(readOnly = true)
     public List<Assignment> getSubmissionsByLectureAndUser(Long lectureId, String userEmail) {
-        return assignmentRepo.findByLecture_LectureIdAndStudent_Email(lectureId, userEmail);
+        return assignmentRepo.findByLecture_LectureIdAndStudent_EmailOrderBySubmittedAtDesc(lectureId, userEmail);
+    }
+
+    @Override
+    @Transactional (readOnly = true)
+    public List <Assignment> getMySubmissions (String userEmail)
+   {
+       return assignmentRepo.findByStudent_EmailOrderBySubmittedAtDesc(userEmail);
     }
 
     @Override

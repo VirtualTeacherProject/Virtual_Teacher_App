@@ -24,6 +24,32 @@
 <!-- 2) Show existing submissions & grades -->
 <div sec:authorize="isAuthenticated()" th:if="${enrolled}">
     <h2>Your Submissions</h2>
+
+    <!-- this should be in the inside lecture-detail.html, in the "Your Submissions" section -->
+    <table>
+        <thead>
+        <tr>
+            <th>File</th>
+            <th>Submitted</th>
+            <th>Status</th>
+            <th>Comment</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="sub : ${submissions}">
+            <td>
+                <a th:href="@{/files/assignments/{id}(id=${sub.assignmentId})}"
+                   th:text="${#strings.substring(sub.submissionFilePath, sub.submissionFilePath.lastIndexOf('/')+1)}">
+                    Download
+                </a>
+            </td>
+            <td th:text="${#temporals.format(sub.submittedAt, 'yyyy-MM-dd HH:mm')}">—</td>
+            <td th:text="${sub.grade != null ? 'Grade: ' + sub.grade : 'Pending'}">Pending</td>
+            <td th:text="${sub.comment}">—</td>
+        </tr>
+        </tbody>
+    </table>
+
     <ul>
         <li th:each="sub : ${submissions}">
             <a th:href="@{|/files/assignments/${sub.assignmentId}|}"

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -39,9 +40,19 @@ public class Course {
     @JoinColumn(name = "teacher_id", nullable = false)
     private User teacher;
 
-    @ManyToMany(mappedBy = "courses")
+//    @ManyToMany(mappedBy = "courses")
+//    @JsonIgnore
+//    private Set<User> users = new HashSet<>();
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<User> users = new HashSet<>();
+    private Set<Enrollment> enrollments = new HashSet<>();
+
+    public Set<User> getStudents() {
+        return enrollments.stream()
+                .map(Enrollment::getStudent)   // requires Enrollment#getStudent()
+                .collect(java.util.stream.Collectors.toSet());
+    }
 
     @Override
     public boolean equals(Object o) {

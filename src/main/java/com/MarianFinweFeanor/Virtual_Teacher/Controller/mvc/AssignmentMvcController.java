@@ -102,5 +102,16 @@ public class AssignmentMvcController {
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
     }
 
+    //a) List all my submissions by the logged in student
+    @GetMapping("/assignments/my")
+    public String mySubmissions (Model model , Principal principal)
+    {
+        var list = assignmentService.getMySubmissions(principal.getName());
+        model.addAttribute("susbmission", list);
+        return "my-assignments";
+    }
+
+
+
 
 }
