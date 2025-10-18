@@ -9,6 +9,8 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.UserServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -45,31 +47,33 @@ public class EnrollmentMvcController {
      * 2. We only attempt to look up “enrolled” IDs if the user is logged in.
      * 3. This prevents NullPointerExceptions and lets anonymous visitors browse.
      */
+
     @GetMapping("")
     public String listCourses(Model model, Principal principal) {
-        // 1) Always show every course in the catalog
+        // Fetch all available courses
         List<Course> all = courseService.getAllCourses();
 
-
-//        // 2) Determine which ones this user is enrolled in—if they’re logged in
-//        Set<Long> enrolledIds = new HashSet<>();
-//        if (principal != null) {
-//            // Only call getEnrolledCourses(...) when we know we have an authenticated user
-//            enrolledIds = userService.getEnrolledCourses(principal.getName())
-//                    .stream()
-//                    .map(Course::getCourseId)
-//                    .collect(Collectors.toSet());
-//        }
-
+        // Determine enrolled course IDs (empty set if not logged in)
         Set<Long> enrolledIds = (principal == null)
                 ? java.util.Collections.emptySet()
                 : enrollmentService.getEnrolledCourseIds(principal.getName());
 
-        // 3) Add to the model for Thymeleaf to render “(Enrolled)” badges
+        // Check if the current user is a teacher
+        boolean isTeacher = false;
+        if (principal != null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            isTeacher = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+        }
+
+        // Add data to the model for Thymeleaf
         model.addAttribute("courses", all);
         model.addAttribute("enrolledIds", enrolledIds);
+        model.addAttribute("isTeacher", isTeacher);
+
         return "courses";
     }
+
 
     //  — Teacher: show “Add Course” form —
     @GetMapping("/add")
