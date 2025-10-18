@@ -69,29 +69,43 @@
 
                 <!-- show to logged-in users -->
                 <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                    <a class="nav-link dropdown-toggle"
-                       href="#"
-                       role="button"
-                       data-bs-toggle="dropdown">
-                        <!-- username/email -->
-                        <span sec:authentication="name">User</span>
-                        <!-- role badge -->
-                        (
-                        <span sec:authorize="hasRole('STUDENT')">Student</span>
-                        <span sec:authorize="hasRole('TEACHER')">Teacher</span>
-                        <span sec:authorize="hasRole('ADMIN')">Admin</span>
-                        )
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <span th:text="${currentUserData.email}">email@example.com</span>
                     </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="px-3 py-2">
+                            <div class="fw-semibold" th:text="${currentUserData.email}">email@example.com</div>
+                            <div class="text-muted small"
+                                 th:text="${(currentUserData.firstName ?: '') + (currentUserData.lastName != null ? ' ' + currentUserData.lastName : '')}">
+                                Full Name
+                            </div>
+                            <span class="badge bg-secondary mt-1"
+                                  th:text="${currentUserData.role != null ? #strings.substring(currentUserData.role,5) : ''}">
+        Role
+      </span>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
                         <li><a class="dropdown-item" th:href="@{/logout}">Logout</a></li>
                     </ul>
                 </li>
+
             </ul>
         </div>
     </div>
 </nav>
+
+<div class="container mt-4">
+    <!-- ✅ Flash / success message goes here -->
+    <div th:if="${msg}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${msg}">Success</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- then your main page content -->
+    <h1>Welcome back!</h1>
+    <p>This is your dashboard. Choose a section to get started:</p>
+</div>
 
 <div class="container mt-5">
 
@@ -104,8 +118,7 @@
 
     <!-- dashboard for logged-in users -->
     <section sec:authorize="isAuthenticated()">
-        <h1>Welcome back!</h1>
-        <p>This is your dashboard. Choose a section to get started:</p>
+
         <a class="btn btn-secondary me-2" th:href="@{/courses}">All Courses</a>
         <!-- only students see “My Courses” -->
         <a class="btn btn-secondary"
