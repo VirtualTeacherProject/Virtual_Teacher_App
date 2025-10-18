@@ -48,12 +48,21 @@ public class CourseServiceImpl implements CourseService {
     }
 
     // 3. Get All Courses
+//    @Override
+//    public List<Course> getAllCourses() {
+//        if(courseRepository.count() == 0) {
+//            throw new EntityNotFoundException("Courses", "database");
+//        }
+//        return courseRepository.findAll();
+//    }
+
     @Override
     public List<Course> getAllCourses() {
-        if(courseRepository.count() == 0) {
-            throw new EntityNotFoundException("Courses", "database");
+        List<Course> courses = courseRepository.findAll();
+        if (courses.isEmpty()) {
+            System.out.println("⚠️ No courses found in database.");
         }
-        return courseRepository.findAll();
+        return courses;
     }
 
     // 4. Update a Course

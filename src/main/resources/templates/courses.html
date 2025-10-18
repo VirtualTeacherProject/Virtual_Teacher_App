@@ -7,28 +7,37 @@
 <body>
 <h1>Available Courses</h1>
 
-<ul>
+<h1>Available Courses</h1>
+
+<!-- Show friendly message if no courses -->
+<div th:if="${#lists.isEmpty(courses)}" style="margin:20px;">
+    <p>No courses are available yet.</p>
+    <div th:if="${isTeacher}">
+        <p>You can create one now:</p>
+        <a class="btn btn-primary" th:href="@{/courses/add}">+ Add Course</a>
+    </div>
+</div>
+
+<!-- Show course list if not empty -->
+<ul th:if="${!#lists.isEmpty(courses)}">
     <li th:each="c : ${courses}">
         <span th:text="${c.title}">Course Title</span>
 
-        <!-- Enrolled badge or details link… -->
-        <span th:if="${enrolledIds.contains(c.courseId)}">(Enrolled)</span>
-        <span th:if="${!enrolledIds.contains(c.courseId)}">
-        <a th:href="@{/courses/{id}(id=${c.courseId})}">Details &amp; Enroll</a>
-      </span>
+        <span th:if="${enrolledIds != null and enrolledIds.contains(c.courseId)}">(Enrolled)</span>
+        <span th:if="${enrolledIds == null or !enrolledIds.contains(c.courseId)}">
+      <a th:href="@{/courses/{id}(id=${c.courseId})}">Details &amp; Enroll</a>
+    </span>
 
         <!-- ✎ Edit link, only for teachers -->
-        <span sec:authorize="hasRole('TEACHER')">
-        &nbsp;
-        <a th:href="@{/courses/{id}/edit(id=${c.courseId})}">
-          ✎ Edit
-        </a>
-      </span>
+        <span th:if="${isTeacher}">
+      &nbsp;
+      <a th:href="@{/courses/{id}/edit(id=${c.courseId})}">✎ Edit</a>
+    </span>
     </li>
 </ul>
 
-<div sec:authorize="hasRole('TEACHER')"
-     xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!-- Show add button also below list -->
+<div th:if="${isTeacher}" style="margin-top:20px;">
     <a class="btn btn-primary" th:href="@{/courses/add}">+ Add Course</a>
 </div>
 
@@ -36,5 +45,6 @@
     <a th:href="@{/home}">Home</a> |
     <a th:href="@{/courses/my-courses}">My Courses</a>
 </p>
+
 </body>
 </html>
