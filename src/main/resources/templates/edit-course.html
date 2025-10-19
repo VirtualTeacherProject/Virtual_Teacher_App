@@ -31,14 +31,25 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Start Date</label>
-            <input class="form-control" type="datetime-local" th:field="*{startDate}">
+            <label class="form-label">Start Date (optional)</label>
+            <input type="datetime-local"
+                   class="form-control"
+                   th:field="*{startDate}"
+                   th:value="${course.startDate != null ? #temporals.format(course.startDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
+            <div class="text-danger small"
+                 th:if="${#fields.hasErrors('startDate')}"
+                 th:errors="*{startDate}">Start date error</div>
+            <div class="form-text">Leave empty to keep the current start date.</div>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Status</label>
-            <input class="form-control" th:field="*{status}">
+            <select class="form-select" th:field="*{status}">
+                <option th:value="ACTIVE">ACTIVE</option>
+                <option th:value="PASSIVE">PASSIVE</option>
+            </select>
         </div>
+
 
         <button class="btn btn-primary">Save Changes</button>
         <a class="btn btn-secondary ms-2" th:href="@{/courses/{id}(id=${course.courseId})}">&larr; Back to Course</a>

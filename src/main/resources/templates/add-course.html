@@ -31,12 +31,20 @@
 
         <div class="mb-3">
             <label class="form-label">Start Date</label>
-            <input class="form-control" type="datetime-local" th:field="*{startDate}">
+            <input type="datetime-local"
+                   class="form-control"
+                   th:field="*{startDate}">
+            <div class="text-danger small"
+                 th:if="${#fields.hasErrors('startDate')}"
+                 th:errors="*{startDate}">Start date error</div>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Status</label>
-            <input class="form-control" th:field="*{status}">
+            <select class="form-select" th:field="*{status}">
+                <option th:value="ACTIVE">ACTIVE</option>
+                <option th:value="PASSIVE">PASSIVE</option>
+            </select>
         </div>
 
         <button class="btn btn-primary" type="submit">Create Course</button>

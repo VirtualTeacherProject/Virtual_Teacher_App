@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -88,6 +89,18 @@ public class EnrollmentMvcController {
         var me = userService.findByEmail(principal.getName());
         course.setTeacher(me);
 
+        // DEFAULT if left empty in the form
+        if (course.getStartDate() == null) {
+            course.setStartDate(LocalDateTime.now());  // or any business default
+        }
+
+        if (course.getStatus() == null || course.getStatus().isBlank()) {
+            course.setStatus("ACTIVE");
+        } else {
+            var s = course.getStatus().trim().toUpperCase();
+            course.setStatus(("ACTIVE".equals(s) || "PASSIVE".equals(s)) ? s : "ACTIVE");
+        }
+
         courseService.createCourse(course);
         ra.addFlashAttribute("msg", "Course created!");
         return "redirect:/courses";
@@ -107,13 +120,37 @@ public class EnrollmentMvcController {
     @PostMapping("/{id}/edit")
     @PreAuthorize("hasRole('TEACHER')")
     public String submitEditCourse(@PathVariable Long id,
-                                   @Valid @ModelAttribute("course") Course updated,
+                                   @ModelAttribute("course") Course updated,
                                    BindingResult br,
-                                   RedirectAttributes ra) {
+                                   RedirectAttributes ra,
+                                   Model model) {
         if (br.hasErrors()) {
             return "edit-course";
         }
-        courseService.updateCourse(id, updated);
+
+        Course existing = courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        existing.setTitle(updated.getTitle());
+        existing.setTopic(updated.getTopic());
+        existing.setDescription(updated.getDescription());
+        existing.setStatus(updated.getStatus());
+
+        String incoming = updated.getStatus();
+        if (incoming == null || incoming.isBlank()) {
+            // keep existing if present, else default
+            existing.setStatus(existing.getStatus() != null ? existing.getStatus() : "ACTIVE");
+        } else {
+            var s = incoming.trim().toUpperCase();
+            existing.setStatus(("ACTIVE".equals(s) || "PASSIVE".equals(s)) ? s : "ACTIVE");
+        }
+
+        // Only overwrite startDate if user actually provided one
+        if (updated.getStartDate() != null) {
+            existing.setStartDate(updated.getStartDate());
+        }
+
+        courseService.updateCourse(id, existing);
         ra.addFlashAttribute("msg", "Course updated!");
         return "redirect:/courses/" + id;
     }

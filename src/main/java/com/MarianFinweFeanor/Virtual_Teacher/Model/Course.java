@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -30,9 +31,13 @@ public class Course {
     @Column (name="description",length = 1000)
     private String description;
 
-    @Column(name="start_date",nullable = false)
+//    @Column(name="start_date",nullable = false)
+//    private LocalDateTime startDate;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) // lets Spring parse the html5 datetime-local
     private LocalDateTime startDate;
 
+    @jakarta.validation.constraints.Pattern(regexp = "ACTIVE|PASSIVE", message = "Status must be ACTIVE or PASSIVE")
     @Column(name="status",nullable = false, length = 20)
     private String status;
 
