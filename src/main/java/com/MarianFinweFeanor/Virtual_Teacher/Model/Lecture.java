@@ -1,6 +1,7 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,16 +16,19 @@ public class Lecture {
     @Column(name = "lecture_id")
     private Long lectureId;
 
-    @Column(name="title",nullable = false, length = 50)
+    @Size(max = 120)     // DB column size
+    @Column(name="title",nullable = false, length = 120)
     private String title;
 
-    @Column(name="description",nullable = false, length = 300)
+    @Size(max = 1000)
+    @Column(name="description",nullable = false, length = 1000)
     private String description;
 
-    @Column(name="video_url",nullable = false)
+    @Size(max = 500)
+    @Column(name="video_url",nullable = false, length = 500)
     private String videoUrl;
 
-    @Column(name="assignment_file_path",nullable = false)
+    @Column(name="assignment_file_path",nullable = false, length = 50)
     private String assignmentFilePath;
 
     @ManyToOne

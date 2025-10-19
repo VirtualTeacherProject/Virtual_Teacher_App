@@ -119,8 +119,10 @@ package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -137,25 +139,42 @@ public class User {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "email", nullable = false, length = 20, unique = true)
+    @NotBlank
+    @Email
+    @Size(max = 254) // typical upper bound for email
+    @Column(name = "email", nullable = false, length = 254, unique = true)
     private String email;
 
-    @Column(name = "password", nullable = false, length = 20)
+    @NotBlank
+    @ToString.Exclude         // prevents printing password in logs via Lombok @Data
+    @JsonIgnore               // prevents exposing in JSON responses (e.g., REST)
+    @Column(name = "password", nullable = false, length = 50)
     private String password;
 
-    @Column(name = "first_name", nullable = false, length = 20)
+    @NotBlank
+    @Size(max = 50)
+    @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 20)
+    @NotBlank
+    @Size(max = 50)
+    @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
-    @Column(name = "profile_picture", nullable = true, length = 40)
+    // URLs are longer than 40; make it 255 (or TEXT if you prefer)
+    @Size(max = 255)
+    @Column(name = "profile_picture", length = 255)
     private String profilePicture;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
     private UserRole role;
 
+    // imports: jakarta.validation.constraints.Pattern, NotBlank, Size
+    @NotBlank
+    @Size(max = 20)
+    @Pattern(regexp = "ACTIVE|PASSIVE", message = "Status must be ACTIVE or PASSIVE")
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 

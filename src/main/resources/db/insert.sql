@@ -1,20 +1,20 @@
 INSERT INTO "PUBLIC"."USERS" VALUES
 
-('test1@example.com', 1, 'pass1234', 'Umutt', 'Yildirim2', 'default1.jpg', 'TEACHER', 'Active'),
+('test1@example.com', 1, 'pass1234', 'Umutt', 'Yildirim2', 'default1.jpg', 'TEACHER', 'ACTIVE'),
 
-('test2@example.com', 33, 'pass1234', 'UmutDev', 'Yildirim', 'default2.jpg', 'ADMIN', 'Active'),
+('test2@example.com', 33, 'pass1234', 'UmutDev', 'Yildirim', 'default2.jpg', 'ADMIN', 'ACTIVE'),
 
-('test3@example.com', 34, 'pass1234', 'Marian', 'Maximov', 'default2.jpg', 'TEACHER', 'Active'),
+('test3@example.com', 34, 'pass1234', 'Marian', 'Maximov', 'default2.jpg', 'TEACHER', 'ACTIVE'),
 
-('test10@example.com', 65, 'pass1234', 'Ertan', 'Haskoy', 'default1.jpg', 'TEACHER', 'Active'),
+('test10@example.com', 65, 'pass1234', 'Ertan', 'Haskoy', 'default1.jpg', 'TEACHER', 'ACTIVE'),
 
-('test5@example.com', 97, 'pass1234', 'Umut', 'Thunder', 'default5.jpg', 'TEACHER', 'Active'),
+('test5@example.com', 97, 'pass1234', 'Umut', 'Thunder', 'default5.jpg', 'TEACHER', 'ACTIVE'),
 
-('test6@example.com', 129, 'pass1234', 'Katya', 'Stepanova', 'default6.jpg', 'TEACHER', 'Active'),
+('test6@example.com', 129, 'pass1234', 'Katya', 'Stepanova', 'default6.jpg', 'TEACHER', 'ACTIVE'),
 
-('student1@example.com', 161, 'pass1234', 'Student1', 'Student1', 'default11.jpg', 'STUDENT', 'Active'),
+('student1@example.com', 161, 'pass1234', 'Student1', 'Student1', 'default11.jpg', 'STUDENT', 'ACTIVE'),
 
-('test4@example.com', 193, 'pass1234', 'Ivan', 'Drago', 'default.jpg', 'TEACHER', 'Active');
+('test4@example.com', 193, 'pass1234', 'Ivan', 'Drago', 'default.jpg', 'TEACHER', 'ACTIVE');
 
 INSERT INTO "PUBLIC"."COURSES" VALUES
 

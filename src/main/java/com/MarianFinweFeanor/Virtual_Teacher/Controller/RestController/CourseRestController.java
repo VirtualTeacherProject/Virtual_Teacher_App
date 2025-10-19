@@ -2,9 +2,11 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,8 +25,8 @@ public class CourseRestController {
 
     //Create or Update a course
     @PostMapping
-    public ResponseEntity<?> createCourse(@RequestBody Course course) {
-        try {
+    public ResponseEntity<?> createCourse(@Valid @RequestBody Course course, BindingResult br) {
+            try {
             Course saveCourse = courseService.createCourse(course);
             return ResponseEntity.status(HttpStatus.CREATED).body(saveCourse);
         } catch (Exception e) {

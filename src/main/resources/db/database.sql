@@ -1,12 +1,12 @@
 create table users
 (
-    email           varchar(20)                          not null,
+    email           varchar(254)                          not null,
     user_id         int auto_increment
         primary key,
-    password        varchar(20)                          not null,
-    first_name      varchar(20)                          not null,
-    last_name       varchar(20)                          not null,
-    profile_picture varchar(40)                          not null,
+    password        varchar(50)                          not null,
+    first_name      varchar(50)                          not null,
+    last_name       varchar(50)                          not null,
+    profile_picture varchar(255)                          not null,
     role            enum ('TEACHER', 'STUDENT', 'ADMIN') not null,
     status          varchar(20)                          not null,
     constraint user_pk
@@ -17,8 +17,8 @@ create table courses
 (
     course_id   int auto_increment
         primary key,
-    title       varchar(30)   not null,
-    topic       varchar(40)   not null,
+    title       varchar(100)   not null,
+    topic       varchar(250)   not null,
     description varchar(1000) not null,
     start_date  timestamp     not null,
     status      varchar(20)   not null,
@@ -45,9 +45,9 @@ create table lectures
 (
     lecture_id           int auto_increment
         primary key,
-    title                varchar(50)  not null,
-    description          varchar(300) not null,
-    video_url            varchar(50)  not null,
+    title                varchar(120)  not null,
+    description          varchar(1000) not null,
+    video_url            varchar(500)  not null,
     assignment_file_path varchar(50)  not null,
     course_id            int          not null,
     constraint lectures_courses_course_id_fk

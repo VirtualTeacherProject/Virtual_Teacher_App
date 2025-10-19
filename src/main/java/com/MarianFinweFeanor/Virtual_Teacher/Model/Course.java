@@ -21,10 +21,10 @@ public class Course {
     @Column (name = "course_id")
     private Long courseId;
 
-    @Column (name="title",nullable = false, length = 30)
+    @Column (name="title",nullable = false, length = 100)
     private String title;
 
-    @Column (name="topic",nullable = false, length = 40)
+    @Column (name="topic",nullable = false, length = 250)
     private String topic;
 
     @Column (name="description",length = 1000)

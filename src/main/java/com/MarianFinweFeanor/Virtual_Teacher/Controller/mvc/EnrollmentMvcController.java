@@ -8,11 +8,13 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentServic
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.UserServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -26,11 +28,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/courses")
 public class EnrollmentMvcController {
 
-    private final UserService userService;        // interface
-    private final CourseService courseService;    // interface
+    private final UserService userService;
+    private final CourseService courseService;
     private final EnrollmentService enrollmentService;
 
-    // <-- constructor injection
     public EnrollmentMvcController(UserService userService,
                                    CourseService courseService,
                                    EnrollmentService enrollmentService) {
@@ -39,43 +40,33 @@ public class EnrollmentMvcController {
         this.enrollmentService = enrollmentService;
     }
 
-    /**
-     * List all courses in the catalog.
-     *
-     * Now open to anonymous users (Principal may be null), so:
-     * 1. We fetch *all* courses for everyone.
-     * 2. We only attempt to look up “enrolled” IDs if the user is logged in.
-     * 3. This prevents NullPointerExceptions and lets anonymous visitors browse.
-     */
+    // --- List Courses (public) ----------------------------------------------
 
+    /** GET /courses — everyone can browse */
     @GetMapping("")
     public String listCourses(Model model, Principal principal) {
-        // Fetch all available courses
-        List<Course> all = courseService.getAllCourses();
+        var all = courseService.getAllCourses();
 
-        // Determine enrolled course IDs (empty set if not logged in)
-        Set<Long> enrolledIds = (principal == null)
-                ? java.util.Collections.emptySet()
+        var enrolledIds = (principal == null)
+                ? java.util.Collections.<Long>emptySet()
                 : enrollmentService.getEnrolledCourseIds(principal.getName());
 
-        // Check if the current user is a teacher
         boolean isTeacher = false;
         if (principal != null) {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            isTeacher = auth.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            isTeacher = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_TEACHER".equals(a.getAuthority()));
         }
 
-        // Add data to the model for Thymeleaf
         model.addAttribute("courses", all);
         model.addAttribute("enrolledIds", enrolledIds);
         model.addAttribute("isTeacher", isTeacher);
-
         return "courses";
     }
 
+    // --- Create/Edit Course (teacher) ---------------------------------------
 
-    //  — Teacher: show “Add Course” form —
+    /** GET /courses/add (TEACHER) */
     @GetMapping("/add")
     @PreAuthorize("hasRole('TEACHER')")
     public String showAddCourseForm(Model model) {
@@ -83,92 +74,94 @@ public class EnrollmentMvcController {
         return "add-course";
     }
 
-    //  — Teacher: handle “Add Course” submit —
+    /** POST /courses/add (TEACHER) */
     @PostMapping("/add")
     @PreAuthorize("hasRole('TEACHER')")
-    public String submitAddCourse(@ModelAttribute Course course,
+    public String submitAddCourse(@Valid @ModelAttribute("course") Course course,
+                                  BindingResult br,
                                   Principal principal,
                                   RedirectAttributes ra) {
-        // set logged‑in teacher as owner
-        User me = userService.findByEmail(principal.getName());
+        if (br.hasErrors()) {
+            return "add-course";
+        }
+        // attach owner
+        var me = userService.findByEmail(principal.getName());
         course.setTeacher(me);
+
         courseService.createCourse(course);
         ra.addFlashAttribute("msg", "Course created!");
         return "redirect:/courses";
     }
 
-    //  — Teacher: show “Edit Course” form —
+    /** GET /courses/{id}/edit (TEACHER) */
     @GetMapping("/{id}/edit")
     @PreAuthorize("hasRole('TEACHER')")
     public String showEditCourseForm(@PathVariable Long id, Model model) {
-        Course c = courseService.getCourseById(id)
+        var c = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
         model.addAttribute("course", c);
         return "edit-course";
     }
 
-    //  — Teacher: handle “Edit Course” submit —
+    /** POST /courses/{id}/edit (TEACHER) */
     @PostMapping("/{id}/edit")
     @PreAuthorize("hasRole('TEACHER')")
     public String submitEditCourse(@PathVariable Long id,
-                                   @ModelAttribute Course updated,
+                                   @Valid @ModelAttribute("course") Course updated,
+                                   BindingResult br,
                                    RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            return "edit-course";
+        }
         courseService.updateCourse(id, updated);
         ra.addFlashAttribute("msg", "Course updated!");
         return "redirect:/courses/" + id;
     }
 
+    // --- Course Detail (public) ---------------------------------------------
 
-    /**
-     * Show detail for a single course.
-     *
-     * Anonymous users can view the page; they simply never see an “Enroll” button
-     * because enrolled=false when principal==null.
-     */
+    /** GET /courses/{id} — public detail; enroll actions are gated in the view */
     @GetMapping("/{id}")
     public String courseDetail(@PathVariable Long id,
                                Model model,
                                Principal principal) {
-        // Load the course or 404
-        Course course = courseService.getCourseById(id)
+        var course = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
 
-        // Check enrollment only if logged in; otherwise keep false
-        boolean enrolled = false;
-        if (principal != null) {
-            enrolled = userService.getEnrolledCourses(principal.getName())
-                    .stream()
-                    .map(Course::getCourseId)
-                    .anyMatch(cid -> cid.equals(id));
-        }
+        boolean enrolled = principal != null &&
+                userService.getEnrolledCourses(principal.getName())
+                        .stream()
+                        .map(Course::getCourseId)
+                        .anyMatch(cid -> cid.equals(id));
 
         model.addAttribute("course", course);
         model.addAttribute("enrolled", enrolled);
-
         return "course-detail";
     }
 
+    // --- Students in Course (teacher/admin) ---------------------------------
+
+    /** GET /courses/{id}/students (TEACHER/ADMIN) */
     @GetMapping("/{id}/students")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     public String courseStudents(@PathVariable Long id, Model model) {
         var course = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
+        var students = enrollmentService.getStudentsInCourse(id);
 
-        var students = enrollmentService.getStudentsInCourse(id); // service queries exactly what we need
         model.addAttribute("course", course);
         model.addAttribute("students", students);
-        return "course-students"; // create this template
+        return "course-students";
     }
 
+    // --- Enroll / Unenroll (authenticated) ----------------------------------
 
+    /** POST /courses/{id}/enroll (authenticated) */
     @PostMapping("/{id}/enroll")
     public String enroll(@PathVariable("id") Long id,
                          Principal principal,
                          RedirectAttributes ra) {
-        String email = principal.getName();
-        // check if already enrolled
-        boolean already = enrollmentService.isEnrolled(email, id);
-
+        var email = principal.getName();
         if (enrollmentService.isEnrolled(email, id)) {
             ra.addFlashAttribute("msg", "You’re already enrolled in this course.");
         } else {
@@ -178,6 +171,7 @@ public class EnrollmentMvcController {
         return "redirect:/courses/" + id;
     }
 
+    /** POST /courses/{id}/unenroll (authenticated) */
     @PostMapping("/{id}/unenroll")
     public String unenroll(@PathVariable("id") Long id,
                            Principal principal,
@@ -187,9 +181,13 @@ public class EnrollmentMvcController {
         return "redirect:/courses/" + id;
     }
 
+    // --- My Courses (authenticated) -----------------------------------------
+
+    /** GET /courses/my-courses (authenticated) */
     @GetMapping("/my-courses")
-    public String myCourses(Model m, Principal p) {
-        m.addAttribute("enrolledCourses", userService.getEnrolledCourses(p.getName()));
+    public String myCourses(Model model, Principal principal) {
+        model.addAttribute("enrolledCourses", userService.getEnrolledCourses(principal.getName()));
         return "my-courses";
     }
 }
+
