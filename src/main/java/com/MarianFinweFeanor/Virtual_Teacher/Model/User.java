@@ -157,7 +157,7 @@ public class User {
     private String firstName;
 
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 50) //test comment
     @Column(name = "last_name", nullable = false, length = 50)
     private String lastName;
 
