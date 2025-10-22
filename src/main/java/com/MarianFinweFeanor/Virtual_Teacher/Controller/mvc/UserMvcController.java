@@ -25,10 +25,17 @@ public class UserMvcController {
         this.userService = userService;
     }
 
+    @ModelAttribute("user") //factory method
+    public User prepareUser() {
+        User u = new User();
+        u.setStatus("ACTIVE");
+        u.setRole(UserRole.STUDENT);
+        return u;
+    }
+
     @GetMapping("/register")
-    public String showRegisterForm(Model model) {
-        model.addAttribute("user", new User());
-        return "register";
+    public String showRegisterForm() {
+        return "register"; // model already has "user" via @ModelAttribute
     }
 
 //    @PostMapping("/register")
@@ -55,26 +62,16 @@ public class UserMvcController {
     @PostMapping("/register")
     public String registerUser(@Valid @ModelAttribute("user") User user,
                                BindingResult br,
-                               Model model,
                                RedirectAttributes ra) {
         if (br.hasErrors()) {
             return "register";
         }
-
-        // Server-side defaults (since the form no longer has these fields)
-        if (user.getStatus() == null || user.getStatus().isBlank()) {
-            user.setStatus("ACTIVE");                 // <-- default
-        }
-        if (user.getRole() == null) {
-            user.setRole(UserRole.STUDENT);           // <-- recommended default
-        }
-
         try {
             userService.saveUser(user);
             ra.addFlashAttribute("msg", "Account created! Please log in.");
             return "redirect:/login";
-        } catch (EntityDuplicateException e) {
-            br.rejectValue("email", "duplicate", e.getMessage());
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            br.rejectValue("email", "duplicate", "Email is already registered.");
             return "register";
         }
     }

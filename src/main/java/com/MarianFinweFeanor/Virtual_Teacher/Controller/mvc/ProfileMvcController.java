@@ -43,15 +43,24 @@ public class ProfileMvcController {
         existing.setFirstName(formUser.getFirstName());
         existing.setLastName(formUser.getLastName());
         existing.setProfilePicture(formUser.getProfilePicture());
-        existing.setStatus(formUser.getStatus());
 
-        // 3) Save via a dedicated update method
+        //  Whitelist status (prevents whitelabel if someone posts bad data)
+        String requestedStatus = formUser.getStatus();
+        if ("ACTIVE".equalsIgnoreCase(requestedStatus) || "INACTIVE".equalsIgnoreCase(requestedStatus)) {
+            existing.setStatus(requestedStatus.toUpperCase());
+        } else {
+            // keep previous valid status (or default to ACTIVE if you prefer)
+            // existing.setStatus("ACTIVE");
+        }
+
+        // 3) Save via service
         userService.updateUser(existing);
 
-        // 4) Flash a success message and stay on /profile
+        // 4) Flash and redirect
         attrs.addFlashAttribute("successMessage", "Profile updated!");
         return "redirect:/profile";
     }
+
 
 }
 

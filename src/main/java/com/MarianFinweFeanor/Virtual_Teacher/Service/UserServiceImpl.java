@@ -45,6 +45,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User saveUser(User user) {
+        // check duplicate
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new EntityDuplicateException("User", "email", user.getEmail());
+        }
+
+        // default role/status if null
+        if (user.getRole() == null) user.setRole(UserRole.STUDENT);
+        if (user.getStatus() == null || user.getStatus().isBlank()) user.setStatus("ACTIVE");
+
         return userRepository.save(user);
     }
 

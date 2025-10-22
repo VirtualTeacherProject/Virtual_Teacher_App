@@ -24,8 +24,12 @@
     <label>Profile Picture URL:</label><br>
     <input type="text" th:field="*{profilePicture}" /><br><br>
 
-    <label>Status:</label><br>
-    <input type="text" th:field="*{status}" /><br><br>
+    <label class="form-label">Status</label><br>
+    <select class="form-select" th:field="*{status}">
+        <option th:value="'ACTIVE'">Active</option>
+        <option th:value="'INACTIVE'">Inactive</option>
+    </select>
+    <br><br>
 
     <button type="submit">Update Profile</button>
 </form>
