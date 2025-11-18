@@ -1,5 +1,6 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
 
+import ch.qos.logback.classic.encoder.JsonEncoder;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
@@ -38,26 +39,6 @@ public class UserMvcController {
         return "register"; // model already has "user" via @ModelAttribute
     }
 
-//    @PostMapping("/register")
-//    public String registerUser(@Valid @ModelAttribute("user") User user,
-//                               BindingResult br,
-//                               Model model,
-//                               RedirectAttributes ra) {
-//        if (br.hasErrors()) {
-//            return "register";
-//        }
-//        try {
-//            // Ensure here (or in userService.saveUser) that you hash the password:
-//            // user.setPassword(passwordEncoder.encode(user.getPassword()));
-//            userService.saveUser(user);
-//            ra.addFlashAttribute("msg", "Account created! Please log in.");
-//            return "redirect:/login";
-//        } catch (EntityDuplicateException e) {
-//            // attach a field error on email and re-render
-//            br.rejectValue("email", "duplicate", e.getMessage());
-//            return "register";
-//        }
-//    }
 
     @PostMapping("/register")
     public String registerUser(@Valid @ModelAttribute("user") User user,
@@ -75,9 +56,6 @@ public class UserMvcController {
             return "register";
         }
     }
-
-
-
 
 }
 

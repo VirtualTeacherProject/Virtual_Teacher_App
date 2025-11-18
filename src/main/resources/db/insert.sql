@@ -1,3 +1,8 @@
+INSERT INTO users (email, password, role, status) VALUES
+('admin1@example.com', '{bcrypt}$2a$12$<yourHashHere>', 'ADMIN', 'ACTIVE');
+
+
+
 INSERT INTO "PUBLIC"."USERS" VALUES
 
 ('test1@example.com', 1, 'pass1234', 'Umutt', 'Yildirim2', 'default1.jpg', 'TEACHER', 'ACTIVE'),
