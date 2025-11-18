@@ -16,6 +16,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
 
@@ -33,10 +36,28 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        return org.springframework.security.crypto.password.NoOpPasswordEncoder.
+//                getInstance();
+//    }
+
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        // cost 12 is a good default; 10–12 is common for web apps
+//        return new org.springframework.security.crypto.bcrypt.
+//                BCryptPasswordEncoder(12);
+//    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance();
+        String idForEncode = "bcrypt";
+        Map<String, PasswordEncoder> encoders = new HashMap<>();
+        encoders.put("bcrypt", new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12));
+        encoders.put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
+        return new org.springframework.security.crypto.password.DelegatingPasswordEncoder(idForEncode, encoders);
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {

@@ -148,7 +148,7 @@ public class User {
     @NotBlank
     @ToString.Exclude         // prevents printing password in logs via Lombok @Data
     @JsonIgnore               // prevents exposing in JSON responses (e.g., REST)
-    @Column(name = "password", nullable = false, length = 50)
+    @Column(name = "password", nullable = false, length = 100)
     private String password;
 
     @NotBlank

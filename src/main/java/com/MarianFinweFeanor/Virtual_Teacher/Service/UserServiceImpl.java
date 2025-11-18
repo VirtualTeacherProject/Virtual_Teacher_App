@@ -10,6 +10,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.MarianFinweFeanor.Virtual_Teacher.util.UserSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
@@ -25,12 +26,15 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final EnrollmentService enrollmentService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepo,
-                           EnrollmentService enrollmentService) {
+                           EnrollmentService enrollmentService,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepo;
         this.enrollmentService = enrollmentService;
+        this.passwordEncoder = passwordEncoder;
     }
 
 //    @Override
@@ -53,6 +57,9 @@ public class UserServiceImpl implements UserService {
         // default role/status if null
         if (user.getRole() == null) user.setRole(UserRole.STUDENT);
         if (user.getStatus() == null || user.getStatus().isBlank()) user.setStatus("ACTIVE");
+
+        // NEW: encode the raw password coming from the form
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         return userRepository.save(user);
     }
@@ -113,6 +120,7 @@ public class UserServiceImpl implements UserService {
     // Get a user by ID
     @Override
     public Optional<User> getUserById(Long userId) {
+
         return userRepository.findById(userId);
     }
 //    @Override

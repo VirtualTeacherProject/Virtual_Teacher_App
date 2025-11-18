@@ -3,7 +3,7 @@ create table users
     email           varchar(254)                          not null,
     user_id         int auto_increment
         primary key,
-    password        varchar(50)                          not null,
+    password        varchar(100)                          not null,
     first_name      varchar(50)                          not null,
     last_name       varchar(50)                          not null,
     profile_picture varchar(255)                          not null,
