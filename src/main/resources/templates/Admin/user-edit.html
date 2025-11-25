@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit User</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/admin">Admin Panel</a>
+        <a class="btn btn-outline-light btn-sm" href="/logout">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h2 class="mb-4">Edit User</h2>
+
+    <div th:if="${msg}" class="alert alert-success" th:text="${msg}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card shadow">
+        <div class="card-body">
+
+            <form th:action="@{'/admin/users/' + ${user.userId} + '/edit'}"
+                  th:object="${user}"
+                  method="post">
+
+                <!-- ID (read-only) -->
+                <div class="mb-3">
+                    <label class="form-label">User ID</label>
+                    <input type="text" class="form-control"
+                           th:value="${user.userId}" readonly>
+                </div>
+
+                <!-- First Name -->
+                <div class="mb-3">
+                    <label for="firstName" class="form-label">First Name</label>
+                    <input id="firstName" type="text" class="form-control"
+                           th:field="*{firstName}">
+                    <div class="text-danger" th:if="${#fields.hasErrors('firstName')}"
+                         th:errors="*{firstName}"></div>
+                </div>
+
+                <!-- Last Name -->
+                <div class="mb-3">
+                    <label for="lastName" class="form-label">Last Name</label>
+                    <input id="lastName" type="text" class="form-control"
+                           th:field="*{lastName}">
+                    <div class="text-danger" th:if="${#fields.hasErrors('lastName')}"
+                         th:errors="*{lastName}"></div>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input id="email" type="email" class="form-control"
+                           th:field="*{email}">
+                    <div class="text-danger" th:if="${#fields.hasErrors('email')}"
+                         th:errors="*{email}"></div>
+                </div>
+
+                <!-- Role -->
+                <div class="mb-3">
+                    <label for="role" class="form-label">Role</label>
+                    <select id="role" class="form-select" th:field="*{role}">
+                        <option value="STUDENT">STUDENT</option>
+                        <option value="TEACHER">TEACHER</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                    <div class="text-danger" th:if="${#fields.hasErrors('role')}"
+                         th:errors="*{role}"></div>
+                </div>
+
+                <!-- Status -->
+                <div class="mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select id="status" class="form-select" th:field="*{status}">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="PASSIVE">PASSIVE</option>
+                    </select>
+                    <div class="text-danger" th:if="${#fields.hasErrors('status')}"
+                         th:errors="*{status}"></div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="/admin/users" class="btn btn-secondary">Cancel</a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

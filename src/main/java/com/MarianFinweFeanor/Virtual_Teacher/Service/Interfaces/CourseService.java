@@ -23,4 +23,8 @@ public interface CourseService {
 
     //  6. Get Courses by Status (e.g., Published, Draft)
     List<Course> getCoursesByStatus(String status);
+
+    long countCourses();
+    Course getCourse(Long id);
+
 }

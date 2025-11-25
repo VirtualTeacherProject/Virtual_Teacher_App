@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -21,6 +22,7 @@ public interface UserService {
 
 
 
+
     /** Enrolls the user in the course if not already enrolled. */
     void enrollInCourse(String userEmail, Long courseId);
 
@@ -31,13 +33,22 @@ public interface UserService {
     Set<Course> getEnrolledCourses(String userEmail);
 
 
-
+    long countUsers();
+    List<User> getAllUsers(); // simpler generic version
+    User getUser(Long id);     // return actual User, not Optional
     // Get all users
     List<User> getAllUsers(String firstName, String lastName, String email);
 
     // Get a user by ID
     Optional<User> getUserById(Long userId);
 
+
+    List<User> findAllStudents();
+    List<User> findAllTeachers();
+
+
     // Delete a user by ID
     void deleteUserById(Long userId);
+
+    long countByRole(UserRole teacher);
 }

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit Course (Admin)</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/admin">Admin Panel</a>
+        <a class="btn btn-outline-light btn-sm" href="/logout">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h2 class="mb-4">Edit Course</h2>
+
+    <div th:if="${msg}" class="alert alert-success" th:text="${msg}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card shadow">
+        <div class="card-body">
+
+            <form th:action="@{'/admin/courses/' + ${course.courseId} + '/edit'}"
+                  th:object="${course}"
+                  method="post">
+
+                <!-- ID read-only -->
+                <div class="mb-3">
+                    <label class="form-label">Course ID</label>
+                    <input type="text" class="form-control"
+                           th:value="${course.courseId}" readonly>
+                </div>
+
+                <!-- Title -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">Title</label>
+                    <input id="title" type="text" class="form-control"
+                           th:field="*{title}">
+                    <div class="text-danger" th:if="${#fields.hasErrors('title')}"
+                         th:errors="*{title}"></div>
+                </div>
+
+                <!-- Topic -->
+                <div class="mb-3">
+                    <label for="topic" class="form-label">Topic</label>
+                    <input id="topic" type="text" class="form-control"
+                           th:field="*{topic}">
+                    <div class="text-danger" th:if="${#fields.hasErrors('topic')}"
+                         th:errors="*{topic}"></div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea id="description" rows="4" class="form-control"
+                              th:field="*{description}"></textarea>
+                    <div class="text-danger" th:if="${#fields.hasErrors('description')}"
+                         th:errors="*{description}"></div>
+                </div>
+
+                <!-- Status -->
+                <div class="mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select id="status" class="form-select" th:field="*{status}">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="PASSIVE">PASSIVE</option>
+                    </select>
+                    <div class="text-danger" th:if="${#fields.hasErrors('status')}"
+                         th:errors="*{status}"></div>
+                </div>
+
+                <!-- (Optional) Show current teacher email read-only -->
+                <div class="mb-3">
+                    <label class="form-label">Teacher</label>
+                    <input type="text" class="form-control"
+                           th:value="${course.teacher != null ? course.teacher.email : 'n/a'}"
+                           readonly>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="/admin/courses" class="btn btn-secondary">Cancel</a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

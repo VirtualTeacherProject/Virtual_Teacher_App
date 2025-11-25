@@ -47,6 +47,21 @@ public class CourseServiceImpl implements CourseService {
         return courseRepository.findById(id);
     }
 
+
+    @Override
+    public long countCourses() {
+        return courseRepository.count();
+    }
+
+
+
+    @Override
+    public Course getCourse(Long id) {
+        return courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+    }
+
+
     // 3. Get All Courses
 //    @Override
 //    public List<Course> getAllCourses() {
@@ -55,6 +70,9 @@ public class CourseServiceImpl implements CourseService {
 //        }
 //        return courseRepository.findAll();
 //    }
+
+
+    
 
     @Override
     public List<Course> getAllCourses() {

@@ -1,6 +1,11 @@
 INSERT INTO users (email, password, role, status) VALUES
 ('admin1@example.com', '{bcrypt}$2a$12$<yourHashHere>', 'ADMIN', 'ACTIVE');
 
+UPDATE users
+SET status = 'ACTIVE'
+WHERE status IS NULL
+   OR status NOT IN ('ACTIVE', 'PASSIVE');
+
 
 INSERT INTO "PUBLIC"."USERS" VALUES
 

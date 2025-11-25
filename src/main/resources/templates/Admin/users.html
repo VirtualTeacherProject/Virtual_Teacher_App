@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Manage Users</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+
+<body class="bg-light">
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/admin">Admin Panel</a>
+        <a class="btn btn-outline-light btn-sm" href="/logout">Logout</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h2 class="mb-4">Manage Users</h2>
+
+    <!-- success message -->
+    <div th:if="${msg}" class="alert alert-success" th:text="${msg}"></div>
+
+    <!-- error message (optional, if you add it) -->
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card shadow">
+        <div class="card-body">
+
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th style="width: 260px;">Actions</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <!-- Adjust field names to your User entity -->
+                    <td th:text="${u.userId}">1</td>
+
+                    <td th:text="${u.email}">user@example.com</td>
+
+                    <td>
+                        <span th:text="${u.firstName}">First</span>
+                        <span th:text="${u.lastName}">Last</span>
+                    </td>
+
+                    <td th:text="${u.role}">STUDENT</td>
+                    <td th:text="${u.status}">ACTIVE</td>
+
+                    <td>
+                        <!-- Make TEACHER -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/make-teacher'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.role.name() != 'TEACHER'}">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                Make Teacher
+                            </button>
+                        </form>
+
+                        <!-- Make ADMIN -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/make-admin'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.role.name() != 'ADMIN'}">
+                            <button type="submit" class="btn btn-sm btn-warning">
+                                Make Admin
+                            </button>
+                        </form>
+
+                        <!-- Make STUDENT -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/make-student'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.role.name() != 'STUDENT'}">
+                            <button type="submit" class="btn btn-sm btn-secondary">
+                                Make Student
+                            </button>
+                        </form>
+
+                        <!-- Delete -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/delete'}"
+                              method="post"
+                              style="display:inline"
+                              onsubmit="return confirm('Delete this user?');">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+
+                </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

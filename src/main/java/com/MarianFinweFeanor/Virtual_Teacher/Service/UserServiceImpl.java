@@ -50,13 +50,25 @@ public class UserServiceImpl implements UserService {
     @Override
     public User saveUser(User user) {
         // check duplicate
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new EntityDuplicateException("User", "email", user.getEmail());
+        if (user.getUserId() == null) {
+            // New user → check pure email duplicate
+            if (userRepository.existsByEmail(user.getEmail())) {
+                throw new EntityDuplicateException("User", "email", user.getEmail());
+            }
+        } else {
+            // Existing user → email must be unique for other users
+            if (userRepository.existsByEmailAndUserIdNot(user.getEmail(), user.getUserId())) {
+                throw new EntityDuplicateException("User", "email", user.getEmail());
+            }
         }
 
         // default role/status if null
-        if (user.getRole() == null) user.setRole(UserRole.STUDENT);
-        if (user.getStatus() == null || user.getStatus().isBlank()) user.setStatus("ACTIVE");
+        if (user.getRole() == null) {
+            user.setRole(UserRole.STUDENT);
+        }
+        if (user.getStatus() == null || user.getStatus().isBlank()) {
+            user.setStatus("ACTIVE");
+        }
 
         // NEW: encode the raw password coming from the form
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -123,6 +135,34 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.findById(userId);
     }
+
+    public List<User> findAllStudents() {
+        return userRepository.findByRole(UserRole.STUDENT);
+    }
+
+    public List<User> findAllTeachers() {
+        return userRepository.findByRole(UserRole.TEACHER);
+    }
+
+
+    @Override
+    public long countUsers() {
+        return userRepository.count();
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public User getUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+
+
 //    @Override
 //    @Transactional(readOnly = true)
 //    public Optional<User> getUserById(Long userId) {
@@ -139,6 +179,11 @@ public class UserServiceImpl implements UserService {
             throw new EntityNotFoundException("User", userId);
         }
         userRepository.deleteById(userId);
+    }
+
+    @Override
+    public long countByRole(UserRole teacher) {
+        return 0;
     }
 
     @Override

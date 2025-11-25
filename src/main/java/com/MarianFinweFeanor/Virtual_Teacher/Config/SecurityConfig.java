@@ -117,11 +117,29 @@ public class SecurityConfig {
 
                         ).hasAnyRole("STUDENT","TEACHER","ADMIN")
 
-
                         // 7) Secure all other API endpoints
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
 
-                        // 8) Everything else (e.g. /home, /profile) needs login
+
+
+
+                        //8) Admin Panel features
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/admin/**"))
+
+                        .hasRole("ADMIN")   // or hasAuthority("ADMIN")
+
+
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/"),
+                                new AntPathRequestMatcher("/register"),
+                                new AntPathRequestMatcher("/login"),
+                                new AntPathRequestMatcher("/css/**"),
+                                new AntPathRequestMatcher("/js/**")
+                        )
+                        .permitAll()
+
+                        // 9) Everything else (e.g. /home, /profile) needs login
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login
