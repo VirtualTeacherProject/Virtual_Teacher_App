@@ -46,6 +46,10 @@
                     <a class="nav-link" th:href="@{/register}">Register</a>
                 </li>
 
+                <li sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin}">Admin Panel</a>
+                </li>
+
                 <!-- Logged in -->
                 <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
