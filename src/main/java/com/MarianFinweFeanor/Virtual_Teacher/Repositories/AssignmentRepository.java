@@ -13,6 +13,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByStudent_EmailOrderBySubmittedAtDesc(String email);
 
+    List<Assignment> findByLecture_LectureIdOrderBySubmittedAtDesc(Long lectureId);
+
 
 }
 

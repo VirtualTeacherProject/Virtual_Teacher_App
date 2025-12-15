@@ -28,7 +28,7 @@ public class Assignment {
     @Column(name="submission_file_path",nullable = false, length = 255)
     private String submissionFilePath; // Path to the  assignment file
 
-    @Column(name="grade",nullable = false)
+    @Column(name="grade")
     private Double grade; // Grade for the assignment
 
     @Column(name="comment", length = 500)
@@ -36,6 +36,5 @@ public class Assignment {
 
     @Column(name="submitted_at", nullable = false)
     private LocalDateTime submittedAt;   // when the file was uploaded
-
 }
 

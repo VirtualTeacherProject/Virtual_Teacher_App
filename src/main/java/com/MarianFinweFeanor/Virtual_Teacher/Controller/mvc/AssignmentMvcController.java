@@ -55,17 +55,20 @@ public class AssignmentMvcController {
                 .getAuthorities()
                 .stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+
+        List<Assignment> subs;
         if (isTeacher) {
             // teacher: show all submissions for lecture
             // you'd need a method like assignmentRepo.findByLecture_LectureId(lectureId)
-            List<Assignment> subs = assignmentService.getSubmissionsByLectureAndUser(lectureId, null); // adjust or add new service method
+            subs = assignmentService.getSubmissionsByLecture(lectureId);
+            // adjust or add new service method
             model.addAttribute("submissions", subs);
         } else {
             // student: only their own
-            List<Assignment> subs = assignmentService.getSubmissionsByLectureAndUser(lectureId, email);
-            model.addAttribute("submissions", subs);
+            subs = assignmentService.getSubmissionsByLectureAndUser(lectureId, email);
         }
 
+        model.addAttribute("submissions", subs);
         model.addAttribute("courseId", courseId);
         model.addAttribute("lectureId", lectureId);
         return "assignments"; // create a Thymeleaf view for this
@@ -93,25 +96,25 @@ public class AssignmentMvcController {
                         @PathVariable Long lectureId,
                         @PathVariable Long assignmentId,
                         @RequestParam Double grade,
+                        @RequestParam(required = false) String teacherComment,
                         RedirectAttributes ra) {
-        Assignment assignment = assignmentService.findById(assignmentId);
-        assignment.setGrade(grade);
+
+        assignmentService.gradeAssignment(assignmentId, grade, teacherComment);
+        ra.addFlashAttribute("msg", "Assignment graded.");
+        //Assignment assignment = assignmentService.findById(assignmentId);
+        //assignment.setGrade(grade);
         // assuming you have save in repository via service (you might need a method)
         // e.g., assignmentService.save(assignment);
-        ra.addFlashAttribute("msg", "Graded.");
-        return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
+        ra.addFlashAttribute("msg", "Assignment graded.");
+        return "redirect:/courses/" + courseId + "/lectures/" + lectureId + "/assignments";
     }
 
-    //a) List all my submissions by the logged in student
-    @GetMapping("/assignments/my")
-    public String mySubmissions (Model model , Principal principal)
-    {
-        var list = assignmentService.getMySubmissions(principal.getName());
-        model.addAttribute("susbmission", list);
-        return "my-assignments";
-    }
-
-
-
-
+//    //a) List all my submissions by the logged in student
+//    @GetMapping("/assignments/my")
+//    public String mySubmissions (Model model , Principal principal)
+//    {
+//        var list = assignmentService.getMySubmissions(principal.getName());
+//        model.addAttribute("submission", list);
+//        return "my-assignments";
+//    }
 }

@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
+import com.fasterxml.jackson.databind.ObjectReader;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -110,7 +111,24 @@ public class AdminUserController {
                              @AuthenticationPrincipal UserDetails currentUser) {
         // optional: don't let admin delete themselves
         // optional: don't delete if this is last ADMIN
+        User existing = userService.getUserById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        //userService.deleteUserById(id);
+
+        User current = userService.findByEmail(currentUser.getUsername());
+        if (current.getUserId().equals(existing.getUserId())) {
+            ra.addFlashAttribute("error", "You can't delete your own account.");
+            return "redirect:/admin/users";
+        }
+
+        // Prevent admins deleting admins
+        if (existing.getRole() == UserRole.ADMIN) {
+            ra.addFlashAttribute("error", "Admins can't delete other admins.");
+            return "redirect:/admin/users";
+        }
+
         userService.deleteUserById(id);
+
         ra.addFlashAttribute("msg", "User deleted.");
         return "redirect:/admin/users";
     }

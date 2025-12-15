@@ -36,18 +36,7 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return org.springframework.security.crypto.password.NoOpPasswordEncoder.
-//                getInstance();
-//    }
 
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        // cost 12 is a good default; 10–12 is common for web apps
-//        return new org.springframework.security.crypto.bcrypt.
-//                BCryptPasswordEncoder(12);
-//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

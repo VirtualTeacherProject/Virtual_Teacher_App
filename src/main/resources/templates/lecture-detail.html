@@ -127,7 +127,13 @@
         <!-- Your submissions -->
         <div class="card shadow-sm mt-3">
             <div class="card-body">
-                <h2 class="h6 mb-3">Your Submissions</h2>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 mb-0">Your Submissions</h2>
+                    <a class="btn btn-sm btn-outline-secondary"
+                       th:href="@{/assignments/my}">
+                        View all my submissions
+                    </a>
+                </div>
 
                 <div th:if="${#lists.isEmpty(submissions)}" class="text-muted">
                     No submissions yet.
@@ -146,21 +152,24 @@
                         <tbody>
                         <tr th:each="sub : ${submissions}">
                             <td>
-                                <a th:href="@{/files/assignments/{id}(id=${sub.assignmentId})}"
-                                   th:text="${#strings.substringAfterLast(sub.submissionFilePath,'/')}">
+                                <a th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/assignments/${sub.assignmentId}/download|}">
                                     Download
                                 </a>
                             </td>
                             <td th:text="${#temporals.format(sub.submittedAt, 'yyyy-MM-dd HH:mm')}">—</td>
-                            <td th:text="${sub.grade != null ? 'Grade: ' + sub.grade : 'Pending'}">Pending</td>
+                            <td>
+                                <span th:if="${sub.grade == null}" class="badge text-bg-warning">Pending</span>
+                                <span th:if="${sub.grade != null}" class="badge text-bg-success"
+                                      th:text="${'Grade: ' + sub.grade}">Grade</span>
+                            </td>
                             <td th:text="${sub.comment}">—</td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
+
     </div>
 
     <div class="mt-4 d-flex gap-3">

@@ -6,7 +6,6 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
-import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
@@ -58,6 +57,30 @@ public class AssignmentServiceImpl implements AssignmentService {
         this.uploadDir = base;
     }
 
+    @Override
+    public List<Assignment> getSubmissionsByLectureAndUser(Long lectureId, String userEmail) {
+        return assignmentRepo.
+                findByLecture_LectureIdAndStudent_EmailOrderBySubmittedAtDesc(lectureId, userEmail);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Assignment> getSubmissionsByLecture(Long lectureId) {
+        return assignmentRepo.findByLecture_LectureIdOrderBySubmittedAtDesc(lectureId);
+    }
+
+
+    @Override
+    public void gradeAssignment(Long assignmentId, Double grade, String teacherComment) {
+        Assignment assignment = assignmentRepo.findById(assignmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Assignment", assignmentId));
+        assignment.setGrade(grade);
+        assignment.setComment(teacherComment);   // for now reuse comment for teacher note
+        assignmentRepo.save(assignment);
+    }
+
+
+
 
     @Override
     public void submit(String userEmail, Long lectureId,
@@ -92,6 +115,8 @@ public class AssignmentServiceImpl implements AssignmentService {
         assignmentRepo.save(a);
     }
 
+
+
     // add a helper to load the file:
     public Resource loadAssignmentFile(Long assignmentId) throws MalformedURLException {
         Assignment assignment = assignmentRepo.findById(assignmentId)
@@ -104,11 +129,9 @@ public class AssignmentServiceImpl implements AssignmentService {
         return resource;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Assignment> getSubmissionsByLectureAndUser(Long lectureId, String userEmail) {
-        return assignmentRepo.findByLecture_LectureIdAndStudent_EmailOrderBySubmittedAtDesc(lectureId, userEmail);
-    }
+
+
+
 
     @Override
     @Transactional (readOnly = true)
