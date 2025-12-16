@@ -39,7 +39,7 @@ public class AssignmentMvcController {
     }
 
     // 1) List submissions: student sees their own, teacher sees all
-    @GetMapping("")
+    @GetMapping({"", "/"})
     public String listSubmissions(@PathVariable Long courseId,
                                   @PathVariable Long lectureId,
                                   Model model,
@@ -71,6 +71,7 @@ public class AssignmentMvcController {
         model.addAttribute("submissions", subs);
         model.addAttribute("courseId", courseId);
         model.addAttribute("lectureId", lectureId);
+
         return "assignments"; // create a Thymeleaf view for this
     }
 

@@ -75,7 +75,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         Assignment assignment = assignmentRepo.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment", assignmentId));
         assignment.setGrade(grade);
-        assignment.setComment(teacherComment);   // for now reuse comment for teacher note
+        assignment.setTeacherComment(teacherComment);   // for now reuse comment for teacher note
         assignmentRepo.save(assignment);
     }
 
@@ -84,7 +84,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     public void submit(String userEmail, Long lectureId,
-                       MultipartFile file, String comment) throws IOException {
+                       MultipartFile file, String studentComment) throws IOException {
         // 1) Fetch & verify
         User student = userService.findByEmail(userEmail);
         Lecture lecture = lectureRepository.findById(lectureId)
@@ -109,7 +109,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         a.setStudent(student);
         a.setLecture(lecture);
         a.setSubmissionFilePath(target.toString());
-        a.setComment(comment);
+        a.setStudentComment(studentComment);
         a.setSubmittedAt(LocalDateTime.now());
         a.setGrade(null);       // pending
         assignmentRepo.save(a);

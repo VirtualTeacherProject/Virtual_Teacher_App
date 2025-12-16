@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Assignments</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">Submissions</h1>
+        <a class="btn btn-sm btn-outline-secondary"
+           th:href="@{|/courses/${courseId}/lectures/${lectureId}|}">
+            Back to lecture
+        </a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(submissions)}" class="alert alert-secondary">
+        No submissions found.
+    </div>
+
+    <div th:if="${!#lists.isEmpty(submissions)}" class="card shadow-sm">
+        <div class="card-body table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                <tr>
+                    <th sec:authorize="hasRole('TEACHER')">Student</th>
+                    <th>Submitted</th>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th>Comment</th>
+                    <th sec:authorize="hasRole('TEACHER')">Grade</th>
+                    <th sec:authorize="hasRole('TEACHER')">Action</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="sub : ${submissions}">
+                    <td sec:authorize="hasRole('TEACHER')" th:text="${sub.student.email}">student@email</td>
+
+                    <td th:text="${#temporals.format(sub.submittedAt, 'yyyy-MM-dd HH:mm')}">—</td>
+
+                    <td>
+                        <a th:href="@{|/courses/${courseId}/lectures/${lectureId}/assignments/${sub.assignmentId}/download|}">
+                            Download
+                        </a>
+                    </td>
+
+                    <td>
+                        <span th:if="${sub.grade == null}" class="badge text-bg-warning">Pending</span>
+                        <span th:if="${sub.grade != null}" class="badge text-bg-success"
+                              th:text="${'Grade: ' + sub.grade}">Grade</span>
+                    </td>
+
+                    <td th:text="${sub.teacherComment}">—</td>
+
+                    <!-- Teacher grading form -->
+                    <td sec:authorize="hasRole('TEACHER')">
+                        <form th:action="@{|/courses/${courseId}/lectures/${lectureId}/assignments/${sub.assignmentId}/grade|}"
+                              method="post" class="d-flex gap-2">
+                            <input type="number" step="0.5" min="0" max="100"
+                                   name="grade"
+                                   th:value="${sub.grade}"
+                                   class="form-control form-control-sm"
+                                   style="width: 90px"
+                                   required>
+
+                            <input type="text" name="teacherComment"
+                                   class="form-control form-control-sm"
+                                   placeholder="Teacher note…"
+                                   style="min-width: 200px">
+                            <button class="btn btn-sm btn-primary">Save</button>
+                        </form>
+                    </td>
+
+                    <td sec:authorize="hasRole('TEACHER')">
+                        <!-- empty because form already has the action button -->
+                    </td>
+                </tr>
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

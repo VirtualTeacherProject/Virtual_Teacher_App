@@ -13,6 +13,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -208,6 +209,11 @@ public class LectureMvcController {
         model.addAttribute("enrolled", enrolled);
         model.addAttribute("submissions", subs);
         model.addAttribute("newAssignment", new Assignment());
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("AUTH=" + auth.getName() + " " + auth.getAuthorities());
+
+
         return "lecture-detail";
     }
 

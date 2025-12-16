@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>My Submissions</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">My Submissions</h1>
+        <a class="btn btn-sm btn-outline-secondary" th:href="@{/}">
+            Home
+        </a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(submissions)}" class="alert alert-secondary">
+        You have no submissions yet.
+    </div>
+
+    <div th:if="${!#lists.isEmpty(submissions)}" class="card shadow-sm">
+        <div class="card-body table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Lecture</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Download</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="s : ${submissions}">
+                    <td th:text="${s.lecture.course.title}">Course title</td>
+                    <td th:text="${s.lecture.title}">Lecture title</td>
+                    <td th:text="${#temporals.format(s.submittedAt, 'yyyy-MM-dd HH:mm')}">—</td>
+                    <td>
+                        <span th:if="${s.grade == null}" class="badge text-bg-warning">Pending</span>
+                        <span th:if="${s.grade != null}" class="badge text-bg-success"
+                              th:text="${'Grade: ' + s.grade}">Grade</span>
+                    </td>
+                    <td>
+                        <a th:href="@{|/courses/${s.lecture.course.courseId}/lectures/${s.lecture.lectureId}/assignments/${s.assignmentId}/download|}">
+                            Download
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

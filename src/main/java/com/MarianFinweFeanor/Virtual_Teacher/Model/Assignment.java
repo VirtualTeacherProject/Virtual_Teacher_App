@@ -34,6 +34,13 @@ public class Assignment {
     @Column(name="comment", length = 500)
     private String comment;              // optional note from student
 
+    @Column(name="student_comment", length=500)
+    private String studentComment;
+
+    @Column(name="teacher_comment", length=500)
+    private String teacherComment;
+
+
     @Column(name="submitted_at", nullable = false)
     private LocalDateTime submittedAt;   // when the file was uploaded
 }

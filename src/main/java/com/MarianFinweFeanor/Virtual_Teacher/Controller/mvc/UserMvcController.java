@@ -8,6 +8,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -55,6 +56,12 @@ public class UserMvcController {
             br.rejectValue("email", "duplicate", "Email is already registered.");
             return "register";
         }
+    }
+
+    public static void main(String[] args) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("AUTH=" + auth.getName() + " " + auth.getAuthorities());
+
     }
 
 }

@@ -18,7 +18,7 @@ public class StudentAssignmentMvcController {
         this.assignmentService = assignmentService;
     }
 
-    @GetMapping("/my")
+    @GetMapping({"/my", "/my/"})
     public String mySubmissions(Model model, Principal principal) {
         String email = principal.getName();
         var list = assignmentService.getMySubmissions(email);
