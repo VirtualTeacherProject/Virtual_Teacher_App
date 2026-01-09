@@ -7,6 +7,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final UserService           userService;
     private final LectureRepository     lectureRepository;
     private final Path                  uploadDir;  // now a Path instead of String
+    private EnrollmentService enrollmentService;
 
     // where to drop uploaded files
     //@Value("${app.upload.dir:${java.io.tmpdir}}")
@@ -43,11 +45,13 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Autowired
     public AssignmentServiceImpl(AssignmentRepository assignmentRepo,
                                  UserService           userService,
+                                 EnrollmentService enrollmentService,
                                  LectureRepository     lectureRepository,
                                  @Value("${app.upload.dir}") String uploadDirStr) throws IOException {
         this.assignmentRepo     = assignmentRepo;
         this.userService        = userService;
         this.lectureRepository  = lectureRepository;
+        this.enrollmentService = enrollmentService;
         //this.uploadDir          = Paths.get(uploadDirPath);
 
         Path base = Paths.get(uploadDirStr);
@@ -77,6 +81,11 @@ public class AssignmentServiceImpl implements AssignmentService {
         assignment.setGrade(grade);
         assignment.setTeacherComment(teacherComment);   // for now reuse comment for teacher note
         assignmentRepo.save(assignment);
+
+        Long studentUserId  = assignment.getStudent().getUserId();
+        Long courseId  = assignment.getLecture().getCourse().getCourseId();
+
+        enrollmentService.recalculateProgress(studentUserId , courseId);
     }
 
 

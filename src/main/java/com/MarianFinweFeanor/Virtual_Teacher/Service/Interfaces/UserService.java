@@ -22,7 +22,6 @@ public interface UserService {
 
 
 
-
     /** Enrolls the user in the course if not already enrolled. */
     void enrollInCourse(String userEmail, Long courseId);
 

@@ -23,6 +23,10 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     // For unenroll
     Optional<Enrollment> findByStudent_EmailAndCourse_CourseId(String email, Long courseId);
 
+    Optional<Enrollment> findByStudent_UserIdAndCourse_CourseId
+            (Long studentUserId, Long courseId);
+
+
     List<Enrollment> findByStudent_Email(String email);
 
     // Handy shortcuts:
@@ -34,5 +38,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     @Query("select e.student from Enrollment e where e.course.courseId = :courseId")
     List<User> findStudentsByCourseId(@Param("courseId") Long courseId);
+
+
 
 }

@@ -20,4 +20,8 @@ public interface EnrollmentService {
 
 
     List<User> getStudentsInCourse(Long courseId);
+
+    void recalculateProgress(Long studentUserId, Long courseId);
+
+
 }

@@ -1,7 +1,9 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
@@ -32,13 +34,16 @@ public class EnrollmentMvcController {
     private final UserService userService;
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
+    private EnrollmentRepository enrollmentRepository;
 
     public EnrollmentMvcController(UserService userService,
                                    CourseService courseService,
+                                   EnrollmentRepository enrollmentRepository,
                                    EnrollmentService enrollmentService) {
         this.userService = userService;
         this.courseService = courseService;
         this.enrollmentService = enrollmentService;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     // --- List Courses (public) ----------------------------------------------
@@ -170,6 +175,15 @@ public class EnrollmentMvcController {
                         .stream()
                         .map(Course::getCourseId)
                         .anyMatch(cid -> cid.equals(id));
+
+        Enrollment enrollment = null;
+        if (principal != null) {
+            enrollment = enrollmentRepository
+                    .findByStudent_EmailAndCourse_CourseId(principal.getName(),
+                            course.getCourseId())
+                    .orElse(null);
+        }
+        model.addAttribute("enrollment", enrollment);
 
         model.addAttribute("course", course);
         model.addAttribute("enrolled", enrolled);

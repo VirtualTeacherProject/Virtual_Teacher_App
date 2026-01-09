@@ -3,9 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
-import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
-import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
-import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,14 +21,20 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final EnrollmentRepository enrollmentRepo;
     private final UserRepository userRepo;
     private final CourseRepository courseRepo;
+    private final AssignmentRepository assignmentRepo;
+    private final LectureRepository lectureRepository;
 
     @Autowired
     public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepo,
                                  UserRepository userRepo,
+                                 AssignmentRepository assignmentRepo,
+                                 LectureRepository lectureRepository,
                                  CourseRepository courseRepo) {
         this.enrollmentRepo = enrollmentRepo;
         this.userRepo       = userRepo;
         this.courseRepo     = courseRepo;
+        this.assignmentRepo = assignmentRepo;
+        this.lectureRepository = lectureRepository;
     }
 
     @Override
@@ -42,6 +46,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .map(e -> e.getCourse().getCourseId())
                 .collect(Collectors.toSet());
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -56,6 +61,42 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Transactional(readOnly = true)
     public List<User> getStudentsInCourse(Long courseId) {
         return enrollmentRepo.findStudentsByCourseId(courseId);
+    }
+
+    @Override
+    public void recalculateProgress(Long studentUserId, Long courseId) {
+
+        Enrollment enrollment = enrollmentRepo.findByStudent_UserIdAndCourse_CourseId
+                (studentUserId, courseId).orElseThrow(() ->
+                new RuntimeException("Enrollment not found"));
+
+        // 1) Average grade for course (null if no graded submissions yet)
+        Double avg = assignmentRepo.avgGradeForCourse(studentUserId, courseId);
+        enrollment.setAverageGrade(avg);
+
+        // 2) Completion status
+        long totalLectures = lectureRepository.countLecturesByCourseId(courseId);
+        long gradedLectures = assignmentRepo.countGradedLectures(studentUserId, courseId);
+
+        Enrollment.CompletionStatus status;
+
+        if (totalLectures == 0)
+        {
+            status = Enrollment.CompletionStatus.IN_PROGRESS;
+        }
+        else if (gradedLectures >= totalLectures)
+        {
+            status = Enrollment.CompletionStatus.COMPLETED;
+        }
+        else
+        {
+            status = Enrollment.CompletionStatus.IN_PROGRESS;
+        }
+
+        enrollment.setCompletionStatus(status);
+
+        enrollmentRepo.save(enrollment);
+
     }
 
     @Override

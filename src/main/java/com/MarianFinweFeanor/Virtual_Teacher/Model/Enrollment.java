@@ -36,6 +36,17 @@ public class Enrollment {
     @Column(name = "enrolled_at", nullable = false)
     private LocalDateTime enrolledAt = LocalDateTime.now();
 
+    @Column(name = "rating")
+    private Integer rating;  // 1..5
+
+    @Column(name = "review_text", length = 1000)
+    private String reviewText;
+
+    @Column(name = "rated_at")
+    private LocalDateTime ratedAt;
+
+
+
 
 
     // getters/setters
@@ -55,11 +66,15 @@ public class Enrollment {
         this.course = course; }
 
     public enum CompletionStatus { IN_PROGRESS, COMPLETED, DROPPED }
-    public void setCompletionStatus(Enum completionStatus) {
-        this.completionStatus = (CompletionStatus) completionStatus;
+
+    public CompletionStatus getCompletionStatus() { return completionStatus; }
+
+    public void setCompletionStatus(CompletionStatus completionStatus) {
+        this.completionStatus = completionStatus;
     }
 
-    public double getAverageGrade() { return averageGrade;}
+    public Double getAverageGrade() { return averageGrade;}
+
     public void setAverageGrade(Double averageGrade) {
         this.averageGrade = averageGrade;
     }
@@ -69,8 +84,25 @@ public class Enrollment {
         this.enrolledAt = enrolledAt;
     }
 
+    public Integer getRating() { return rating; }
+
+    public void setRating(Integer rating){ this.rating = rating; }
+
+    public String getReviewText(){return reviewText;}
+
+    public void setReviewText(String reviewText){this.reviewText = reviewText;}
+
+    public LocalDateTime getRatedAt(){return ratedAt;}
+
+    public void setRatedAt(LocalDateTime ratedAt){this.ratedAt = ratedAt;}
+
     // equals/hashCode: ONLY on enrollmentId (or on student+course if you don’t use generated id),
     // and NEVER include collections to avoid recursion/StackOverflow.
+
+    public void setAverageGradeForCourse () {
+
+
+    }
 
     @Override
     public boolean equals(Object o) {
