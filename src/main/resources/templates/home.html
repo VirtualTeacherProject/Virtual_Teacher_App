@@ -14,6 +14,17 @@
             integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
             crossorigin="anonymous"
     >
+
+    <style>
+  .hero {
+    padding: 4rem 0;
+    background: radial-gradient(circle at top, rgba(13,110,253,.15), transparent 55%);
+  }
+  .hero-title { letter-spacing: -0.5px; }
+  .feature-card { transition: transform .2s ease, box-shadow .2s ease; }
+  .feature-card:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.1); }
+</style>
+
 </head>
 
 <body>
@@ -46,8 +57,8 @@
                     <a class="nav-link" th:href="@{/register}">Register</a>
                 </li>
 
-                <li sec:authorize="hasRole('ADMIN')">
-                    <a th:href="@{/admin}">Admin Panel</a>
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link" th:href="@{/admin}">Admin Panel</a>
                 </li>
 
                 <!-- Logged in -->
@@ -77,43 +88,149 @@
     </div>
 </nav>
 
-<div class="container mt-4">
+<!--<div class="container mt-4">-->
+<!--    &lt;!&ndash; Flash / success message &ndash;&gt;-->
+<!--    <div th:if="${msg}" class="alert alert-success alert-dismissible fade show" role="alert">-->
+<!--        <span th:text="${msg}">Success</span>-->
+<!--        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; main page content &ndash;&gt;-->
+<!--    <h1>Welcome back!</h1>-->
+<!--    <p>This is your dashboard. Choose a section to get started:</p>-->
+<!--</div>-->
+
+<!--<div class="container mt-5">-->
+<!--    &lt;!&ndash; landing page for guests &ndash;&gt;-->
+<!--    <section sec:authorize="isAnonymous()">-->
+<!--        <h1>Welcome to Virtual Teacher</h1>-->
+<!--        <p>Explore our courses or <a th:href="@{/register}">create an account</a>.</p>-->
+<!--        <a class="btn btn-primary" th:href="@{/courses}">Browse Courses</a>-->
+<!--    </section>-->
+
+<!--    &lt;!&ndash; dashboard for logged-in users &ndash;&gt;-->
+<!--    <section sec:authorize="isAuthenticated()">-->
+<!--        <a class="btn btn-secondary me-2" th:href="@{/courses}">All Courses</a>-->
+<!--        <a class="btn btn-secondary"-->
+<!--           th:href="@{/courses/my-courses}"-->
+<!--           sec:authorize="hasRole('STUDENT')">-->
+<!--            My Courses-->
+<!--        </a>-->
+<!--    </section>-->
+
+<!--    <hr class="mt-5">-->
+<!--    <footer class="text-center text-muted small">-->
+<!--        Virtual Teacher © 2025 — Built with Java Spring Boot + Thymeleaf + Bootstrap.-->
+<!--        <br>-->
+<!--        This demo app runs on Railway with a PostgreSQL backend.-->
+<!--    </footer>-->
+<!--</div>-->
+
+<div class="container hero">
+
     <!-- Flash / success message -->
     <div th:if="${msg}" class="alert alert-success alert-dismissible fade show" role="alert">
         <span th:text="${msg}">Success</span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- main page content -->
-    <h1>Welcome back!</h1>
-    <p>This is your dashboard. Choose a section to get started:</p>
-</div>
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
 
-<div class="container mt-5">
-    <!-- landing page for guests -->
-    <section sec:authorize="isAnonymous()">
-        <h1>Welcome to Virtual Teacher</h1>
-        <p>Explore our courses or <a th:href="@{/register}">create an account</a>.</p>
-        <a class="btn btn-primary" th:href="@{/courses}">Browse Courses</a>
-    </section>
+            <!-- Guest title -->
+            <h1 class="display-6 fw-bold hero-title" sec:authorize="isAnonymous()">
+                Welcome to Virtual Teacher
+            </h1>
 
-    <!-- dashboard for logged-in users -->
-    <section sec:authorize="isAuthenticated()">
-        <a class="btn btn-secondary me-2" th:href="@{/courses}">All Courses</a>
-        <a class="btn btn-secondary"
-           th:href="@{/courses/my-courses}"
-           sec:authorize="hasRole('STUDENT')">
-            My Courses
-        </a>
-    </section>
+            <!-- Auth title -->
+            <h1 class="display-6 fw-bold hero-title" sec:authorize="isAuthenticated()">
+                Welcome back!
+            </h1>
+
+            <p class="lead text-muted">
+                Browse courses, watch lectures, and practice with assignments in a clean Spring Boot learning platform.
+            </p>
+
+            <!-- Guest buttons -->
+            <div class="d-flex flex-wrap gap-2" sec:authorize="isAnonymous()">
+                <a class="btn btn-primary btn-lg" th:href="@{/courses}">Browse Courses</a>
+                <a class="btn btn-outline-secondary btn-lg" th:href="@{/register}">Create Account</a>
+                <a class="btn btn-outline-secondary btn-lg" th:href="@{/login}">Login</a>
+            </div>
+
+            <!-- Auth buttons -->
+            <div class="d-flex flex-wrap gap-2" sec:authorize="isAuthenticated()">
+                <a class="btn btn-primary btn-lg" th:href="@{/courses}">All Courses</a>
+
+                <a class="btn btn-outline-secondary btn-lg"
+                   th:href="@{/courses/my-courses}"
+                   sec:authorize="hasRole('STUDENT')">
+                    My Courses
+                </a>
+
+                <a class="btn btn-outline-secondary btn-lg"
+                   th:href="@{/courses/add}"
+                   sec:authorize="hasRole('TEACHER')">
+                    Create Course
+                </a>
+            </div>
+
+            <div class="mt-3 text-muted small">
+                Java 17 • Spring Boot • Thymeleaf • Bootstrap • PostgreSQL (Railway)
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm feature-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Quick Start</h5>
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-outline-primary" th:href="@{/courses}">Browse Courses</a>
+                        <a class="btn btn-outline-primary" th:href="@{/profile}" sec:authorize="isAuthenticated()">My Profile</a>
+                        <a class="btn btn-outline-primary" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Admin Panel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5 g-3">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm feature-card">
+                <div class="card-body">
+                    <h5 class="card-title">Courses</h5>
+                    <p class="card-text text-muted">Structured topics with lectures and video links.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm feature-card">
+                <div class="card-body">
+                    <h5 class="card-title">Assignments</h5>
+                    <p class="card-text text-muted">Submit work, view history, and track grades.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm feature-card">
+                <div class="card-body">
+                    <h5 class="card-title">Roles</h5>
+                    <p class="card-text text-muted">Student, teacher, and admin flows with security.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <hr class="mt-5">
-    <footer class="text-center text-muted small">
-        Virtual Teacher © 2025 — Built with Java Spring Boot + Thymeleaf + Bootstrap.
+    <footer class="text-center text-muted small pb-4">
+        Virtual Teacher © 2026 — Built with Java Spring Boot + Thymeleaf + Bootstrap.
         <br>
-        This demo app runs on Railway with a PostgreSQL backend.
+        Deployed on Railway with a PostgreSQL backend.
     </footer>
 </div>
+
 
 <!-- Bootstrap JS -->
 <script
@@ -123,4 +240,5 @@
 ></script>
 
 </body>
+
 </html>
