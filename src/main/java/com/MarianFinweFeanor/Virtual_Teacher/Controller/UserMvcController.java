@@ -1,4 +1,4 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 import ch.qos.logback.classic.encoder.JsonEncoder;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;

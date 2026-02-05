@@ -61,7 +61,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf().disable()
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // 1) Public: home, login, register, H2 console
                         .requestMatchers(
@@ -128,6 +128,14 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
+                        //9) Swagger - OpenApi
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/swagger-ui.html"),
+                                new AntPathRequestMatcher("/swagger-ui/**"),
+                                new AntPathRequestMatcher("/v3/api-docs/**")
+                        )
+                        .permitAll()
+
                         // 9) Everything else (e.g. /home, /profile) needs login
                         .anyRequest().authenticated()
                 )
@@ -141,7 +149,7 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/")
                         .permitAll()
                 )
-                .headers(headers -> headers.frameOptions().disable()) // required for H2 console
+                .headers(headers -> headers.frameOptions(frame -> frame.disable())) // required for H2 console
                 .build();
     }
 

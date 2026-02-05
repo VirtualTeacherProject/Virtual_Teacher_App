@@ -48,6 +48,53 @@
             </ul>
         </div>
     </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Wikipedia search</h2>
+
+            <div class="input-group mb-2">
+                <input id="wikiQuery" class="form-control" placeholder="Search Wikipedia…">
+                <button class="btn btn-outline-primary" type="button" onclick="wikiSearch()">Search</button>
+            </div>
+
+            <div id="wikiResults" class="list-group small"></div>
+        </div>
+    </div>
+
+    <script>
+        async function wikiSearch() {
+          const q = document.getElementById("wikiQuery").value.trim();
+          const box = document.getElementById("wikiResults");
+          box.innerHTML = "";
+          if (!q) return;
+
+          const res = await fetch(`/api/wiki/search?q=${encodeURIComponent(q)}`);
+          if (!res.ok) {
+            box.innerHTML = `<div class="text-danger">Search failed.</div>`;
+            return;
+          }
+          const items = await res.json();
+          if (!items.length) {
+            box.innerHTML = `<div class="text-muted">No results.</div>`;
+            return;
+          }
+
+          box.innerHTML = items.map(x => `
+            <a class="list-group-item list-group-item-action" href="${x.url}" target="_blank" rel="noopener">
+              <div class="fw-semibold">${escapeHtml(x.title)}</div>
+              <div class="text-muted">${x.snippet}</div>
+            </a>
+          `).join("");
+        }
+
+        function escapeHtml(str) {
+          return str.replace(/[&<>"']/g, m => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+          }[m]));
+        }
+</script>
+
 </nav>
 
 <div class="container py-4">

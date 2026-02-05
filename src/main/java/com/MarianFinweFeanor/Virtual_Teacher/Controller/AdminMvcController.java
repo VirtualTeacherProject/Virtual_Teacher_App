@@ -1,4 +1,4 @@
-package com.MarianFinweFeanor.Virtual_Teacher.Controller.mvc;
+package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;

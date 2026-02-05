@@ -13,7 +13,7 @@ public class VirtualTeacherApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(VirtualTeacherApplication.class, args);
 
-		System.out.println(new BCryptPasswordEncoder(12).encode("pass1234"));
+		//System.out.println(new BCryptPasswordEncoder(12).encode("pass1234"));
 
 	}
 
