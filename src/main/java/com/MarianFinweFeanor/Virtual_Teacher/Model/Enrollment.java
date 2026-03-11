@@ -6,9 +6,6 @@ import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
-
-
-
 @Entity
 @Table(name = "enrollments")
 public class Enrollment {
@@ -44,13 +41,6 @@ public class Enrollment {
 
     @Column(name = "rated_at")
     private LocalDateTime ratedAt;
-
-
-
-
-
-    // getters/setters
-
 
     // --- getters/setters (write them or use Lombok @Getter/@Setter) ---
     public Long getEnrollmentId() { return enrollmentId; }
@@ -100,7 +90,6 @@ public class Enrollment {
     // and NEVER include collections to avoid recursion/StackOverflow.
 
     public void setAverageGradeForCourse () {
-
 
     }
 

@@ -78,6 +78,7 @@ public class UserRestController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
+
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getByEmail(@PathVariable String email) {
         try {

@@ -48,6 +48,7 @@ public class UserMvcController {
         if (br.hasErrors()) {
             return "register";
         }
+
         try {
             userService.saveUser(user);
             ra.addFlashAttribute("msg", "Account created! Please log in.");
@@ -56,6 +57,7 @@ public class UserMvcController {
             br.rejectValue("email", "duplicate", "Email is already registered.");
             return "register";
         }
+
     }
 
     public static void main(String[] args) {

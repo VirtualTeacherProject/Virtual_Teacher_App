@@ -72,5 +72,4 @@ public class Course {
         return (courseId != null ? courseId.hashCode() : 0);
     }
 
-
 }
