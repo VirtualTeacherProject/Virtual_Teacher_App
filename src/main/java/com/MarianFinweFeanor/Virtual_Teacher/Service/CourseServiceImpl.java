@@ -17,6 +17,8 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
 
+
+
     // Constructor Injection
     public CourseServiceImpl(CourseRepository courseRepository, UserRepository userRepository) {
         this.courseRepository = courseRepository;
@@ -45,6 +47,14 @@ public class CourseServiceImpl implements CourseService {
             throw new EntityNotFoundException("Course", id);
         }
         return courseRepository.findById(id);
+    }
+
+    @Override
+    public List<Course> searchActiveCoursesByTitle(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            return courseRepository.findByStatus("ACTIVE");
+        }
+        return courseRepository.findByStatusAndTitleContainingIgnoreCase("ACTIVE", title.trim());
     }
 
 
