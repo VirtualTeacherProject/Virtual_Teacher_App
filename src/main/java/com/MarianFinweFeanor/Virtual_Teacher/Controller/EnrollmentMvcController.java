@@ -70,6 +70,30 @@ public class EnrollmentMvcController {
         return "courses";
     }
 
+    @GetMapping("/search")
+    public String searchCourses(@RequestParam(required = false) String query, Model model,
+                                Principal principal) {
+        List<Course> courses = courseService.searchActiveCoursesByTitle(query);
+
+        var enrolledIds = (principal == null)
+                ? java.util.Collections.<Long>emptySet()
+                : enrollmentService.getEnrolledCourseIds(principal.getName());
+
+        boolean isTeacher = false;
+        if (principal != null) {
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            isTeacher = auth != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_TEACHER".equals(a.getAuthority()));
+        }
+
+
+        model.addAttribute("courses", courses);
+        model.addAttribute("enrolledIds", enrolledIds);
+        model.addAttribute("isTeacher", isTeacher);
+        model.addAttribute("query", query);
+        return "courses";
+    }
+
     // --- Create/Edit Course (teacher) ---------------------------------------
 
     /** GET /courses/add (TEACHER) */
@@ -163,7 +187,7 @@ public class EnrollmentMvcController {
     // --- Course Detail (public) ---------------------------------------------
 
     /** GET /courses/{id} — public detail; enroll actions are gated in the view */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public String courseDetail(@PathVariable Long id,
                                Model model,
                                Principal principal) {
