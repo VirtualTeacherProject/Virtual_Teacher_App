@@ -48,14 +48,43 @@ public class UserServiceImpl implements UserService {
 //    }
 
     @Override
+    public void ensureApprovedTeacher(String email) {
+        User me = findByEmail(email);
+
+        // ✅ Allow admins immediately
+        if (me.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        // ❌ Block unapproved teachers or non-teachers
+        if (me.getRole() != UserRole.TEACHER || !me.isTeacherApproved()) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Your teacher account is pending admin approval."
+            );
+        }
+    }
+
+    @Override
     public User saveUser(User user) {
         // check duplicate
         if (user.getUserId() == null) {
+
             // New user → check pure email duplicate
             if (userRepository.existsByEmail(user.getEmail())) {
                 throw new EntityDuplicateException("User", "email", user.getEmail());
             }
-        } else {
+
+            // users that registered as teacher will stay as pending status until approval
+            if (user.getRole() == UserRole.TEACHER) {
+                user.setTeacherApproved(false);
+            }
+            else {
+                user.setTeacherApproved(true);
+            }
+
+        }
+
+        else {
             // Existing user → email must be unique for other users
             if (userRepository.existsByEmailAndUserIdNot(user.getEmail(), user.getUserId())) {
                 throw new EntityDuplicateException("User", "email", user.getEmail());
@@ -77,35 +106,35 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public User updateUser(User user) {
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public List<User> findPendingTeachers() {
+
+        return userRepository.findByRoleAndTeacherApprovedFalse(UserRole.TEACHER);
+    }
+
+    @Override
+    public void approveTeacher(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User", userId));
+
+
+        user.setTeacherApproved(true);
+        user.setRole(UserRole.TEACHER);
+        userRepository.save(user);
+    }
+
+    @Override
     public User findByEmail(String email) {
         // if repo returns Optional<User>
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User", email));
-
-        // if repo returns User directly, use:
-        // return Optional.ofNullable(userRepo.findByEmail(email))
-        //         .orElseThrow(() -> new EntityNotFoundException("User", email));
     }
-
-
-
-//    // Create or Update a user
-////    @Override
-////    public User saveUser(User user)
-////    {
-////        if (userRepository.existsByEmail(user.getEmail())) {
-////            throw new EntityDuplicateException("User", "email", user.getEmail());
-////        }
-////
-////        // If `role` is null, assign default role as STUDENT
-////        if (user.getRole() == null) {
-////            user.setRole(UserRole.STUDENT);
-////        }
-////        return userRepository.save(user);
-////    }
-
-
-
 
     // Get all users
 
@@ -114,20 +143,6 @@ public class UserServiceImpl implements UserService {
         // implement your filtering or return userRepo.findAll();
         return userRepository.findAll();
     }
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<User> getAllUsers(String firstName, String lastName, String email) {
-//        Specification<User> spec = Specification
-//                .where(UserSpecification.hasFirstName(firstName))
-//                .and(UserSpecification.hasLastName(lastName))
-//                .and(UserSpecification.hasEmail(email));
-//        List<User> users = userRepository.findAll(spec);
-//        if(users.isEmpty()) {
-//            throw new EntityNotFoundException("Users","database");
-//        }
-//
-//        return users;
-//    }
 
     // Get a user by ID
     @Override
@@ -161,17 +176,6 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-
-
-//    @Override
-//    @Transactional(readOnly = true)
-//    public Optional<User> getUserById(Long userId) {
-//        if(!userRepository.existsById(userId)) {
-//            throw new EntityNotFoundException("User", userId);
-//        }
-//        return userRepository.findById(userId);
-//    }
-
     // Delete a user by ID
     @Override
     public void deleteUserById(Long userId) {
@@ -186,12 +190,7 @@ public class UserServiceImpl implements UserService {
         return 0;
     }
 
-    @Override
-    @Transactional
-    public User updateUser(User user) {
 
-        return userRepository.save(user);
-    }
 
 
 

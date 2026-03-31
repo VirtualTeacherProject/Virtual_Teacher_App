@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
@@ -51,6 +52,9 @@ public class EnrollmentMvcController {
     /** GET /courses — everyone can browse */
     @GetMapping("")
     public String listCourses(Model model, Principal principal) {
+        System.out.println("LIST COURSES HIT, principal = " +
+                (principal == null ? "anonymous" : principal.getName()));
+
         var all = courseService.getAllCourses();
 
         var enrolledIds = (principal == null)
@@ -86,7 +90,6 @@ public class EnrollmentMvcController {
                     .anyMatch(a -> "ROLE_TEACHER".equals(a.getAuthority()));
         }
 
-
         model.addAttribute("courses", courses);
         model.addAttribute("enrolledIds", enrolledIds);
         model.addAttribute("isTeacher", isTeacher);
@@ -94,12 +97,11 @@ public class EnrollmentMvcController {
         return "courses";
     }
 
-    // --- Create/Edit Course (teacher) ---------------------------------------
-
     /** GET /courses/add (TEACHER) */
     @GetMapping("/add")
     @PreAuthorize("hasRole('TEACHER')")
-    public String showAddCourseForm(Model model) {
+    public String showAddCourseForm(Model model, Principal principal) {
+        userService.ensureApprovedTeacher(principal.getName());
         model.addAttribute("course", new Course());
         return "add-course";
     }
@@ -111,9 +113,12 @@ public class EnrollmentMvcController {
                                   BindingResult br,
                                   Principal principal,
                                   RedirectAttributes ra) {
+        userService.ensureApprovedTeacher(principal.getName());
+
         if (br.hasErrors()) {
             return "add-course";
         }
+
         // attach owner
         var me = userService.findByEmail(principal.getName());
         course.setTeacher(me);
@@ -138,9 +143,12 @@ public class EnrollmentMvcController {
     /** GET /courses/{id}/edit (TEACHER) */
     @GetMapping("/{id}/edit")
     @PreAuthorize("hasRole('TEACHER')")
-    public String showEditCourseForm(@PathVariable Long id, Model model) {
+    public String showEditCourseForm(@PathVariable Long id, Model model, Principal principal) {
+
+        userService.ensureApprovedTeacher(principal.getName());
         var c = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
         model.addAttribute("course", c);
         return "edit-course";
     }
@@ -152,7 +160,10 @@ public class EnrollmentMvcController {
                                    @ModelAttribute("course") Course updated,
                                    BindingResult br,
                                    RedirectAttributes ra,
-                                   Model model) {
+                                   Model model,
+                                   Principal principal) {
+        userService.ensureApprovedTeacher(principal.getName());
+
         if (br.hasErrors()) {
             return "edit-course";
         }
@@ -206,7 +217,11 @@ public class EnrollmentMvcController {
                     .findByStudent_EmailAndCourse_CourseId(principal.getName(),
                             course.getCourseId())
                     .orElse(null);
+
+            model.addAttribute("currentUser", userService
+                    .findByEmail(principal.getName()));
         }
+
         model.addAttribute("enrollment", enrollment);
 
         model.addAttribute("course", course);
@@ -219,7 +234,10 @@ public class EnrollmentMvcController {
     /** GET /courses/{id}/students (TEACHER/ADMIN) */
     @GetMapping("/{id}/students")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public String courseStudents(@PathVariable Long id, Model model) {
+    public String courseStudents(@PathVariable Long id, Model model,
+                                 Principal principal) {
+
+        userService.ensureApprovedTeacher(principal.getName());
         var course = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
         var students = enrollmentService.getStudentsInCourse(id);

@@ -11,6 +11,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.springframework.http.ResponseEntity.ok;
 
@@ -40,11 +41,13 @@ public class UserRestController {
                                                   @RequestParam(required = false) String email) {
         try {
             List<User> users = userService.getAllUsers(firstName, lastName, email);
+            System.out.println(users);
             return ok(users);
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
+
     //Create or Update a user
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody User user) {

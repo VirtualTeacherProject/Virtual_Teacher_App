@@ -1,9 +1,7 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 
-import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
-import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
-import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
@@ -49,12 +47,30 @@ public class LectureMvcController {
 
     // --- Add Lecture (form) --------------------------------------------------
 
+    //move this helper  into UserService later, also EnrollmentMvcController
+    // has same helper method
+//    private void ensureApprovedTeacher(Principal principal) {
+//        User me = userService.findByEmail(principal.getName());
+//
+//        if (me.getRole() != UserRole.TEACHER || !me.isTeacherApproved()) {
+//            throw new org.springframework.security.access.AccessDeniedException(
+//                    "Your teacher account is pending admin approval."
+//            );
+//        }
+//    }
+
+
+
     /** GET /courses/{courseId}/lectures/add-lecture (TEACHER) */
     @GetMapping("/add-lecture")
     @PreAuthorize("hasRole('TEACHER')")
     public String showAddForm(@PathVariable Long courseId,
                               Model model,
                               Principal principal) {
+
+        //ensureApprovedTeacher(principal);
+        userService.ensureApprovedTeacher(principal.getName());
+
         var course = courseService.getCourseById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
 
@@ -77,6 +93,8 @@ public class LectureMvcController {
                             Principal principal,
                             Model model,
                             RedirectAttributes ra) {
+        //ensureApprovedTeacher(principal);
+        userService.ensureApprovedTeacher(principal.getName());
 
         if (br.hasErrors()) {
             // view uses 'course' for form action/url
@@ -109,6 +127,8 @@ public class LectureMvcController {
                                @PathVariable Long lectureId,
                                Model model,
                                Principal principal) {
+        userService.ensureApprovedTeacher(principal.getName());
+
         var lecture = lectureService.getLecturesById(lectureId)
                 .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
 
@@ -137,6 +157,8 @@ public class LectureMvcController {
                              RedirectAttributes ra,
                              Principal principal,
                              Model model) {
+        userService.ensureApprovedTeacher(principal.getName());
+
 
         if (br.hasErrors()) {
             model.addAttribute("course", courseService.getCourseById(courseId)

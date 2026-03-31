@@ -17,6 +17,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     List<User> findByRole(UserRole student);
 
+
+    List<User> findByRoleAndTeacherApprovedFalse(UserRole role);
+
     boolean existsByEmailAndUserIdNot(String email, Long userId);
 
     long count();

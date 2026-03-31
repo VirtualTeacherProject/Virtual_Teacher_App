@@ -21,6 +21,7 @@
 
     <!-- flash message -->
     <div th:if="${msg}" class="alert alert-success" th:text="${msg}"></div>
+    <div th:if="${error}" class="alert alert-warning" th:text="${error}"></div>
 
     <div class="card shadow">
         <div class="card-body">

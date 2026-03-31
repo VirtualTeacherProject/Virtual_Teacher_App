@@ -61,6 +61,9 @@ public class User {
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
+    @Column(nullable = false)
+    private boolean teacherApproved = false;
+
 
     // --- Enrollments owned by this student ---
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL,
@@ -91,6 +94,18 @@ public class User {
     public String getLastName(){
         return lastName;
     }
+
+    public boolean isTeacherApproved()
+    {
+        return teacherApproved;
+    }
+
+    public void setTeacherApproved(boolean teacherApproved)
+    {
+        this.teacherApproved = teacherApproved;
+    }
+
+
 
     @Override
     public boolean equals(Object o) {

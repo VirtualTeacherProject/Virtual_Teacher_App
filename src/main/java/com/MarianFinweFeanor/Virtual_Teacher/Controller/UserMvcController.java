@@ -6,6 +6,8 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class UserMvcController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserMvcController.class);
 
     private final UserService userService;
 
@@ -37,6 +41,7 @@ public class UserMvcController {
 
     @GetMapping("/register")
     public String showRegisterForm() {
+
         return "register"; // model already has "user" via @ModelAttribute
     }
 
@@ -53,8 +58,16 @@ public class UserMvcController {
             userService.saveUser(user);
             ra.addFlashAttribute("msg", "Account created! Please log in.");
             return "redirect:/login";
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+        }
+        catch (EntityDuplicateException e) {
             br.rejectValue("email", "duplicate", "Email is already registered.");
+            return "register";
+        }
+
+        catch (org.springframework.dao.DataIntegrityViolationException e) {
+            //e.printStackTrace();
+            log.warn("Failed to register user due to data integrity issue: {}", e.getMessage());
+            br.reject("saveError", "Could not register user due to invalid data.");
             return "register";
         }
 

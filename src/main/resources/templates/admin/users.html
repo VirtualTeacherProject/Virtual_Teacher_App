@@ -26,6 +26,10 @@
     <!-- error message (optional, if you add it) -->
     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
+    <a href="/admin/users/pending-teachers" class="btn btn-warning btn-sm mb-3">
+        ⏳ View Pending Teacher Approvals
+    </a>
+
     <div class="card shadow">
         <div class="card-body">
 
