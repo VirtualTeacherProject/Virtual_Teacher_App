@@ -10,9 +10,6 @@
 </head>
 <body>
 
-
-
-
 <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
     <div class="container-fluid">
         <a class="navbar-brand fw-semibold" th:href="@{/home}">Virtual Teacher</a>
@@ -38,19 +35,19 @@
 
                 <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <span th:text="${currentUserData.email}">user@example.com</span>
+                        <span th:text="${currentUserData['email']}">user@example.com</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="px-3 py-2">
-                            <div class="fw-semibold" th:text="${currentUserData.email}">email@example.com</div>
+                            <div class="fw-semibold" th:text="${currentUserData['email']}">email@example.com</div>
                             <div class="text-muted small"
-                                 th:text="${(currentUserData.firstName ?: '') + (currentUserData.lastName != null ? ' ' + currentUserData.lastName : '')}">
+                                 th:text="${(currentUserData['firstName'] ?: '') + (currentUserData['lastName'] != null ? ' ' + currentUserData['lastName'] : '')}">
                                 Full Name
                             </div>
                             <span class="badge bg-secondary mt-1"
-                                  th:text="${currentUserData.role != null ? #strings.substring(currentUserData.role,5) : ''}">
-                Role
-              </span>
+                                  th:text="${currentUserData['role']}">
+                                Role
+                            </span>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
@@ -93,22 +90,24 @@
             <p th:text="${course.description}">Course description...</p>
 
             <div class="d-flex flex-wrap gap-2 mt-3">
-                <!-- Teacher actions -->
-                <a class="btn btn-outline-secondary"
-                   sec:authorize="hasRole('TEACHER')"
-                   th:href="@{/courses/{id}/edit(id=${course.courseId})}">
-                    ✎ Edit Course
+
+                <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"
+                   th:href="@{/courses/{id}/edit(id=${course.courseId})}"
+                   class="btn btn-outline-primary">
+                    Edit Course
                 </a>
 
-                <a class="btn btn-outline-secondary"
-                   sec:authorize="hasAnyRole('TEACHER','ADMIN')"
-                   th:href="@{/courses/{id}/students(id=${course.courseId})}">
+
+                <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"
+                   th:href="@{/courses/{id}/students(id=${course.courseId})}"
+                   class="btn btn-outline-secondary">
                     View Enrolled Students
                 </a>
 
-                <a class="btn btn-primary"
-                   sec:authorize="hasRole('TEACHER')"
-                   th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
+
+                <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"
+                   th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}"
+                   class="btn btn-primary">
                     + Add Lecture
                 </a>
 
@@ -130,8 +129,6 @@
             </div>
         </div>
     </div>
-
-
 
     <div class="mt-4">
         <a class="link-secondary me-3" th:href="@{/courses}">All Courses</a>

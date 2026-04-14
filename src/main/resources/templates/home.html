@@ -64,19 +64,19 @@
                 <!-- Logged in -->
                 <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <span th:text="${currentUserData.email}">email@example.com</span>
+                        <span th:text="${currentUserData['email']}">email@example.com</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="px-3 py-2">
-                            <div class="fw-semibold" th:text="${currentUserData.email}">email@example.com</div>
+                            <div class="fw-semibold" th:text="${currentUserData['email']}">email@example.com</div>
                             <div class="text-muted small"
-                                 th:text="${(currentUserData.firstName ?: '') + (currentUserData.lastName != null ? ' ' + currentUserData.lastName : '')}">
+                                 th:text="${(currentUserData['firstName'] ?: '') + (currentUserData['lastName'] != null ? ' ' + currentUserData['lastName'] : '')}">
                                 Full Name
                             </div>
                             <span class="badge bg-secondary mt-1"
-                                  th:text="${currentUserData.role != null ? #strings.substring(currentUserData.role,5) : ''}">
-                Role
-              </span>
+                                  th:text="${currentUserData['role']}">
+                                Role
+                            </span>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>

@@ -10,7 +10,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @Entity
 @Table(name = "lectures")
-public class Lecture {
+public class    Lecture {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "lecture_id")

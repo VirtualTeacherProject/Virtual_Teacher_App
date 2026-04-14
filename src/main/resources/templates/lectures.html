@@ -15,30 +15,39 @@
         <a class="navbar-brand fw-semibold" th:href="@{/home}">Virtual Teacher</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#nav" aria-controls="nav" aria-expanded="false"
-                aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
         <div id="nav" class="collapse navbar-collapse">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" th:href="@{/home}">Home</a></li>
                 <li class="nav-item"><a class="nav-link active" aria-current="page" th:href="@{/courses}">Courses</a></li>
             </ul>
+
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item" sec:authorize="isAnonymous()"><a class="nav-link" th:href="@{/login}">Login</a></li>
-                <li class="nav-item" sec:authorize="isAnonymous()"><a class="nav-link" th:href="@{/register}">Register</a></li>
+                <li class="nav-item" sec:authorize="isAnonymous()">
+                    <a class="nav-link" th:href="@{/login}">Login</a>
+                </li>
+                <li class="nav-item" sec:authorize="isAnonymous()">
+                    <a class="nav-link" th:href="@{/register}">Register</a>
+                </li>
+
                 <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <span th:text="${currentUserData.email}">user@example.com</span>
+                        <span th:text="${currentUserData['email']}">user@example.com</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="px-3 py-2">
-                            <div class="fw-semibold" th:text="${currentUserData.email}">email@example.com</div>
+                            <div class="fw-semibold" th:text="${currentUserData['email']}">email@example.com</div>
                             <div class="text-muted small"
-                                 th:text="${(currentUserData.firstName ?: '') + (currentUserData.lastName != null ? ' ' + currentUserData.lastName : '')}">
+                                 th:text="${(currentUserData['firstName'] ?: '') + (currentUserData['lastName'] != null ? ' ' + currentUserData['lastName'] : '')}">
                                 Full Name
                             </div>
                             <span class="badge bg-secondary mt-1"
-                                  th:text="${currentUserData.role != null ? #strings.substring(currentUserData.role,5) : ''}">
-                Role
-              </span>
+                                  th:text="${currentUserData['role']}">
+                                Role
+                            </span>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
@@ -52,10 +61,22 @@
 
 <div class="container py-4">
 
-    <!-- Flash -->
+    <!-- Flash success -->
     <div th:if="${msg}" class="alert alert-success alert-dismissible fade show" role="alert">
         <span th:text="${msg}">Success</span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Flash error -->
+    <div th:if="${error}" class="alert alert-warning alert-dismissible fade show" role="alert">
+        <span th:text="${error}">Error</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Pending approval info -->
+    <div th:if="${currentUserData['role'] == 'ROLE_TEACHER' and !currentUserData['teacherApproved']}"
+         class="alert alert-warning">
+        Your teacher account is pending admin approval. You cannot add or edit lectures yet.
     </div>
 
     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -63,9 +84,15 @@
             <h1 class="h4 mb-1" th:text="${course.title}">Course Title</h1>
             <div class="text-muted">Lectures</div>
         </div>
-        <a class="btn btn-primary" sec:authorize="hasRole('TEACHER')"
+
+        <a class="btn btn-primary"
+           sec:authorize="hasAnyRole('TEACHER','ADMIN')"
+           th:if="${currentUserData['canManageCourses']}"
            th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
             + Add Lecture
+<!--            th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"-->
+
+
         </a>
     </div>
 
@@ -73,26 +100,40 @@
     <div th:if="${#lists.isEmpty(lectures)}" class="text-center py-5">
         <h2 class="h5">No lectures yet</h2>
         <p class="text-muted mb-3">Once lectures are added, they’ll appear here.</p>
-        <a class="btn btn-primary" sec:authorize="hasRole('TEACHER')"
+
+
+        <a class="btn btn-primary"
+           sec:authorize="hasAnyRole('TEACHER','ADMIN')"
+           th:if="${currentUserData['canManageCourses']}"
            th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
             Create the first lecture
+<!--            th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"-->
+
         </a>
     </div>
 
-    <!-- List group of lectures -->
+    <!-- Lecture list -->
     <div th:if="${!#lists.isEmpty(lectures)}" class="list-group">
         <a class="list-group-item list-group-item-action d-flex align-items-center justify-content-between"
            th:each="lec : ${lectures}"
            th:href="@{/courses/{c}/lectures/{l}(c=${course.courseId}, l=${lec.lectureId})}">
             <div>
                 <div class="fw-semibold" th:text="${lec.title}">Lecture title</div>
-                <div class="text-muted small" th:if="${lec.description}" th:text="${lec.description}">Short description…</div>
+                <div class="text-muted small"
+                     th:if="${lec.description}"
+                     th:text="${lec.description}">
+                    Short description…
+                </div>
             </div>
+
             <div class="d-flex align-items-center gap-2">
                 <a class="btn btn-sm btn-outline-secondary"
-                   sec:authorize="hasRole('TEACHER')"
+                   sec:authorize="hasAnyRole('TEACHER','ADMIN')"
+                   th:if="${currentUserData['canManageCourses']}"
                    th:href="@{/courses/{c}/lectures/{l}/edit(c=${course.courseId}, l=${lec.lectureId})}">
                     ✎ Edit
+<!--                    th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"-->
+
                 </a>
                 <span class="text-muted small">&rsaquo;</span>
             </div>

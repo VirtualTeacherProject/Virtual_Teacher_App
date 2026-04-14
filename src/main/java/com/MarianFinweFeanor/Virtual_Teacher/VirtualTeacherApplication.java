@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -24,6 +25,7 @@ public class VirtualTeacherApplication {
 
 	//This is for Admin Seeding, creating Admin, since its needs to be seeded
 	@Bean
+	@Profile("!test")
 	CommandLineRunner seedAdmin (UserRepository userRepository, PasswordEncoder passwordEncoder) {
 		return args -> {
 			String email = "admin1@example.com";

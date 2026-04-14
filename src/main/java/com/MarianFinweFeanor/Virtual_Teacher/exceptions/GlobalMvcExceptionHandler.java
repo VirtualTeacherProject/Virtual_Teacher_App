@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @ControllerAdvice
 public class GlobalMvcExceptionHandler {
@@ -27,6 +28,14 @@ public class GlobalMvcExceptionHandler {
         model.addAttribute("error", "Bad Request");
         model.addAttribute("message", ex.getMessage());
         return "errors/400";
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public String handleAccessDenied(org.springframework.security.access.
+                                                 AccessDeniedException e,
+                                     RedirectAttributes ra) {
+        ra.addFlashAttribute("error, you do not have access", e.getMessage());
+        return "redirect:/courses";
     }
 
     @ExceptionHandler(Exception.class)

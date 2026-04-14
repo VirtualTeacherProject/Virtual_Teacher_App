@@ -38,7 +38,7 @@ public class AdminUserController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setRole(UserRole.TEACHER);
-        userService.saveUser(user);
+        userService.updateUser( user);
 
         ra.addFlashAttribute("msg", "User promoted to TEACHER.");
         return "redirect:/admin/users";
@@ -50,7 +50,7 @@ public class AdminUserController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setRole(UserRole.ADMIN);
-        userService.saveUser(user);
+        userService.updateUser(user);
 
         ra.addFlashAttribute("msg", "User promoted to ADMIN.");
         return "redirect:/admin/users";
@@ -63,11 +63,13 @@ public class AdminUserController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setRole(UserRole.STUDENT);
-        userService.saveUser(user);
+        userService.updateUser(user);
 
         ra.addFlashAttribute("msg", "User changed to STUDENT.");
         return "redirect:/admin/users";
     }
+
+
 
     // GET /admin/users/{id}/edit
     @GetMapping("/{id}/edit")
@@ -99,7 +101,7 @@ public class AdminUserController {
         existing.setStatus(formUser.getStatus());
 
         // reuse your saveUser (with create/update logic fixed as we discussed)
-        userService.saveUser(existing);
+        userService.updateUser(existing);
 
         ra.addFlashAttribute("msg", "User updated.");
         return "redirect:/admin/users";
@@ -132,5 +134,24 @@ public class AdminUserController {
         ra.addFlashAttribute("msg", "User deleted.");
         return "redirect:/admin/users";
     }
+
+    // GET /admin/users/pending-teachers
+    @GetMapping("/pending-teachers")
+    public String listPendingTeachers(Model model) {
+        model.addAttribute("pendingTeachers", userService.findPendingTeachers());
+        return "admin/pending-teachers";
+    }
+
+    // POST /admin/users/{id}/approve-teacher
+    @PostMapping("/{id}/approve-teacher")
+    public String approveTeacher(@PathVariable Long id, RedirectAttributes ra) {
+        userService.approveTeacher(id);
+        ra.addFlashAttribute("msg", "Teacher approved successfully.");
+        return "redirect:/admin/users/pending-teachers";
+    }
+
+
+
+
 }
 

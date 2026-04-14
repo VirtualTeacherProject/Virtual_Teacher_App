@@ -20,8 +20,6 @@ public interface UserService {
 
     User updateUser(User user);
 
-
-
     /** Enrolls the user in the course if not already enrolled. */
     void enrollInCourse(String userEmail, Long courseId);
 
@@ -40,6 +38,12 @@ public interface UserService {
 
     // Get a user by ID
     Optional<User> getUserById(Long userId);
+
+    List<User> findPendingTeachers();
+
+    void approveTeacher(Long userId);
+
+    void ensureApprovedTeacher(String email);
 
 
     List<User> findAllStudents();

@@ -41,24 +41,70 @@ public class GlobalModelAttributes {
 
     @ModelAttribute("currentUserData")
     public Map<String, Object> addCurrentUser(Principal principal, Authentication auth) {
-        if (principal == null) return Map.of(); // anonymous
+        if (principal == null) {
+            return Map.of(
+                    "email", "",
+                    "firstName", "",
+                    "lastName", "",
+                    "role", "",
+                    "teacherApproved", false,
+                    "canManageCourses", false
+            );
+        }
+
         User u = userRepository.findByEmail(principal.getName()).orElse(null);
-        if (u == null) return Map.of();
+        if (u == null) {
+            return Map.of(
+                    "email", "",
+                    "firstName", "",
+                    "lastName", "",
+                    "role", "",
+                    "teacherApproved", false,
+                    "canManageCourses", false
+            );
+        }
 
-        /*
-         * Extract role from Spring Security authorities.
-         * like: ROLE_TEACHER
-         */
+        String authorityRole = (auth == null || auth.getAuthorities().isEmpty())
+                ? ""
+                : auth.getAuthorities().iterator().next().getAuthority();
 
-        String role = (auth == null || auth.getAuthorities().isEmpty())
-                ? null
-                : auth.getAuthorities().iterator().next().getAuthority(); // e.g., ROLE_TEACHER
+        boolean canManageCourses =
+                "ROLE_ADMIN".equals(authorityRole) ||
+                        ("ROLE_TEACHER".equals(authorityRole) && u.isTeacherApproved());
 
         return Map.of(
                 "email", u.getEmail(),
                 "firstName", u.getFirstName(),
                 "lastName", u.getLastName(),
-                "role", role
+                "role", u.getRole().name(), // display role: TEACHER/STUDENT/ADMIN
+                "teacherApproved", u.isTeacherApproved(),
+                "canManageCourses", canManageCourses
         );
     }
+
+
+//    @ModelAttribute("currentUserData")
+//    public Map<String, Object> addCurrentUser
+//    (Principal principal, Authentication auth) {
+//        if (principal == null) return Map.of(); // anonymous user
+//
+//        User u = userRepository.findByEmail(principal.getName()).orElse(null);
+//        if (u == null) return Map.of();
+//
+//        String role = (auth == null || auth.getAuthorities().isEmpty())
+//                ? null
+//                : auth.getAuthorities().iterator().next().getAuthority();
+//
+//        return Map.of(
+//                "email", u.getEmail(),
+//                "firstName", u.getFirstName(),
+//                "lastName", u.getLastName(),
+//                "role", role,
+//                "teacherApproved", u.isTeacherApproved()
+//        );
+//    }
+
+
+
+
 }
