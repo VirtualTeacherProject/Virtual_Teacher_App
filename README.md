@@ -4,6 +4,10 @@ Virtual Teacher is an - WIP - online learning platform where students can **enro
 
 ---
 
+## Swagger Link
+http://localhost:8080/swagger-ui/index.html#/
+##
+
 ##  Features
 
 ✅ **User Authentication & Roles**  
