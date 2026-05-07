@@ -31,6 +31,9 @@ public class Course {
     @Column (name="description",length = 1000)
     private String description;
 
+    @Column(name = "passing_grade")
+    private Double passingGrade = 50.0;
+
 //    @Column(name="start_date",nullable = false)
 //    private LocalDateTime startDate;
 
@@ -45,9 +48,6 @@ public class Course {
     @JoinColumn(name = "teacher_id", nullable = false)
     private User teacher;
 
-//    @ManyToMany(mappedBy = "courses")
-//    @JsonIgnore
-//    private Set<User> users = new HashSet<>();
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -57,6 +57,14 @@ public class Course {
         return enrollments.stream()
                 .map(Enrollment::getStudent)   // requires Enrollment#getStudent()
                 .collect(java.util.stream.Collectors.toSet());
+    }
+
+    public Double getPassingGrade() {
+        return passingGrade;
+    }
+
+    public void setPassingGrade(Double passingGrade) {
+        this.passingGrade = passingGrade;
     }
 
     @Override

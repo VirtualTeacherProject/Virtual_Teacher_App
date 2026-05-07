@@ -100,6 +100,28 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
+    public void ensureCanRateCourse(Long studentUserId, Long courseId) {
+        Enrollment e = enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(studentUserId, courseId)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+
+        if (e.getAverageGrade() == null) {
+            throw new IllegalStateException("You can rate only after your course grade is calculated.");
+        }
+
+        if (e.getCompletionStatus() != Enrollment.CompletionStatus.COMPLETED) {
+            throw new IllegalStateException("You can rate only after completing all lectures.");
+        }
+
+        double passingGrade = e.getCourse().getPassingGrade() != null
+                ? e.getCourse().getPassingGrade()
+                : 50.0;
+
+            if (e.getAverageGrade() < passingGrade) {
+                throw new IllegalStateException("Your grade is: " + e.getAverageGrade() +  " you can rate only after passing the course.");
+            }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean isEnrolled(String userEmail, Long courseId) {
         return enrollmentRepo.existsByStudent_EmailAndCourse_CourseId(userEmail, courseId);
