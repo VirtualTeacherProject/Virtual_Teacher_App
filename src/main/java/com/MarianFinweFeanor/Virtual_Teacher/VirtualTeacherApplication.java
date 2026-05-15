@@ -19,8 +19,6 @@ public class VirtualTeacherApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(VirtualTeacherApplication.class, args);
 
-		//System.out.println(new BCryptPasswordEncoder(12).encode("Admin12345"));
-
 	}
 
 	//This is for Admin Seeding, creating Admin, since its needs to be seeded
@@ -42,7 +40,6 @@ public class VirtualTeacherApplication {
 
 				userRepository.save(admin);
 				System.out.println("Admin seeded successfully");
-
 
 			}
 

@@ -23,5 +23,7 @@ public interface EnrollmentService {
 
     void recalculateProgress(Long studentUserId, Long courseId);
 
+    void ensureCanRateCourse(Long studentUserId, Long courseId);
+
 
 }

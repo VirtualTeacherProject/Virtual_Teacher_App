@@ -45,7 +45,6 @@ public class UserMvcController {
         return "register"; // model already has "user" via @ModelAttribute
     }
 
-
     @PostMapping("/register")
     public String registerUser(@Valid @ModelAttribute("user") User user,
                                BindingResult br,

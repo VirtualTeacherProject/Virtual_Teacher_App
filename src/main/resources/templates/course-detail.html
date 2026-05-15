@@ -139,18 +139,36 @@
     <div sec:authorize="isAuthenticated()" th:if="${enrollment != null}">
         <div class="card shadow-sm mt-3">
             <div class="card-body">
+
+                <div th:if="${error}" class="alert alert-warning text-center" th:text="${error}"></div>
+                <div th:if="${msg}" class="alert alert-success text-center" th:text="${msg}"></div>
+
                 <h2 class="h6 mb-2">Your progress</h2>
+
                 <div>
                     Status:
                     <span th:text="${enrollment.completionStatus}">IN_PROGRESS</span>
                 </div>
+
                 <div th:if="${enrollment.averageGrade != null}">
                     Average grade:
                     <span th:text="${enrollment.averageGrade}">—</span>
                 </div>
 
+                <div>
+                    Passing grade:
+                    <span th:text="${course.passingGrade != null ? course.passingGrade : 50}">50</span>
+                </div>
+
                 <div class="mt-3" th:if="${enrollment.completionStatus.name() == 'COMPLETED'}">
                     <h3 class="h6">Rate this course</h3>
+
+                    <div class="alert alert-warning py-2"
+                         th:if="${enrollment.averageGrade != null
+             and enrollment.averageGrade < (course.passingGrade != null ? course.passingGrade : 50)}">
+                        Your grade is: <span th:text="${enrollment.averageGrade}"></span>.
+                        You can rate only after passing the course.
+                    </div>
 
                     <form th:action="@{|/courses/${course.courseId}/rating|}" method="post" class="row gy-2">
                         <div class="col-12 col-md-3">
@@ -163,11 +181,13 @@
                                 </option>
                             </select>
                         </div>
+
                         <div class="col-12">
                         <textarea name="reviewText" class="form-control" rows="2"
                                   placeholder="Optional review..."
                                   th:text="${enrollment.reviewText}"></textarea>
                         </div>
+
                         <div class="col-12">
                             <button class="btn btn-primary btn-sm">Save rating</button>
                         </div>
@@ -180,6 +200,52 @@
             </div>
         </div>
     </div>
+
+<!--    <div sec:authorize="isAuthenticated()" th:if="${enrollment != null}">-->
+<!--        <div class="card shadow-sm mt-3">-->
+<!--            <div class="card-body">-->
+<!--                <h2 class="h6 mb-2">Your progress</h2>-->
+<!--                <div>-->
+<!--                    Status:-->
+<!--                    <span th:text="${enrollment.completionStatus}">IN_PROGRESS</span>-->
+<!--                </div>-->
+<!--                <div th:if="${enrollment.averageGrade != null}">-->
+<!--                    Average grade:-->
+<!--                    <span th:text="${enrollment.averageGrade}">—</span>-->
+<!--                </div>-->
+
+<!--                <div class="mt-3" th:if="${enrollment.completionStatus.name() == 'COMPLETED'}">-->
+<!--                    <h3 class="h6">Rate this course</h3>-->
+
+
+<!--                    <form th:action="@{|/courses/${course.courseId}/rating|}" method="post" class="row gy-2">-->
+<!--                        <div class="col-12 col-md-3">-->
+<!--                            <select name="rating" class="form-select" required>-->
+<!--                                <option value="" disabled th:selected="${enrollment.rating == null}">Select…</option>-->
+<!--                                <option th:each="r : ${#numbers.sequence(1,5)}"-->
+<!--                                        th:value="${r}"-->
+<!--                                        th:text="${r}"-->
+<!--                                        th:selected="${enrollment.rating != null and enrollment.rating == r}">-->
+<!--                                </option>-->
+<!--                            </select>-->
+<!--                        </div>-->
+<!--                        <div class="col-12">-->
+<!--                        <textarea name="reviewText" class="form-control" rows="2"-->
+<!--                                  placeholder="Optional review..."-->
+<!--                                  th:text="${enrollment.reviewText}"></textarea>-->
+<!--                        </div>-->
+<!--                        <div class="col-12">-->
+<!--                            <button class="btn btn-primary btn-sm">Save rating</button>-->
+<!--                        </div>-->
+<!--                    </form>-->
+<!--                </div>-->
+
+<!--                <div class="mt-3 text-muted" th:if="${enrollment.completionStatus.name() != 'COMPLETED'}">-->
+<!--                    Complete the course to rate it.-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 
 </div>
 
