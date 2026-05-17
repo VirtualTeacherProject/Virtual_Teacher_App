@@ -35,6 +35,7 @@
   }
 </style>
 </head>
+
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
@@ -75,6 +76,7 @@
             </ul>
         </div>
     </div>
+
 
     <div class="card shadow-sm mt-4 wiki-search-card">
         <div class="card-body">
@@ -136,6 +138,8 @@
 </script>
 
 </nav>
+
+
 
 <div class="container py-4">
 
@@ -267,10 +271,56 @@
 
     </div>
 
+    <!-- Comments Section -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3 class="h5">Comments / Questions</h3>
+
+            <div th:if="${msg}" class="alert alert-success" th:text="${msg}"></div>
+            <div th:if="${error}" class="alert alert-warning" th:text="${error}"></div>
+
+            <form th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/comments|}"
+                  method="post"
+                  sec:authorize="isAuthenticated()">
+
+                <div class="mb-3">
+                <textarea name="comment"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Ask a question or leave a comment..."
+                          required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+            </form>
+
+            <hr>
+
+            <div th:if="${#lists.isEmpty(comments)}" class="text-muted">
+                No comments yet.
+            </div>
+
+            <div th:each="c : ${comments}" class="border rounded p-2 mb-2">
+                <div class="fw-semibold">
+                    <span th:text="${c.author.firstName + ' ' + c.author.lastName}">User Name</span>
+                </div>
+
+                <div class="text-muted small">
+                    <span th:text="${#temporals.format(c.createdAt, 'dd MMM yyyy HH:mm')}">date</span>
+                </div>
+
+                <p class="mb-0" th:text="${c.comment}">
+                    Comment text
+                </p>
+            </div>
+        </div>
+    </div>
+
     <div class="mt-4 d-flex gap-3">
         <a class="btn btn-secondary" th:href="@{/courses/{c}/lectures(c=${courseId})}">&larr; Back to Lectures</a>
         <a class="btn btn-outline-secondary" th:href="@{/courses/{c}(c=${courseId})}">Course</a>
     </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
