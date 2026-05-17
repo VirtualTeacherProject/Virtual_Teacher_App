@@ -2,15 +2,13 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.*;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
 
@@ -21,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.management.relation.Relation;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
@@ -33,32 +32,25 @@ public class LectureMvcController {
     private final UserService userService;          // enrollment checks
     private final CourseService courseService;      // breadcrumbs, ownership
     private final AssignmentService assignmentService;
+    private final LectureCommentService lectureCommentService;
+    private final EnrollmentService enrollmentService;
 
     @Autowired
     public LectureMvcController(LectureService lectureService,
                                 UserService userService,
                                 CourseService courseService,
-                                AssignmentService assignmentService) {
+                                AssignmentService assignmentService,
+                                LectureCommentService lectureCommentService,
+                                EnrollmentService enrollmentService) {
         this.lectureService = lectureService;
         this.userService = userService;
         this.courseService = courseService;
         this.assignmentService = assignmentService;
+        this.lectureCommentService = lectureCommentService;
+        this.enrollmentService = enrollmentService;
     }
 
     // --- Add Lecture (form) --------------------------------------------------
-
-    //move this helper  into UserService later, also EnrollmentMvcController
-    // has same helper method
-//    private void ensureApprovedTeacher(Principal principal) {
-//        User me = userService.findByEmail(principal.getName());
-//
-//        if (me.getRole() != UserRole.TEACHER || !me.isTeacherApproved()) {
-//            throw new org.springframework.security.access.AccessDeniedException(
-//                    "Your teacher account is pending admin approval."
-//            );
-//        }
-//    }
-
 
 
     /** GET /courses/{courseId}/lectures/add-lecture (TEACHER) */
@@ -74,10 +66,6 @@ public class LectureMvcController {
         var course = courseService.getCourseById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
 
-        // (optional) Only the owning teacher may add to this course
-        // if (!course.getTeacher().getEmail().equals(principal.getName())) {
-        //     throw new AccessDeniedException("Not your course");
-        // }
 
         model.addAttribute("course", course);
         model.addAttribute("lecture", new Lecture());   // course is attached on submit (server-side)
@@ -106,11 +94,6 @@ public class LectureMvcController {
         var course = courseService.getCourseById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
 
-        // (optional) ownership
-        // if (!course.getTeacher().getEmail().equals(principal.getName())) {
-        //     throw new AccessDeniedException("Not your course");
-        // }
-
         lecture.setCourse(course);                 // URL is source of truth
         lectureService.createLectures(lecture);
 
@@ -137,10 +120,6 @@ public class LectureMvcController {
             throw new IllegalArgumentException("Lecture does not belong to this course");
         }
 
-        // (optional) ownership
-        // if (!lecture.getCourse().getTeacher().getEmail().equals(principal.getName())) {
-        //     throw new AccessDeniedException("Not your course");
-        // }
 
         model.addAttribute("lecture", lecture);
         model.addAttribute("course", lecture.getCourse());
@@ -165,13 +144,6 @@ public class LectureMvcController {
                     .orElseThrow(() -> new EntityNotFoundException("Course", courseId)));
             return "edit-lecture";
         }
-
-        // (optional) load + verify ownership before update
-        // var existing = lectureService.getLecturesById(lectureId).orElseThrow(...);
-        // if (!existing.getCourse().getCourseId().equals(courseId) ||
-        //     !existing.getCourse().getTeacher().getEmail().equals(principal.getName())) {
-        //     throw new AccessDeniedException("Not your course");
-        // }
 
         lectureService.updateLecture(lectureId, updated);
         ra.addFlashAttribute("msg", "Lecture updated!");
@@ -208,10 +180,11 @@ public class LectureMvcController {
                                 @PathVariable Long lectureId,
                                 Model model,
                                 Principal principal) {
+
         var lecture = lectureService.getLecturesById(lectureId)
                 .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
 
-        // lecture must belong to the course in URL
+        // Lecture must belong to the course in the URL.
         if (lecture.getCourse() == null || !lecture.getCourse().getCourseId().equals(courseId)) {
             throw new IllegalArgumentException("Lecture does not belong to this course");
         }
@@ -231,10 +204,7 @@ public class LectureMvcController {
         model.addAttribute("enrolled", enrolled);
         model.addAttribute("submissions", subs);
         model.addAttribute("newAssignment", new Assignment());
-
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        System.out.println("AUTH=" + auth.getName() + " " + auth.getAuthorities());
-
+        model.addAttribute("comments", lectureCommentService.getCommentsForLecture(lectureId));
 
         return "lecture-detail";
     }
@@ -258,6 +228,40 @@ public class LectureMvcController {
         }
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
     }
+
+    @PostMapping("/{lectureId}/comments")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
+    public String addComment(@PathVariable Long courseId,
+                             @PathVariable Long lectureId,
+                             @RequestParam("comment") String comment,
+                             Principal principal,
+                             RedirectAttributes ra) {
+
+        if (principal == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            User user = userService.findByEmail(principal.getName());
+
+            // Only students need to be enrolled before commenting.
+            // Teachers and admins can comment without being enrolled.
+            if (user.getRole() == UserRole.STUDENT) {
+                enrollmentService.ensureStudentEnrolled(principal.getName(), courseId);
+            }
+
+            lectureCommentService.addComment(lectureId, principal.getName(), comment);
+
+            ra.addFlashAttribute("msg", "Comment added.");
+
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+
+        return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
+    }
+
+
 }
 
 

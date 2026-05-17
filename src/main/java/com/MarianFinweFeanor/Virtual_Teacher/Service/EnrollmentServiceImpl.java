@@ -47,6 +47,12 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .collect(Collectors.toSet());
     }
 
+    @Override
+    public void ensureStudentEnrolled(String studentEmail, Long courseId) {
+        enrollmentRepo.findByStudent_EmailAndCourse_CourseId(studentEmail, courseId)
+                .orElseThrow(() -> new IllegalStateException("You must be enrolled in this course to comment."));
+    }
+
 
     @Override
     @Transactional(readOnly = true)

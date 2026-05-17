@@ -25,5 +25,7 @@ public interface EnrollmentService {
 
     void ensureCanRateCourse(Long studentUserId, Long courseId);
 
+    void ensureStudentEnrolled(String studentEmail, Long courseId);
+
 
 }
