@@ -120,4 +120,5 @@ public class User {
         return (userId != null ? userId.hashCode() : 0);
     }
 
+
 }
