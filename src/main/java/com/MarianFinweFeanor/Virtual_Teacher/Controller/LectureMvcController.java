@@ -3,7 +3,6 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.*;
-import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -19,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.management.relation.Relation;
-import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 

@@ -52,6 +52,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollmentRepo.findByStudent_EmailAndCourse_CourseId(studentEmail, courseId)
                 .orElseThrow(() -> new IllegalStateException("You must be enrolled in this course to comment."));
     }
+    // add later for if student was dropped
 
 
     @Override

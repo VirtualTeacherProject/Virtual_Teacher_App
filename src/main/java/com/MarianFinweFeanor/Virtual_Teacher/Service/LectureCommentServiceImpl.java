@@ -7,6 +7,9 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentReposito
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureCommentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.data.annotation.Id;
 import org.springframework.stereotype.Service;
 
@@ -17,15 +20,15 @@ import java.util.List;
 public class LectureCommentServiceImpl implements LectureCommentService {
 
     private final LectureCommentRepository lectureCommentRepository;
-    private final LectureRepository lectureRepository;
-    private final UserRepository userRepository;
+    private final LectureService lectureService;
+    private final UserService userService;
 
     public LectureCommentServiceImpl(LectureCommentRepository lectureCommentRepository,
-                                     LectureRepository lectureRepository,
-                                     UserRepository userRepository){
+                                     LectureService lectureService,
+                                     UserService userService) {
         this.lectureCommentRepository = lectureCommentRepository;
-        this.lectureRepository = lectureRepository;
-        this.userRepository = userRepository;
+        this.lectureService = lectureService;
+        this.userService = userService;
     }
 
     @Override
@@ -43,14 +46,16 @@ public class LectureCommentServiceImpl implements LectureCommentService {
     @Override
     public void addComment(Long lectureId, String userEmail, String comment){
         if (comment == null || comment.trim().isBlank()) {
-            throw new IllegalArgumentException("Comments can not be empty");
+            throw new IllegalArgumentException("Comments cannot be empty");
         }
 
-        Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new RuntimeException("Lecture Not found"));
+        Lecture lecture = lectureService.getLecturesById(lectureId)
+        .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
 
-        User author = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User Not found"));
+        User author = userService.findByEmail(userEmail);
+        // User Service is not returning optional, so for now i did minimal change.
+        //later, we can use both service will return the model itself.
+                //.orElseThrow(() -> new EntityNotFoundException("User", userEmail));
 
 
         LectureComment lectureComment = new LectureComment();
@@ -60,7 +65,6 @@ public class LectureCommentServiceImpl implements LectureCommentService {
         lectureComment.setCreatedAt(LocalDateTime.now());
 
         lectureCommentRepository.save(lectureComment);
-
     }
 
 
