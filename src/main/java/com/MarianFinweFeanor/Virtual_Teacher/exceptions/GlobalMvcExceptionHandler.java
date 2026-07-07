@@ -34,8 +34,17 @@ public class GlobalMvcExceptionHandler {
     public String handleAccessDenied(org.springframework.security.access.
                                                  AccessDeniedException e,
                                      RedirectAttributes ra) {
-        ra.addFlashAttribute("error, you do not have access", e.getMessage());
+        ra.addFlashAttribute("error", "You do not have access");
         return "redirect:/courses";
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public String handleFileStorageException(Exception ex, Model model) {
+        model.addAttribute("status", 500);
+        model.addAttribute("error", "File Error");
+        model.addAttribute("message", "Requested File Could not be loaded");
+        return "errors/500";
     }
 
     @ExceptionHandler(Exception.class)
