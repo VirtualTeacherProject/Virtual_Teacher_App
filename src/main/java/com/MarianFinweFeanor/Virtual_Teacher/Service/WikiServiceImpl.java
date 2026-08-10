@@ -17,7 +17,14 @@ import java.util.Map;
 @Service
 public class WikiServiceImpl {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    //private final RestTemplate restTemplate = new RestTemplate();
+
+    private final RestTemplate restTemplate;
+
+    public WikiServiceImpl(RestTemplate restTemplate)
+    {
+        this.restTemplate= restTemplate;
+    }
 
     public List<WikiSearchResult> searchResults(String query) {
         if (query == null || query.isBlank()) return List.of();

@@ -40,9 +40,12 @@ public class Course {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) // lets Spring parse the html5 datetime-local
     private LocalDateTime startDate;
 
-    @jakarta.validation.constraints.Pattern(regexp = "ACTIVE|PASSIVE", message = "Status must be ACTIVE or PASSIVE")
-    @Column(name="status",nullable = false, length = 20)
-    private String status;
+    @jakarta.validation.constraints.Pattern(
+            regexp = "DRAFT|PUBLISHED",
+            message = "Status must be DRAFT or PUBLISHED"
+    )
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "DRAFT";
 
     @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)

@@ -7,12 +7,17 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CourseService {
-    List<Course> searchActiveCoursesByTitle(String query);
+    //List<Course> searchActiveCoursesByTitle(String query);
+
+
+    List<Course> searchVisibleCoursesByTitle(String query, String userEmail, boolean canManageCourses);
+
+    List<Course> getVisibleCourses(String userEmail, boolean canManageCourses);
+
+    Course publishCourse(Long id);
 
     //  1. Create a New Course
     Course createCourse(Course course);
-
-
 
     // 2. Get a Course by ID
     Optional<Course> getCourseById(Long id);
@@ -31,7 +36,6 @@ public interface CourseService {
 
     long countCourses();
     Course getCourse(Long id);
-
 
 
 }

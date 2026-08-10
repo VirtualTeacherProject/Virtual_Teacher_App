@@ -67,6 +67,11 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}">Error</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body">
             <h1 class="h3 mb-3" th:text="${course.title}">Course Title</h1>
@@ -96,6 +101,14 @@
                    class="btn btn-outline-primary">
                     Edit Course
                 </a>
+
+                <form th:if="${course.status == 'DRAFT' and (currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved']))}"
+                      th:action="@{/courses/{id}/publish(id=${course.courseId})}"
+                      method="post">
+                    <button type="submit" class="btn btn-success">
+                        Publish Course
+                    </button>
+                </form>
 
 
                 <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"

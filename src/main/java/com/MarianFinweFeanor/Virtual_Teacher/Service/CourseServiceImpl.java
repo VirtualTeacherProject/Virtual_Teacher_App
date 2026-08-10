@@ -33,28 +33,80 @@ public class CourseServiceImpl implements CourseService {
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> new EntityNotFoundException("User", teacherId));
 
-        course.setTeacher(teacher); // Attach managed entity
-        // todo Check if the course already exists after looking up filtering
-
+        course.setTeacher(teacher);
+        course.setStatus("DRAFT");
 
         return courseRepository.save(course);
     }
 
+
+
+
     // 2. Get a Course by ID
+
     @Override
     public Optional<Course> getCourseById(Long id) {
-        if (!courseRepository.existsById(id)) {
-            throw new EntityNotFoundException("Course", id);
-        }
-        return courseRepository.findById(id);
+        return Optional.of(courseRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id)));
     }
 
     @Override
-    public List<Course> searchActiveCoursesByTitle(String title) {
-        if (title == null || title.trim().isEmpty()) {
-            return courseRepository.findByStatus("ACTIVE");
+    public Course getCourse(Long id) {
+        return courseRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+    }
+
+    @Override
+    public Course publishCourse(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        if (course.getTitle() == null || course.getTitle().isBlank()) {
+            throw new IllegalStateException("Course title is required before publishing.");
         }
-        return courseRepository.findByStatusAndTitleContainingIgnoreCase("ACTIVE", title.trim());
+
+        if (course.getTopic() == null || course.getTopic().isBlank()) {
+            throw new IllegalStateException("Course topic is required before publishing.");
+        }
+
+        if (course.getDescription() == null || course.getDescription().isBlank()) {
+            throw new IllegalStateException("Course description is required before publishing.");
+        }
+
+        course.setStatus("PUBLISHED");
+        return courseRepository.save(course);
+    }
+
+    @Override
+    public List<Course> getVisibleCourses(String userEmail, boolean canManageCourses) {
+        if (canManageCourses && userEmail != null) {
+            return courseRepository.findByStatusOrTeacher_Email("PUBLISHED", userEmail);
+        }
+
+        return courseRepository.findByStatus("PUBLISHED");
+    }
+
+    @Override
+    public List<Course> searchVisibleCoursesByTitle(String title,
+                                                    String userEmail,
+                                                    boolean canManageCourses) {
+        if (title == null || title.trim().isEmpty()) {
+            return getVisibleCourses(userEmail, canManageCourses);
+        }
+
+        String trimmedTitle = title.trim();
+
+        if (canManageCourses && userEmail != null) {
+            return courseRepository
+                    .findByStatusAndTitleContainingIgnoreCaseOrTeacher_EmailAndTitleContainingIgnoreCase(
+                            "PUBLISHED",
+                            trimmedTitle,
+                            userEmail,
+                            trimmedTitle
+                    );
+        }
+
+        return courseRepository.findByStatusAndTitleContainingIgnoreCase("PUBLISHED", trimmedTitle);
     }
 
 
@@ -65,11 +117,7 @@ public class CourseServiceImpl implements CourseService {
 
 
 
-    @Override
-    public Course getCourse(Long id) {
-        return courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
-    }
+
 
 
     // 3. Get All Courses
@@ -102,7 +150,10 @@ public class CourseServiceImpl implements CourseService {
                     course.setTopic(updatedCourse.getTopic());
                     course.setDescription(updatedCourse.getDescription());
                     course.setStartDate(updatedCourse.getStartDate());
-                    course.setStatus(updatedCourse.getStatus());
+                    course.setPassingGrade(updatedCourse.getPassingGrade());
+
+                    // Status is intentionally not changed here.
+                    // Publishing is handled only through publishCourse().
                     return courseRepository.save(course);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
