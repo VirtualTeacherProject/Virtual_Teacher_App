@@ -55,13 +55,20 @@ public class EnrollmentMvcController {
         System.out.println("LIST COURSES HIT, principal = " +
                 (principal == null ? "anonymous" : principal.getName()));
 
-        var all = courseService.getAllCourses();
+        //var all = courseService.getAllCourses();
+
+        boolean canManageCourses = canManageCourses(principal);
+
+        var all = courseService.getVisibleCourses(
+                principal == null ? null : principal.getName(),
+                canManageCourses
+        );
 
         var enrolledIds = (principal == null)
                 ? java.util.Collections.<Long>emptySet()
                 : enrollmentService.getEnrolledCourseIds(principal.getName());
 
-        boolean isTeacher = false;
+        boolean isTeacher = hasRole("ROLE_TEACHER");
         if (principal != null) {
             var auth = SecurityContextHolder.getContext().getAuthentication();
             isTeacher = auth != null && auth.getAuthorities().stream()
@@ -77,13 +84,19 @@ public class EnrollmentMvcController {
     @GetMapping("/search")
     public String searchCourses(@RequestParam(required = false) String query, Model model,
                                 Principal principal) {
-        List<Course> courses = courseService.searchActiveCoursesByTitle(query);
+        boolean canManageCourses = canManageCourses(principal);
+
+        List<Course> courses = courseService.searchVisibleCoursesByTitle(
+                query,
+                principal == null ? null : principal.getName(),
+                canManageCourses
+        );
 
         var enrolledIds = (principal == null)
                 ? java.util.Collections.<Long>emptySet()
                 : enrollmentService.getEnrolledCourseIds(principal.getName());
 
-        boolean isTeacher = false;
+        boolean isTeacher = hasRole("ROLE_TEACHER");
         if (principal != null) {
             var auth = SecurityContextHolder.getContext().getAuthentication();
             isTeacher = auth != null && auth.getAuthorities().stream()
@@ -128,15 +141,10 @@ public class EnrollmentMvcController {
             course.setStartDate(LocalDateTime.now());  // or any business default
         }
 
-        if (course.getStatus() == null || course.getStatus().isBlank()) {
-            course.setStatus("ACTIVE");
-        } else {
-            var s = course.getStatus().trim().toUpperCase();
-            course.setStatus(("ACTIVE".equals(s) || "PASSIVE".equals(s)) ? s : "ACTIVE");
-        }
+        course.setStatus("DRAFT");
 
         courseService.createCourse(course);
-        ra.addFlashAttribute("msg", "Course created!");
+        ra.addFlashAttribute("msg", "Course created as draft!");
         return "redirect:/courses";
     }
 
@@ -174,15 +182,9 @@ public class EnrollmentMvcController {
         existing.setTitle(updated.getTitle());
         existing.setTopic(updated.getTopic());
         existing.setDescription(updated.getDescription());
-        existing.setStatus(updated.getStatus());
 
-        String incoming = updated.getStatus();
-        if (incoming == null || incoming.isBlank()) {
-            // keep existing if present, else default
-            existing.setStatus(existing.getStatus() != null ? existing.getStatus() : "ACTIVE");
-        } else {
-            var s = incoming.trim().toUpperCase();
-            existing.setStatus(("ACTIVE".equals(s) || "PASSIVE".equals(s)) ? s : "ACTIVE");
+        if (existing.getStatus() == null || existing.getStatus().isBlank()) {
+            existing.setStatus("DRAFT");
         }
 
         // Only overwrite startDate if user actually provided one
@@ -204,6 +206,11 @@ public class EnrollmentMvcController {
                                Principal principal) {
         var course = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        if (!canViewCourse(course, principal)) {
+            throw new EntityNotFoundException("Course", id);
+        }
+
 
         boolean enrolled = principal != null &&
                 userService.getEnrolledCourses(principal.getName())
@@ -254,13 +261,24 @@ public class EnrollmentMvcController {
     public String enroll(@PathVariable("id") Long id,
                          Principal principal,
                          RedirectAttributes ra) {
+
+        var course = courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        if (!"PUBLISHED".equals(course.getStatus())) {
+            ra.addFlashAttribute("error", "This course is not published yet.");
+            return "redirect:/courses";
+        }
+
         var email = principal.getName();
+
         if (enrollmentService.isEnrolled(email, id)) {
             ra.addFlashAttribute("msg", "You’re already enrolled in this course.");
         } else {
             enrollmentService.enroll(email, id);
             ra.addFlashAttribute("msg", "Enrolled successfully!");
         }
+
         return "redirect:/courses/" + id;
     }
 
@@ -281,6 +299,79 @@ public class EnrollmentMvcController {
     public String myCourses(Model model, Principal principal) {
         model.addAttribute("enrolledCourses", userService.getEnrolledCourses(principal.getName()));
         return "my-courses";
+    }
+
+    @PostMapping("/{id}/publish")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    public String publishCourse(@PathVariable Long id,
+                                Principal principal,
+                                RedirectAttributes ra) {
+
+        Course course = courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        if (!canViewCourse(course, principal)) {
+            ra.addFlashAttribute("error", "You cannot publish this course.");
+            return "redirect:/courses";
+        }
+
+        try {
+            courseService.publishCourse(id);
+            ra.addFlashAttribute("msg", "Course published successfully!");
+        } catch (IllegalStateException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+
+        return "redirect:/courses/" + id;
+    }
+
+
+    private boolean hasRole(String role) {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        return auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> role.equals(a.getAuthority()));
+    }
+
+    private boolean canManageCourses(Principal principal) {
+        if (principal == null) {
+            return false;
+        }
+
+        if (hasRole("ROLE_ADMIN")) {
+            return true;
+        }
+
+        if (hasRole("ROLE_TEACHER")) {
+            User user = userService.findByEmail(principal.getName());
+            return Boolean.TRUE.equals(user.isTeacherApproved());
+        }
+
+        return false;
+    }
+
+    private boolean canViewCourse(Course course, Principal principal) {
+        if ("PUBLISHED".equals(course.getStatus())) {
+            return true;
+        }
+
+        if (principal == null) {
+            return false;
+        }
+
+        if (hasRole("ROLE_ADMIN")) {
+            return true;
+        }
+
+        if (hasRole("ROLE_TEACHER")) {
+            User user = userService.findByEmail(principal.getName());
+
+            return Boolean.TRUE.equals(user.isTeacherApproved())
+                    && course.getTeacher() != null
+                    && course.getTeacher().getUserId().equals(user.getUserId());
+        }
+
+        return false;
     }
 }
 

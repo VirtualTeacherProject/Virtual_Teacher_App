@@ -10,6 +10,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentServic
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.FileStorageException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -128,12 +129,15 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     // add a helper to load the file:
     public Resource loadAssignmentFile(Long assignmentId) throws MalformedURLException {
+
         Assignment assignment = assignmentRepo.findById(assignmentId)
                 .orElseThrow(() -> new EntityNotFoundException("Assignment", assignmentId));
+
         Path target = Paths.get(assignment.getSubmissionFilePath());
         Resource resource = new UrlResource(target.toUri());
+
         if (!resource.exists() || !resource.isReadable()) {
-            throw new RuntimeException("Could not read file: " + target);
+            throw new FileStorageException("Could not read file: " + target);
         }
         return resource;
     }
