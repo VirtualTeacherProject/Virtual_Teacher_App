@@ -1,0 +1,28 @@
+name: Build and Deploy Virtual Teacher App
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-deploy:
+    name: Build and Deploy Spring boot
+    runs-on: ubuntu-leatest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v7
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+
+      - name: Unit Tests
+        run: mvn -B test --file pom.xml
+
+      - name: Build the application
+        run:
+         mvn clean 
+         mvn -B package --file pom.xml
+
