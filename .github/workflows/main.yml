@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - SCRUM-9-Continuous-Integration
   pull_request:
     branches:
       - main
