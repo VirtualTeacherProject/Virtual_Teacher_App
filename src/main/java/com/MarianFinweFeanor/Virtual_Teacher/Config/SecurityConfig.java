@@ -87,14 +87,18 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/register", "POST")
                         ).permitAll()
 
-                        // 4) Teacher-only: add lectures
+                        // 4) Teacher/admin course and lecture management
                         .requestMatchers(
+                                new AntPathRequestMatcher("/courses/add", "GET"),
+                                new AntPathRequestMatcher("/courses/add", "POST"),
+                                new AntPathRequestMatcher("/courses/*/edit", "GET"),
+                                new AntPathRequestMatcher("/courses/*/edit", "POST"),
+                                new AntPathRequestMatcher("/courses/*/publish", "POST"),
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "GET"),
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST"),
-                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST"),
-                                new AntPathRequestMatcher("/courses/add", "POST"),
-                                new AntPathRequestMatcher("/courses/*/edit", "POST")
-                        ).hasRole("TEACHER")
+                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "GET"),
+                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST")
+                        ).hasAnyRole("TEACHER", "ADMIN")
 
                         // 5) only teachers/admins can see list of enrolled students
                         .requestMatchers(new AntPathRequestMatcher("/courses/*/students", "GET"))

@@ -78,6 +78,15 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    public Course moveCourseToDraft(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+
+        course.setStatus("DRAFT");
+        return courseRepository.save(course);
+    }
+
+    @Override
     public List<Course> getVisibleCourses(String userEmail, boolean canManageCourses) {
         if (canManageCourses && userEmail != null) {
             return courseRepository.findByStatusOrTeacher_Email("PUBLISHED", userEmail);

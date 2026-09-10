@@ -38,41 +38,46 @@ public class AssignmentMvcController {
         this.userService = userService;
     }
 
-    // 1) List submissions: student sees their own, teacher sees all
+    // List submissions: student sees their own; teacher/admin see all
     @GetMapping({"", "/"})
     public String listSubmissions(@PathVariable Long courseId,
                                   @PathVariable Long lectureId,
                                   Model model,
                                   Principal principal) {
-        String email = principal != null ? principal.getName() : null;
-        if (email == null) {
+
+        if (principal == null) {
             return "redirect:/login";
         }
 
-        //boolean isTeacher = /* your logic to check role, e.g., via userService or SecurityContext */;
+        String email = principal.getName();
 
-        boolean isTeacher = SecurityContextHolder.getContext().getAuthentication()
-                .getAuthorities()
-                .stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+        boolean canManageAssignments =
+                SecurityContextHolder.getContext()
+                        .getAuthentication()
+                        .getAuthorities()
+                        .stream()
+                        .anyMatch(authority ->
+                                authority.getAuthority().equals("ROLE_TEACHER")
+                                        || authority.getAuthority().equals("ROLE_ADMIN")
+                        );
 
-        List<Assignment> subs;
-        if (isTeacher) {
-            // teacher: show all submissions for lecture
-            // you'd need a method like assignmentRepo.findByLecture_LectureId(lectureId)
-            subs = assignmentService.getSubmissionsByLecture(lectureId);
-            // adjust or add new service method
-            model.addAttribute("submissions", subs);
+        List<Assignment> submissions;
+
+        if (canManageAssignments) {
+            submissions = assignmentService.getSubmissionsByLecture(lectureId);
         } else {
-            // student: only their own
-            subs = assignmentService.getSubmissionsByLectureAndUser(lectureId, email);
+            submissions =
+                    assignmentService.getSubmissionsByLectureAndUser(
+                            lectureId,
+                            email
+                    );
         }
 
-        model.addAttribute("submissions", subs);
+        model.addAttribute("submissions", submissions);
         model.addAttribute("courseId", courseId);
         model.addAttribute("lectureId", lectureId);
 
-        return "assignments"; // create a Thymeleaf view for this
+        return "assignments";
     }
 
     // 2) Download a submission file
@@ -92,7 +97,7 @@ public class AssignmentMvcController {
 
     // (Optional) 3) Teacher grades an assignment
     @PostMapping("/{assignmentId}/grade")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String grade(@PathVariable Long courseId,
                         @PathVariable Long lectureId,
                         @PathVariable Long assignmentId,
@@ -110,12 +115,4 @@ public class AssignmentMvcController {
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId + "/assignments";
     }
 
-//    //a) List all my submissions by the logged in student
-//    @GetMapping("/assignments/my")
-//    public String mySubmissions (Model model , Principal principal)
-//    {
-//        var list = assignmentService.getMySubmissions(principal.getName());
-//        model.addAttribute("submission", list);
-//        return "my-assignments";
-//    }
 }

@@ -51,6 +51,13 @@
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
+
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item" th:href="@{/admin}">
+                                Admin Panel
+                            </a>
+                        </li>
+
                         <li><a class="dropdown-item" th:href="@{/logout}">Logout</a></li>
                     </ul>
                 </li>
@@ -96,30 +103,41 @@
 
             <div class="d-flex flex-wrap gap-2 mt-3">
 
-                <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"
+                <!-- Admin edit includes status management -->
+                <a th:if="${currentUserData['role'] == 'ADMIN'}"
+                   th:href="@{/admin/courses/{id}/edit(id=${course.courseId})}"
+                   class="btn btn-outline-primary">
+                    Edit Course
+                </a>
+
+                <!-- Approved-teacher edit -->
+                <a th:if="${currentUserData['role'] == 'TEACHER'
+           and currentUserData['teacherApproved']}"
                    th:href="@{/courses/{id}/edit(id=${course.courseId})}"
                    class="btn btn-outline-primary">
                     Edit Course
                 </a>
 
-                <form th:if="${course.status == 'DRAFT' and (currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved']))}"
+                <form th:if="${course.status == 'DRAFT'
+              and currentUserData['canManageCourses']}"
                       th:action="@{/courses/{id}/publish(id=${course.courseId})}"
                       method="post">
+
                     <button type="submit" class="btn btn-success">
                         Publish Course
                     </button>
                 </form>
 
 
-                <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"
+                <a th:if="${currentUserData['canManageCourses']}"
                    th:href="@{/courses/{id}/students(id=${course.courseId})}"
                    class="btn btn-outline-secondary">
                     View Enrolled Students
                 </a>
 
 
-                <a th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"
-                   th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}"
+                <a th:if="${currentUserData['canManageCourses']}"
+                   th:href="@{/courses/{id}/lectures/add-lecture(id=${course.courseId})}"
                    class="btn btn-primary">
                     + Add Lecture
                 </a>
@@ -145,7 +163,13 @@
 
     <div class="mt-4">
         <a class="link-secondary me-3" th:href="@{/courses}">All Courses</a>
-        <a class="link-secondary me-3" th:href="@{/courses/my-courses}">My Courses</a>
+
+        <a sec:authorize="hasRole('STUDENT')"
+           class="link-secondary me-3"
+           th:href="@{/courses/my-courses}">
+            My Courses
+        </a>
+
         <a class="link-secondary" th:href="@{/home}">Home</a>
     </div>
 

@@ -15,6 +15,7 @@ public interface CourseService {
     List<Course> getVisibleCourses(String userEmail, boolean canManageCourses);
 
     Course publishCourse(Long id);
+    Course moveCourseToDraft(Long id);
 
     //  1. Create a New Course
     Course createCourse(Course course);

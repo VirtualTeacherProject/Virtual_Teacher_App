@@ -52,7 +52,7 @@ public class LectureMvcController {
 
     /** GET /courses/{courseId}/lectures/add-lecture (TEACHER) */
     @GetMapping("/add-lecture")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String showAddForm(@PathVariable Long courseId,
                               Model model,
                               Principal principal) {
@@ -71,7 +71,7 @@ public class LectureMvcController {
 
     /** POST /courses/{courseId}/lectures/add-lecture (TEACHER) */
     @PostMapping("/add-lecture")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String submitAdd(@PathVariable Long courseId,
                             @Valid @ModelAttribute("lecture") Lecture lecture,
                             BindingResult br,
@@ -102,7 +102,7 @@ public class LectureMvcController {
 
     /** GET /courses/{courseId}/lectures/{lectureId}/edit (TEACHER) */
     @GetMapping("/{lectureId}/edit")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String showEditForm(@PathVariable Long courseId,
                                @PathVariable Long lectureId,
                                Model model,
@@ -125,7 +125,7 @@ public class LectureMvcController {
 
     /** POST /courses/{courseId}/lectures/{lectureId}/edit (TEACHER) */
     @PostMapping("/{lectureId}/edit")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String submitEdit(@PathVariable Long courseId,
                              @PathVariable Long lectureId,
                              @Valid @ModelAttribute("lecture") Lecture updated,
@@ -135,12 +135,24 @@ public class LectureMvcController {
                              Model model) {
         userService.ensureApprovedTeacher(principal.getName());
 
+        Lecture existing = lectureService.getLecturesById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
+
+        if (existing.getCourse() == null
+                || !existing.getCourse().getCourseId().equals(courseId)) {
+            throw new IllegalArgumentException(
+                    "Lecture does not belong to this course"
+            );
+        }
+
 
         if (br.hasErrors()) {
             model.addAttribute("course", courseService.getCourseById(courseId)
                     .orElseThrow(() -> new EntityNotFoundException("Course", courseId)));
             return "edit-lecture";
         }
+
+
 
         lectureService.updateLecture(lectureId, updated);
         ra.addFlashAttribute("msg", "Lecture updated!");
