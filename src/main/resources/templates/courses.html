@@ -69,6 +69,12 @@
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
+
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item" th:href="@{/admin}">
+                                Admin Panel
+                            </a>
+                        </li>
                         <li><a class="dropdown-item" th:href="@{/logout}">Logout</a></li>
                     </ul>
                 </li>
@@ -143,7 +149,7 @@
                         <span class="badge text-bg-light border"
                               th:if="${c.status != null and !c.status.isBlank()}"
                               th:text="${c.status}">
-                            ACTIVE
+                            DRAFT
                         </span>
                     </div>
 
@@ -172,11 +178,21 @@
                             Enrolled
                         </span>
 
-                        <a th:if="${currentUserData['canManageCourses']}"
+                        <!-- Admin edit -->
+                        <a th:if="${currentUserData['role'] == 'ADMIN'}"
+                           class="btn btn-sm btn-outline-secondary ms-auto"
+                           th:href="@{/admin/courses/{id}/edit(id=${c.courseId})}">
+                            Edit
+                        </a>
+
+                        <!-- Approved-teacher edit -->
+                        <a th:if="${currentUserData['role'] == 'TEACHER'
+           and currentUserData['teacherApproved']}"
                            class="btn btn-sm btn-outline-secondary ms-auto"
                            th:href="@{/courses/{id}/edit(id=${c.courseId})}">
                             Edit
                         </a>
+
                     </div>
                 </div>
             </div>
@@ -199,6 +215,7 @@
            th:href="@{/courses/my-courses}">
             My Courses
         </a>
+
     </div>
 </div>
 

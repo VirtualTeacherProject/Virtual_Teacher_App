@@ -9,6 +9,10 @@
 <div class="container py-4">
     <h1 class="h4 mb-3">Add Course</h1>
 
+    <div class="alert alert-info col-md-7">
+        New courses are created as drafts. Publish the course after it is ready.
+    </div>
+
     <form th:action="@{/courses/add}" th:object="${course}" method="post" class="col-md-7">
 
         <div class="mb-3">
@@ -40,12 +44,26 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Status</label>
-            <select class="form-select" th:field="*{status}">
-                <option th:value="DRAFT">DRAFT</option>
-                <option th:value="PUBLISHED">PUBLISHED</option>
-            </select>
+            <label class="form-label">Passing Grade</label>
+
+            <input type="number"
+                   class="form-control"
+                   th:field="*{passingGrade}"
+                   min="0"
+                   max="100"
+                   step="1">
+
+            <div class="text-danger small"
+                 th:if="${#fields.hasErrors('passingGrade')}"
+                 th:errors="*{passingGrade}">
+                Passing grade error
+            </div>
+
+            <div class="form-text">
+                Leave empty to use the default passing grade.
+            </div>
         </div>
+
 
         <button class="btn btn-primary" type="submit">Create Course</button>
         <a class="btn btn-secondary ms-2" th:href="@{/courses}">&larr; Back to Courses</a>
