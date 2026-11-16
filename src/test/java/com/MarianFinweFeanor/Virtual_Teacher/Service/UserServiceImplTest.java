@@ -8,6 +8,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -453,22 +454,36 @@ class UserServiceImplTest {
     }
 
     @Test
-    void deleteUserById_shouldKeepCoursesTheUserTaught_withoutATeacher() {
-        Course taught = new Course();
-        taught.setCourseId(10L);
-        taught.setTeacher(teacher);
+    void deleteUserById_shouldBeRefused_whileTheUserStillTeachesCourses() {
+        Course java = new Course();
+        java.setCourseId(10L);
+        java.setTitle("Java Basics");
+        java.setTeacher(teacher);
+
+        Course python = new Course();
+        python.setCourseId(11L);
+        python.setTitle("Python Basics");
+        python.setTeacher(teacher);
 
         when(userRepository.existsById(2L)).thenReturn(true);
-        when(courseRepository.findByTeacher_UserId(2L)).thenReturn(List.of(taught));
+        when(courseRepository.findByTeacher_UserId(2L)).thenReturn(List.of(java, python));
 
-        userService.deleteUserById(2L);
+        EntityInUseException exception = assertThrows(
+                EntityInUseException.class,
+                () -> userService.deleteUserById(2L)
+        );
 
-        // SCRUM-15: the course survives; only the link to the deleted teacher is cleared
-        assertNull(taught.getTeacher());
-        verify(courseRepository).save(taught);
-        verify(courseRepository, never()).delete(any());
-        verify(courseRepository, never()).deleteById(anyLong());
-        verify(userRepository).deleteById(2L);
+        // SCRUM-15: the message tells the admin what to do and which courses block it
+        assertTrue(exception.getMessage().contains("2 courses"));
+        assertTrue(exception.getMessage().contains("Java Basics"));
+        assertTrue(exception.getMessage().contains("Python Basics"));
+        assertTrue(exception.getMessage().contains("Reassign"));
+
+        // nothing is deleted or changed
+        assertEquals(teacher, java.getTeacher());
+        verify(userRepository, never()).deleteById(anyLong());
+        verify(courseRepository, never()).save(any());
+        verifyNoInteractions(contentCleanupService);
     }
 
     @Test

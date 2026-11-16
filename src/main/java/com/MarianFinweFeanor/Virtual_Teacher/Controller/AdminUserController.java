@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -131,9 +132,13 @@ public class AdminUserController {
             return "redirect:/admin/users";
         }
 
-        userService.deleteUserById(id);
-
-        ra.addFlashAttribute("msg", "User deleted.");
+        try {
+            userService.deleteUserById(id);
+            ra.addFlashAttribute("msg", "User deleted.");
+        } catch (EntityInUseException ex) {
+            // SCRUM-15: still teaches courses -> reassign first
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
         return "redirect:/admin/users";
     }
 

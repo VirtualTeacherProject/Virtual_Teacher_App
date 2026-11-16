@@ -21,6 +21,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.UserServiceImpl;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ import org.springframework.test.context.TestPropertySource;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * SCRUM-15: the deletion policy against a real (in-memory) database, so
@@ -168,20 +170,42 @@ class DeletionPolicyIntegrationTest {
     }
 
     @Test
-    void deletingATeacher_shouldKeepTheirCoursesAndLectures_withoutATeacher() {
+    void deletingATeacher_shouldBeRefused_whileTheyStillTeachCourses() {
+        assertThatThrownBy(() -> userService.deleteUserById(teacher.getUserId()))
+                .isInstanceOf(EntityInUseException.class)
+                .hasMessageContaining("2 courses")
+                .hasMessageContaining("Reassign");
+        flushAndClear();
+
+        // nothing at all was removed
+        assertThat(userRepository.count()).isEqualTo(3);
+        assertThat(courseRepository.count()).isEqualTo(2);
+        assertThat(lectureRepository.count()).isEqualTo(3);
+        assertThat(enrollmentRepository.count()).isEqualTo(3);
+        assertThat(assignmentRepository.count()).isEqualTo(3);
+        assertThat(commentRepository.count()).isEqualTo(3);
+    }
+
+    @Test
+    void deletingATeacher_shouldWork_onceTheirCoursesAreReassigned() {
+        User replacement = user("replacement@test.com", UserRole.TEACHER);
+        for (Course taught : courseRepository.findByTeacher_UserId(teacher.getUserId())) {
+            taught.setTeacher(replacement);
+        }
+        flushAndClear();
+
         userService.deleteUserById(teacher.getUserId());
         flushAndClear();
 
         assertThat(userRepository.findById(teacher.getUserId())).isEmpty();
 
-        // courses and lectures survive, only the teacher link is cleared
+        // courses and lectures stay, now with the new teacher
         assertThat(courseRepository.count()).isEqualTo(2);
         assertThat(lectureRepository.count()).isEqualTo(3);
-        assertThat(courseRepository.findById(course.getCourseId()).orElseThrow().getTeacher()).isNull();
-        assertThat(courseRepository.findById(otherCourse.getCourseId()).orElseThrow().getTeacher()).isNull();
+        assertThat(courseRepository.findById(course.getCourseId()).orElseThrow()
+                .getTeacher().getEmail()).isEqualTo("replacement@test.com");
 
         // students and their work are untouched; only the teacher's own comment is gone
-        assertThat(userRepository.count()).isEqualTo(2);
         assertThat(enrollmentRepository.count()).isEqualTo(3);
         assertThat(assignmentRepository.count()).isEqualTo(3);
         assertThat(commentRepository.count()).isEqualTo(2);

@@ -8,7 +8,8 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces;
  *   and its enrollments. Deleting a course never deletes a user.
  * - A user owns only what they produced as a participant: their enrollments,
  *   their submissions and their comments. Deleting a user never deletes a
- *   course or a lecture; courses they taught stay, without a teacher.
+ *   course or a lecture. A user who still teaches courses cannot be deleted
+ *   until those courses are reassigned (UserService.deleteUserById).
  *
  * These methods remove the dependent rows (and uploaded submission files);
  * the calling service then deletes the lecture, course or user itself.

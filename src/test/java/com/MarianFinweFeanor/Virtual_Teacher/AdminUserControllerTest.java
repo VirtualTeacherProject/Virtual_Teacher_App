@@ -5,21 +5,26 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** SCRUM-19: search box on the admin user list. */
@@ -69,6 +74,46 @@ class AdminUserControllerTest {
                 .andExpect(content().string(containsString("anna@test.com")));
 
         verify(userService).searchUsers(" petro ", null);
+    }
+
+    // --- SCRUM-15: hard delete --------------------------------------------
+
+    private void givenAdminDeletes(User target) {
+        User admin = user("Ada", "Admin", "admin@test.com");
+        admin.setUserId(99L);
+        admin.setRole(UserRole.ADMIN);
+
+        given(userService.findByEmail("admin@test.com")).willReturn(admin);
+        given(userService.getUserById(target.getUserId())).willReturn(Optional.of(target));
+    }
+
+    @Test
+    @WithMockUser(username = "admin@test.com", roles = "ADMIN")
+    void deleteUser_shouldShowTheReason_whenUserStillTeachesCourses() throws Exception {
+        User teacher = user("Tina", "Teacher", "tina@test.com");
+        teacher.setRole(UserRole.TEACHER);
+        givenAdminDeletes(teacher);
+
+        doThrow(new EntityInUseException("This user still teaches 1 course (Java). Reassign them to another teacher first, or deactivate the user instead."))
+                .when(userService).deleteUserById(1L);
+
+        mockMvc.perform(post("/admin/users/1/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/users"))
+                .andExpect(flash().attribute("error", containsString("Reassign them to another teacher first")))
+                .andExpect(flash().attributeCount(1));
+    }
+
+    @Test
+    @WithMockUser(username = "admin@test.com", roles = "ADMIN")
+    void deleteUser_shouldDelete_whenNothingBlocksIt() throws Exception {
+        givenAdminDeletes(user("Anna", "Petrova", "anna@test.com"));
+
+        mockMvc.perform(post("/admin/users/1/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("msg", "User deleted."));
+
+        verify(userService).deleteUserById(1L);
     }
 
     @Test

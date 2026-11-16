@@ -7,6 +7,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupSe
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.MarianFinweFeanor.Virtual_Teacher.util.UserSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -208,15 +210,25 @@ public class UserServiceImpl implements UserService {
             throw new EntityNotFoundException("User", userId);
         }
 
-        // SCRUM-15: only what belongs to the user goes with them — their
-        // submissions and comments here, their enrollments through the cascade
-        // on User.enrollments. Courses they taught are kept, without a teacher.
-        contentCleanupService.deleteUserContent(userId);
+        // SCRUM-15: a user who still teaches courses cannot be deleted; the
+        // courses must be handed to another teacher first (or the user is
+        // deactivated instead, which keeps everything in place).
+        List<Course> taught = courseRepository.findByTeacher_UserId(userId);
+        if (!taught.isEmpty()) {
+            String titles = taught.stream()
+                    .map(Course::getTitle)
+                    .collect(Collectors.joining(", "));
 
-        for (Course course : courseRepository.findByTeacher_UserId(userId)) {
-            course.setTeacher(null);
-            courseRepository.save(course);
+            throw new EntityInUseException(
+                    "This user still teaches " + taught.size()
+                            + (taught.size() == 1 ? " course (" : " courses (") + titles
+                            + "). Reassign them to another teacher first, or deactivate the user instead.");
         }
+
+        // Only what belongs to the user goes with them: their submissions and
+        // comments here, their enrollments through the cascade on User.enrollments.
+        // No course or lecture is deleted.
+        contentCleanupService.deleteUserContent(userId);
 
         userRepository.deleteById(userId);
     }
