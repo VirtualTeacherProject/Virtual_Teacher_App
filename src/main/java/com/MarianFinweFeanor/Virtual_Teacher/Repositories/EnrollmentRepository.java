@@ -36,6 +36,12 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @Query("select e.course.courseId from Enrollment e where e.student.email = :email")
     Set<Long> findEnrolledCourseIdsByEmail(@Param("email") String email);
 
+    // Reviews of a course (SCRUM-31), newest first
+    List<Enrollment> findByCourse_CourseIdAndRatingIsNotNullOrderByRatedAtDesc(Long courseId);
+
+    @Query("select avg(e.rating) from Enrollment e where e.course.courseId = :courseId and e.rating is not null")
+    Double averageRatingForCourse(@Param("courseId") Long courseId);
+
     @Query("select e.student from Enrollment e where e.course.courseId = :courseId")
     List<User> findStudentsByCourseId(@Param("courseId") Long courseId);
 

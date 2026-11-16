@@ -209,20 +209,28 @@
 
                     <form th:action="@{|/courses/${course.courseId}/rating|}" method="post" class="row gy-2">
                         <div class="col-12 col-md-3">
-                            <select name="rating" class="form-select" required>
-                                <option value="" disabled th:selected="${enrollment.rating == null}">Select…</option>
+                            <select name="rating" class="form-select" required
+                                    th:with="current=${ratingDraft != null ? ratingDraft : enrollment.rating}">
+                                <option value="" disabled th:selected="${current == null}">Select…</option>
                                 <option th:each="r : ${#numbers.sequence(1,5)}"
                                         th:value="${r}"
                                         th:text="${r}"
-                                        th:selected="${enrollment.rating != null and enrollment.rating == r}">
+                                        th:selected="${current != null and current == r}">
                                 </option>
                             </select>
                         </div>
 
+                        <!-- SCRUM-31: review is mandatory, at least 75 characters -->
                         <div class="col-12">
-                        <textarea name="reviewText" class="form-control" rows="2"
-                                  placeholder="Optional review..."
-                                  th:text="${enrollment.reviewText}"></textarea>
+                        <textarea name="reviewText" id="reviewText" class="form-control" rows="4"
+                                  required
+                                  th:minlength="${minReviewLength}"
+                                  th:maxlength="${maxReviewLength}"
+                                  th:placeholder="|Your review (at least ${minReviewLength} characters)|"
+                                  th:text="${reviewDraft != null ? reviewDraft : enrollment.reviewText}"></textarea>
+                            <div class="form-text">
+                                A review of at least <span th:text="${minReviewLength}">75</span> characters is required.
+                            </div>
                         </div>
 
                         <div class="col-12">
@@ -234,6 +242,36 @@
                 <div class="mt-3 text-muted" th:if="${enrollment.completionStatus.name() != 'COMPLETED'}">
                     Complete the course to rate it.
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews (SCRUM-31): visible to everyone who can see the course -->
+    <div class="card shadow-sm mt-3" id="course-reviews">
+        <div class="card-body">
+            <h2 class="h6 mb-2">
+                Reviews
+                <span class="badge bg-secondary ms-1"
+                      th:if="${averageRating != null}"
+                      th:text="|${#numbers.formatDecimal(averageRating, 1, 1)} / 5 (${#lists.size(reviews)})|">
+                    4.5 / 5 (2)
+                </span>
+            </h2>
+
+            <p class="text-muted mb-0" th:if="${#lists.isEmpty(reviews)}">
+                No reviews yet.
+            </p>
+
+            <div class="border-top pt-2 mt-2" th:each="r : ${reviews}">
+                <div>
+                    <strong th:text="|${r.rating} / 5|">5 / 5</strong>
+                    <span class="text-muted small"
+                          th:text="|${r.student.firstName} ${r.student.lastName}|">Student Name</span>
+                    <span class="text-muted small"
+                          th:if="${r.ratedAt != null}"
+                          th:text="${#temporals.format(r.ratedAt, 'yyyy-MM-dd')}">2026-01-01</span>
+                </div>
+                <p class="mb-0" style="white-space: pre-line" th:text="${r.reviewText}">Review text</p>
             </div>
         </div>
     </div>
