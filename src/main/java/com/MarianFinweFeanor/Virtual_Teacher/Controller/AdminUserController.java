@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -139,6 +140,39 @@ public class AdminUserController {
             // SCRUM-15: still teaches courses -> reassign first
             ra.addFlashAttribute("error", ex.getMessage());
         }
+        return "redirect:/admin/users";
+    }
+
+    // POST /admin/users/{id}/deactivate
+    // SCRUM-12: the normal way to remove someone. Nothing is deleted; the
+    // account just cannot log in any more.
+    @PostMapping("/{id}/deactivate")
+    public String deactivateUser(@PathVariable Long id, RedirectAttributes ra,
+                                 @AuthenticationPrincipal UserDetails currentUser) {
+        User existing = userService.getUserById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User", id));
+
+        User current = userService.findByEmail(currentUser.getUsername());
+        if (current.getUserId().equals(existing.getUserId())) {
+            ra.addFlashAttribute("error", "You can't deactivate your own account.");
+            return "redirect:/admin/users";
+        }
+
+        if (existing.getRole() == UserRole.ADMIN) {
+            ra.addFlashAttribute("error", "Admins can't deactivate other admins.");
+            return "redirect:/admin/users";
+        }
+
+        userService.deactivateUser(id);
+        ra.addFlashAttribute("msg", "User deactivated. They can no longer log in.");
+        return "redirect:/admin/users";
+    }
+
+    // POST /admin/users/{id}/activate
+    @PostMapping("/{id}/activate")
+    public String activateUser(@PathVariable Long id, RedirectAttributes ra) {
+        userService.activateUser(id);
+        ra.addFlashAttribute("msg", "User activated.");
         return "redirect:/admin/users";
     }
 

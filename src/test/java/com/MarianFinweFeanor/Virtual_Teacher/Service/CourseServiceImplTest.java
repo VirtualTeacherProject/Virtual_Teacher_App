@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
@@ -626,4 +627,95 @@ class CourseServiceImplTest {
 
 
 
+
+    // --- SCRUM-12: assignTeacher ---------------------------------------------
+
+    private User candidate(UserRole role, boolean approved, String status) {
+        User user = new User();
+        user.setUserId(50L);
+        user.setRole(role);
+        user.setTeacherApproved(approved);
+        user.setStatus(status);
+        return user;
+    }
+
+    private Course courseWithOldTeacher() {
+        User oldTeacher = new User();
+        oldTeacher.setUserId(40L);
+
+        Course existing = new Course();
+        existing.setCourseId(1L);
+        existing.setTeacher(oldTeacher);
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(existing));
+        return existing;
+    }
+
+    @Test
+    void assignTeacher_shouldSetNewTeacher_whenApprovedAndActive() {
+        Course existing = courseWithOldTeacher();
+        User newTeacher = candidate(UserRole.TEACHER, true, "ACTIVE");
+
+        when(userRepository.findById(50L)).thenReturn(Optional.of(newTeacher));
+        when(courseRepository.save(existing)).thenReturn(existing);
+
+        Course result = courseService.assignTeacher(1L, 50L);
+
+        assertEquals(newTeacher, result.getTeacher());
+        verify(courseRepository).save(existing);
+    }
+
+    @Test
+    void assignTeacher_shouldAcceptAnAdmin() {
+        Course existing = courseWithOldTeacher();
+        User admin = candidate(UserRole.ADMIN, false, "ACTIVE");
+
+        when(userRepository.findById(50L)).thenReturn(Optional.of(admin));
+        when(courseRepository.save(existing)).thenReturn(existing);
+
+        assertEquals(admin, courseService.assignTeacher(1L, 50L).getTeacher());
+    }
+
+    @Test
+    void assignTeacher_shouldRefuse_studentsUnapprovedTeachersAndDeactivatedUsers() {
+        Course existing = courseWithOldTeacher();
+        User oldTeacher = existing.getTeacher();
+
+        List<User> notAllowed = List.of(
+                candidate(UserRole.STUDENT, true, "ACTIVE"),
+                candidate(UserRole.TEACHER, false, "ACTIVE"),
+                candidate(UserRole.TEACHER, true, "PASSIVE"));
+
+        for (User user : notAllowed) {
+            when(userRepository.findById(50L)).thenReturn(Optional.of(user));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> courseService.assignTeacher(1L, 50L)
+            );
+        }
+
+        assertEquals(oldTeacher, existing.getTeacher());
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
+    @Test
+    void assignTeacher_shouldThrowEntityNotFoundException_whenCourseOrUserIsMissing() {
+        when(courseRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> courseService.assignTeacher(99L, 50L)
+        );
+
+        courseWithOldTeacher();
+        when(userRepository.findById(77L)).thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> courseService.assignTeacher(1L, 77L)
+        );
+
+        verify(courseRepository, never()).save(any(Course.class));
+    }
 }

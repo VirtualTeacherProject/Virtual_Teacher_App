@@ -61,4 +61,20 @@ public interface UserService {
     void deleteUserById(Long userId);
 
     long countByRole(UserRole teacher);
+
+    /** Account status values (see User.status). A PASSIVE user cannot log in. */
+    String STATUS_ACTIVE = "ACTIVE";
+    String STATUS_PASSIVE = "PASSIVE";
+
+    /**
+     * Soft delete (SCRUM-12): the account is switched to PASSIVE and can no longer
+     * log in. Courses, enrollments, submissions, grades and reviews stay.
+     */
+    User deactivateUser(Long userId);
+
+    /** Undo of deactivateUser. */
+    User activateUser(Long userId);
+
+    /** Active admins and active, approved teachers: who a course can be assigned to. */
+    List<User> findAssignableTeachers();
 }

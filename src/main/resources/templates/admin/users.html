@@ -112,13 +112,33 @@
                             </button>
                         </form>
 
-                        <!-- Delete -->
+                        <!-- Deactivate: the normal way to remove a user (nothing is deleted) -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/deactivate'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.status == 'ACTIVE'}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Deactivate
+                            </button>
+                        </form>
+
+                        <!-- Activate again -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/activate'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.status != 'ACTIVE'}">
+                            <button type="submit" class="btn btn-sm btn-success">
+                                Activate
+                            </button>
+                        </form>
+
+                        <!-- Delete permanently: refused while the user still teaches courses -->
                         <form th:action="@{'/admin/users/' + ${u.userId} + '/delete'}"
                               method="post"
                               style="display:inline"
-                              onsubmit="return confirm('Delete this user?');">
+                              onsubmit="return confirm('Permanently delete this user together with their enrollments, submissions and comments? This cannot be undone. Use Deactivate to only block the account.');">
                             <button type="submit" class="btn btn-sm btn-danger">
-                                Delete
+                                Delete permanently
                             </button>
                         </form>
                     </td>

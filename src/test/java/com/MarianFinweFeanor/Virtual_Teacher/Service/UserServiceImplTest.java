@@ -554,4 +554,73 @@ class UserServiceImplTest {
 
 
 
+
+    // --- SCRUM-12: deactivate / activate / assignable teachers ---------------
+
+    @Test
+    void deactivateUser_shouldSetStatusPassive_andKeepTheUser() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.save(student)).thenReturn(student);
+
+        User result = userService.deactivateUser(1L);
+
+        assertEquals("PASSIVE", result.getStatus());
+        verify(userRepository).save(student);
+        verify(userRepository, never()).deleteById(anyLong());
+        verifyNoInteractions(contentCleanupService, courseRepository);
+    }
+
+    @Test
+    void activateUser_shouldSetStatusActive() {
+        student.setStatus("PASSIVE");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.save(student)).thenReturn(student);
+
+        User result = userService.activateUser(1L);
+
+        assertEquals("ACTIVE", result.getStatus());
+        verify(userRepository).save(student);
+    }
+
+    @Test
+    void deactivateUser_shouldThrowEntityNotFoundException_whenUserDoesNotExist() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> userService.deactivateUser(99L)
+        );
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void findAssignableTeachers_shouldReturnOnlyActiveAdminsAndActiveApprovedTeachers() {
+        User admin = new User();
+        admin.setUserId(3L);
+        admin.setRole(UserRole.ADMIN);
+        admin.setStatus("ACTIVE");
+
+        User pendingTeacher = new User();
+        pendingTeacher.setUserId(4L);
+        pendingTeacher.setRole(UserRole.TEACHER);
+        pendingTeacher.setStatus("ACTIVE");
+        pendingTeacher.setTeacherApproved(false);
+
+        User deactivatedTeacher = new User();
+        deactivatedTeacher.setUserId(5L);
+        deactivatedTeacher.setRole(UserRole.TEACHER);
+        deactivatedTeacher.setStatus("PASSIVE");
+        deactivatedTeacher.setTeacherApproved(true);
+
+        // students carry teacherApproved = true after registration
+        student.setTeacherApproved(true);
+
+        when(userRepository.findAll(any(Sort.class)))
+                .thenReturn(List.of(student, teacher, admin, pendingTeacher, deactivatedTeacher));
+
+        List<User> result = userService.findAssignableTeachers();
+
+        assertEquals(List.of(teacher, admin), result);
+    }
 }

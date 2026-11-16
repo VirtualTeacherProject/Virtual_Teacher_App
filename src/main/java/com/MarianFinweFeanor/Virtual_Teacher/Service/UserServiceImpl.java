@@ -234,6 +234,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User deactivateUser(Long userId) {
+        return changeStatus(userId, STATUS_PASSIVE);
+    }
+
+    @Override
+    public User activateUser(Long userId) {
+        return changeStatus(userId, STATUS_ACTIVE);
+    }
+
+    private User changeStatus(Long userId, String status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User", userId));
+        user.setStatus(status);
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findAssignableTeachers() {
+        return userRepository.findAll(USER_SORT).stream()
+                .filter(u -> STATUS_ACTIVE.equalsIgnoreCase(u.getStatus()))
+                .filter(u -> u.getRole() == UserRole.ADMIN
+                        || (u.getRole() == UserRole.TEACHER && u.isTeacherApproved()))
+                .toList();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public long countByRole(UserRole role) {
         return userRepository.countByRole(role);

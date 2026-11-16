@@ -2,6 +2,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
@@ -174,6 +175,32 @@ public class CourseServiceImpl implements CourseService {
                     return courseRepository.save(course);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
+    }
+
+    @Override
+    @Transactional
+    public Course assignTeacher(Long courseId, Long teacherId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new EntityNotFoundException("User", teacherId));
+
+        boolean mayTeach = teacher.getRole() == UserRole.ADMIN
+                || (teacher.getRole() == UserRole.TEACHER && teacher.isTeacherApproved());
+
+        if (!mayTeach) {
+            throw new IllegalArgumentException(
+                    "Only an admin or an approved teacher can be assigned to a course.");
+        }
+
+        if (!"ACTIVE".equalsIgnoreCase(teacher.getStatus())) {
+            throw new IllegalArgumentException(
+                    "A deactivated user cannot be assigned to a course.");
+        }
+
+        course.setTeacher(teacher);
+        return courseRepository.save(course);
     }
 
     // 5. Delete a Course

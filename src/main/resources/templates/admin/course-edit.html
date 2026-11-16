@@ -112,12 +112,22 @@
                          th:errors="*{status}"></div>
                 </div>
 
-                <!-- (Optional) Show current teacher email read-only -->
+                <!-- Teacher: admins can hand the course to another teacher (SCRUM-12) -->
                 <div class="mb-3">
-                    <label class="form-label">Teacher</label>
-                    <input type="text" class="form-control"
-                           th:value="${course.teacher != null ? course.teacher.email : 'n/a'}"
-                           readonly>
+                    <label for="teacherId" class="form-label">Teacher</label>
+                    <select id="teacherId" name="teacherId" class="form-select" required>
+                        <option value="" disabled
+                                th:selected="${selectedTeacherId == null}">Select a teacher…</option>
+                        <option th:each="t : ${teachers}"
+                                th:value="${t.userId}"
+                                th:selected="${selectedTeacherId != null and selectedTeacherId == t.userId}"
+                                th:text="|${t.firstName} ${t.lastName} (${t.email}) — ${t.role}${t.status != 'ACTIVE' ? ', deactivated' : ''}|">
+                            Teacher Name (teacher@example.com)
+                        </option>
+                    </select>
+                    <div class="form-text">
+                        Active admins and approved teachers can be assigned.
+                    </div>
                 </div>
 
                 <div class="d-flex gap-2">
