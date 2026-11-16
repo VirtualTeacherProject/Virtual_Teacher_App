@@ -31,6 +31,7 @@ public class LectureMvcController {
     private final AssignmentService assignmentService;
     private final LectureCommentService lectureCommentService;
     private final EnrollmentService enrollmentService;
+    private final CourseAccessService courseAccessService;  // draft visibility + enrollment-gated content
 
     @Autowired
     public LectureMvcController(LectureService lectureService,
@@ -38,13 +39,15 @@ public class LectureMvcController {
                                 CourseService courseService,
                                 AssignmentService assignmentService,
                                 LectureCommentService lectureCommentService,
-                                EnrollmentService enrollmentService) {
+                                EnrollmentService enrollmentService,
+                                CourseAccessService courseAccessService) {
         this.lectureService = lectureService;
         this.userService = userService;
         this.courseService = courseService;
         this.assignmentService = assignmentService;
         this.lectureCommentService = lectureCommentService;
         this.enrollmentService = enrollmentService;
+        this.courseAccessService = courseAccessService;
     }
 
     // --- Add Lecture (form) --------------------------------------------------
@@ -161,13 +164,16 @@ public class LectureMvcController {
 
     // --- Lists & Detail ------------------------------------------------------
 
-    /** GET /courses/{courseId}/lectures — everyone can view */
+    /** GET /courses/{courseId}/lectures — public for published courses; drafts only for course managers */
     @GetMapping("")
     public String listLectures(@PathVariable Long courseId,
                                Model model,
                                Principal principal) {
         var course = courseService.getCourseById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+
+        // SCRUM-22: lectures of a draft course stay hidden from non-managers.
+        courseAccessService.ensureCanViewCourse(course, emailOf(principal));
 
         var lectures = lectureService.getByCourseId(courseId);
 
@@ -183,7 +189,11 @@ public class LectureMvcController {
         return "lectures";
     }
 
-    /** GET /courses/{courseId}/lectures/{lectureId} — everyone can view */
+    /**
+     * GET /courses/{courseId}/lectures/{lectureId}
+     * The page is public for published courses, but the video (SCRUM-10) is only
+     * rendered for enrolled users and course managers.
+     */
     @GetMapping("/{lectureId}")
     public String lectureDetail(@PathVariable Long courseId,
                                 @PathVariable Long lectureId,
@@ -198,11 +208,20 @@ public class LectureMvcController {
             throw new IllegalArgumentException("Lecture does not belong to this course");
         }
 
+        String email = emailOf(principal);
+
+        // SCRUM-22: lectures of a draft course stay hidden from non-managers.
+        courseAccessService.ensureCanViewCourse(lecture.getCourse(), email);
+
         boolean enrolled = principal != null &&
                 userService.getEnrolledCourses(principal.getName())
                         .stream()
                         .map(Course::getCourseId)
                         .anyMatch(id -> id.equals(courseId));
+
+        // SCRUM-10: video only after enrollment (or for admins / approved teachers).
+        boolean canAccessContent =
+                courseAccessService.canAccessCourseContent(lecture.getCourse(), email);
 
         List<Assignment> subs = enrolled
                 ? assignmentService.getSubmissionsByLectureAndUser(lectureId, principal.getName())
@@ -211,6 +230,7 @@ public class LectureMvcController {
         model.addAttribute("courseId", courseId);
         model.addAttribute("lecture", lecture);
         model.addAttribute("enrolled", enrolled);
+        model.addAttribute("canAccessContent", canAccessContent);
         model.addAttribute("submissions", subs);
         model.addAttribute("newAssignment", new Assignment());
         model.addAttribute("comments", lectureCommentService.getCommentsForLecture(lectureId));
@@ -271,6 +291,8 @@ public class LectureMvcController {
     }
 
 
+
+    private static String emailOf(Principal principal) {
+        return principal == null ? null : principal.getName();
+    }
 }
-
-
