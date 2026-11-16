@@ -215,9 +215,11 @@
                 Description
             </p>
 
-            <!-- Video: SCRUM-10 protection will be added later -->
+            <!-- Video: SCRUM-10 — only for enrolled users and course managers -->
             <div class="mt-3"
-                 th:if="${lecture.videoUrl != null
+                 id="lecture-video"
+                 th:if="${canAccessContent
+                         and lecture.videoUrl != null
                          and !lecture.videoUrl.isBlank()}">
 
                 <p class="text-muted mb-1">
@@ -252,6 +254,23 @@
                    rel="noopener noreferrer">
                     Watch video
                 </a>
+            </div>
+
+            <!-- Video locked: SCRUM-10 -->
+            <div class="alert alert-secondary mt-3 mb-0"
+                 id="lecture-video-locked"
+                 th:if="${!canAccessContent
+                         and lecture.videoUrl != null
+                         and !lecture.videoUrl.isBlank()}">
+
+                <span sec:authorize="isAnonymous()">
+                    <a th:href="@{/login}">Log in</a> and enroll in this course to watch the video.
+                </span>
+
+                <span sec:authorize="isAuthenticated()">
+                    The video is available after you
+                    <a th:href="@{/courses/{id}(id=${courseId})}">enroll in this course</a>.
+                </span>
             </div>
 
             <!-- Teacher/admin lecture management -->

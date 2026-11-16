@@ -73,6 +73,13 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/h2-console/**")
                         ).permitAll()
 
+                        // 1b) Assignment submissions (list + file download) always need a login.
+                        //     Must stay above the public GET /courses/** rule below.
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/courses/*/lectures/*/assignments"),
+                                new AntPathRequestMatcher("/courses/*/lectures/*/assignments/**")
+                        ).authenticated()
+
                         // 2) Public: browse courses & lectures (GET only)
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses", "GET"),
@@ -110,6 +117,21 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/courses/*/lectures/*/assignments", "POST")
 
                         ).hasAnyRole("STUDENT","TEACHER","ADMIN")
+
+                        // 6b) REST API: lectures carry video URLs (SCRUM-10), so the whole
+                        //     lecture API is teacher/admin only; same for course writes.
+                        //     Deleting users over the API is admin only.
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/api/lectures"),
+                                new AntPathRequestMatcher("/api/lectures/**"),
+                                new AntPathRequestMatcher("/api/courses", "POST"),
+                                new AntPathRequestMatcher("/api/courses/**", "PUT"),
+                                new AntPathRequestMatcher("/api/courses/**", "DELETE")
+                        ).hasAnyRole("TEACHER", "ADMIN")
+
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/api/users/**", "DELETE")
+                        ).hasRole("ADMIN")
 
                         // 7) Secure all other API endpoints
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()

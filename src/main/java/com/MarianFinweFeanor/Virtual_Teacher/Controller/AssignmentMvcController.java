@@ -4,6 +4,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -30,12 +32,15 @@ public class AssignmentMvcController {
 
     private final AssignmentService assignmentService;
     private final UserService userService;
+    private final CourseAccessService courseAccessService;
 
     @Autowired
-    public AssignmentMvcController (AssignmentService assignmentService, UserService userService)
+    public AssignmentMvcController (AssignmentService assignmentService, UserService userService,
+                                    CourseAccessService courseAccessService)
     {
         this.assignmentService = assignmentService;
         this.userService = userService;
+        this.courseAccessService = courseAccessService;
     }
 
     // List submissions: student sees their own; teacher/admin see all
@@ -82,8 +87,29 @@ public class AssignmentMvcController {
 
     // 2) Download a submission file
     @GetMapping("/{assignmentId}/download")
-    public ResponseEntity<Resource> download(@PathVariable Long assignmentId) throws IOException {
+    public ResponseEntity<Resource> download(@PathVariable Long lectureId,
+                                             @PathVariable Long assignmentId,
+                                             Principal principal) throws IOException {
+        if (principal == null) {
+            throw new AccessDeniedException("Login required");
+        }
+
         Assignment assignment = assignmentService.findById(assignmentId);
+
+        // The submission must belong to the lecture in the URL.
+        if (assignment.getLecture() == null
+                || !lectureId.equals(assignment.getLecture().getLectureId())) {
+            throw new EntityNotFoundException("Assignment", assignmentId);
+        }
+
+        // Only the student who submitted it, or a course manager, may download it.
+        boolean isOwner = assignment.getStudent() != null
+                && principal.getName().equalsIgnoreCase(assignment.getStudent().getEmail());
+
+        if (!isOwner && !courseAccessService.canManageCourses(principal.getName())) {
+            throw new AccessDeniedException("You do not have access to this submission");
+        }
+
         Path path = Paths.get(assignment.getSubmissionFilePath());
         Resource resource = new UrlResource(path.toUri());
         if (!resource.exists()) {
