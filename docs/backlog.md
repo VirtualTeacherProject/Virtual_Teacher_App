@@ -15,13 +15,13 @@ SCRUM-10	Course videos are accessible only after enrollment	Merged. Also closed 
 SCRUM-19	Search users by first name, last name or email	Done on feature/SCRUM-19-user-search (not merged yet). Admin user list search and GET /api/users filters.
 SCRUM-6	Approved teachers receive course administration and student-search functionality	Done on feature/SCRUM-6-teacher-student-search (not merged yet). /students search page.
 SCRUM-31	Students rate courses 1–5 with a mandatory comment of at least 75 characters	Done on feature/SCRUM-31-mandatory-course-review (not merged yet). Reviews and average shown on the course page.
-SCRUM-15	Decide how deletion works for entities connected through foreign keys	Done on feature/SCRUM-15-deletion-policy (not merged yet). Course -> lectures -> submissions/comments; users only lose their own enrollments, submissions and comments; a deleted teacher's courses stay without a teacher.
-SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	Completed by SCRUM-15 (deletes now work for rows with dependants; dashboard teacher count fixed).
+SCRUM-15	Decide how deletion works for entities connected through foreign keys	Done on feature/SCRUM-15-deletion-policy (not merged yet). Course -> lectures -> submissions/comments. Deleting a user removes only their own enrollments, submissions and comments, and is refused while they still teach courses (reassign first). Deactivating is the normal way to remove a user.
+SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	Done on feature/SCRUM-15-deletion-policy (not merged yet). Deletes work for rows with dependants, Deactivate/Activate on the user list, teacher select on the course edit page, dashboard teacher count fixed.
 
 
 ## Partially done — previously listed as completed
 # Ticket	Description	What is missing
-SCRUM-13	Teachers can create courses and upload video lectures	Video is a URL, not an upload — decide which is intended. No course ownership check (see "Course ownership and permissions"). Since SCRUM-15 a course can have no teacher; there is no screen yet to assign a new one.
+SCRUM-13	Teachers can create courses and upload video lectures	Video is a URL, not an upload — decide which is intended. No course ownership check (see "Course ownership and permissions").
 SCRUM-22	Courses can be drafts or published; students cannot see drafts	Lecture pages fixed with SCRUM-10. Remaining: GET /api/courses still returns drafts to any logged-in user.
 
 
@@ -85,7 +85,11 @@ SCRUM-37	A student can become an assistant teacher and edit a teacher’s course
 SCRUM-30	Courses can contain groups of enrolled students	Not started.
 SCRUM-32	Teachers show tutoring availability and available times on their profiles	Not started.
 
-### 11. Documentation and engagement (any time)
+### 11. Technical debt
+# Ticket	Description	Status
+NEW (no Jira key yet)	Adopt Flyway and switch ddl-auto to validate	Not started. Today both profiles use ddl-auto=update and there is no migration tool, so a schema change that relaxes or removes something cannot reach existing databases. Scope: add Flyway, write a V1 baseline of the current schema that runs on H2 and PostgreSQL, set baseline-on-migrate for existing databases, switch ddl-auto to validate. Do this before the next ticket that adds tables (notes, resources, attendance, exams).
+
+### 12. Documentation and engagement (any time)
 # Ticket	Description	Status
 SCRUM-26	Add images/diagrams of database relationships	Not started. Best drawn after SCRUM-15.
 SCRUM-39	Add creative Easter eggs	Not started.
