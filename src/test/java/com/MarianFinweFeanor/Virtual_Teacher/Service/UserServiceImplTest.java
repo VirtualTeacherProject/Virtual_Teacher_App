@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -315,10 +317,10 @@ class UserServiceImplTest {
     }
 
     @Test
-    void getAllUsersWithFilters_shouldReturnAllUsersFromRepository() {
+    void getAllUsersWithFilters_shouldQueryRepositoryWithSpecification() {
         List<User> expected = List.of(student, teacher);
 
-        when(userRepository.findAll())
+        when(userRepository.findAll(any(Specification.class), any(Sort.class)))
                 .thenReturn(expected);
 
         List<User> result = userService.getAllUsers(
@@ -328,7 +330,23 @@ class UserServiceImplTest {
         );
 
         assertEquals(expected, result);
-        verify(userRepository).findAll();
+        verify(userRepository).findAll(any(Specification.class), any(Sort.class));
+        verify(userRepository, never()).findAll();
+    }
+
+    @Test
+    void searchUsers_shouldQueryRepositoryWithSpecification_sortedByName() {
+        List<User> expected = List.of(student);
+
+        when(userRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(expected);
+
+        List<User> result = userService.searchUsers("stud", UserRole.STUDENT);
+
+        assertEquals(expected, result);
+        verify(userRepository).findAll(
+                any(Specification.class),
+                eq(Sort.by("lastName", "firstName", "email")));
     }
 
     @Test

@@ -36,6 +36,13 @@ public interface UserService {
     // Get all users
     List<User> getAllUsers(String firstName, String lastName, String email);
 
+    /**
+     * Search by one text that may match first name, last name or email
+     * (case-insensitive, partial). A blank query returns everyone.
+     * role may be null to search all roles.
+     */
+    List<User> searchUsers(String query, UserRole role);
+
     // Get a user by ID
     Optional<User> getUserById(Long userId);
 

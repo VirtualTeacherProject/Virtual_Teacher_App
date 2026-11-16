@@ -26,8 +26,10 @@ public class AdminUserController {
 
     // list all users
     @GetMapping
-    public String listUsers(Model model) {
-        model.addAttribute("users", userService.getAllUsers());
+    public String listUsers(@RequestParam(name = "q", required = false) String q, Model model) {
+        // SCRUM-19: search by first name, last name or email (blank = everyone)
+        model.addAttribute("users", userService.searchUsers(q, null));
+        model.addAttribute("q", q == null ? "" : q.trim());
         return "admin/users";
     }
 

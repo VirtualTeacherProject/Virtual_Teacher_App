@@ -133,6 +133,12 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/api/users/**", "DELETE")
                         ).hasRole("ADMIN")
 
+                        // 6c) Listing/searching users over the API (SCRUM-19) is not for students.
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/api/users", "GET"),
+                                new AntPathRequestMatcher("/api/users/**", "GET")
+                        ).hasAnyRole("TEACHER", "ADMIN")
+
                         // 7) Secure all other API endpoints
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
 

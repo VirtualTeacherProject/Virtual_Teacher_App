@@ -9,6 +9,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.MarianFinweFeanor.Virtual_Teacher.util.UserSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final EnrollmentService enrollmentService;
     private final PasswordEncoder passwordEncoder;
+
+    private static final Sort USER_SORT = Sort.by("lastName", "firstName", "email");
 
     @Autowired
     public UserServiceImpl(UserRepository userRepo,
@@ -140,8 +143,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers(String firstName, String lastName, String email) {
-        // implement your filtering or return userRepo.findAll();
-        return userRepository.findAll();
+        // Each filter is optional; the ones provided must all match.
+        Specification<User> spec = Specification
+                .where(UserSpecification.hasFirstName(firstName))
+                .and(UserSpecification.hasLastName(lastName))
+                .and(UserSpecification.hasEmail(email));
+
+        return userRepository.findAll(spec, USER_SORT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> searchUsers(String query, UserRole role) {
+        Specification<User> spec = Specification
+                .where(UserSpecification.matchesAnyField(query))
+                .and(UserSpecification.hasRole(role));
+
+        return userRepository.findAll(spec, USER_SORT);
     }
 
     // Get a user by ID
