@@ -4,10 +4,13 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +29,12 @@ class LectureServiceImplTest {
 
     @Mock
     private CourseRepository courseRepository;
+
+    @Mock
+    private ContentCleanupService contentCleanupService;
+
+    @Mock
+    private EnrollmentService enrollmentService;
 
     @InjectMocks
     private LectureServiceImpl lectureService;
@@ -213,20 +222,27 @@ class LectureServiceImplTest {
     }
 
     @Test
-    void delete_shouldDeleteLecture_whenLectureExists() {
-        when(lectureRepository.existsById(100L))
-                .thenReturn(true);
+    void delete_shouldDeleteLectureWithItsContent_andRefreshCourseProgress() {
+        lecture.setCourse(course);
+
+        when(lectureRepository.findById(100L))
+                .thenReturn(Optional.of(lecture));
 
         lectureService.delete(100L);
 
-        verify(lectureRepository).existsById(100L);
-        verify(lectureRepository).deleteById(100L);
+        // SCRUM-15: submissions and comments first, then the lecture itself
+        InOrder inOrder = inOrder(contentCleanupService, lectureRepository, enrollmentService);
+        inOrder.verify(contentCleanupService).deleteLectureContent(100L);
+        inOrder.verify(lectureRepository).delete(lecture);
+        inOrder.verify(enrollmentService).recalculateProgressForCourse(10L);
+
+        verifyNoInteractions(courseRepository);
     }
 
     @Test
     void delete_shouldThrowEntityNotFoundException_whenLectureDoesNotExist() {
-        when(lectureRepository.existsById(999L))
-                .thenReturn(false);
+        when(lectureRepository.findById(999L))
+                .thenReturn(Optional.empty());
 
         EntityNotFoundException exception = assertThrows(
                 EntityNotFoundException.class,
@@ -239,7 +255,8 @@ class LectureServiceImplTest {
         );
 
         verify(lectureRepository, never())
-                .deleteById(anyLong());
+                .delete(any(Lecture.class));
+        verifyNoInteractions(contentCleanupService, enrollmentService);
     }
 
     @Test

@@ -3,13 +3,16 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,6 +39,12 @@ class UserServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private CourseRepository courseRepository;
+
+    @Mock
+    private ContentCleanupService contentCleanupService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -433,6 +442,43 @@ class UserServiceImplTest {
     }
 
     @Test
+    void deleteUserById_shouldDeleteTheUsersOwnContentFirst() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+
+        userService.deleteUserById(1L);
+
+        InOrder inOrder = inOrder(contentCleanupService, userRepository);
+        inOrder.verify(contentCleanupService).deleteUserContent(1L);
+        inOrder.verify(userRepository).deleteById(1L);
+    }
+
+    @Test
+    void deleteUserById_shouldKeepCoursesTheUserTaught_withoutATeacher() {
+        Course taught = new Course();
+        taught.setCourseId(10L);
+        taught.setTeacher(teacher);
+
+        when(userRepository.existsById(2L)).thenReturn(true);
+        when(courseRepository.findByTeacher_UserId(2L)).thenReturn(List.of(taught));
+
+        userService.deleteUserById(2L);
+
+        // SCRUM-15: the course survives; only the link to the deleted teacher is cleared
+        assertNull(taught.getTeacher());
+        verify(courseRepository).save(taught);
+        verify(courseRepository, never()).delete(any());
+        verify(courseRepository, never()).deleteById(anyLong());
+        verify(userRepository).deleteById(2L);
+    }
+
+    @Test
+    void countByRole_shouldReturnCountFromRepository() {
+        when(userRepository.countByRole(UserRole.TEACHER)).thenReturn(3L);
+
+        assertEquals(3L, userService.countByRole(UserRole.TEACHER));
+    }
+
+    @Test
     void deleteUserById_shouldThrowEntityNotFoundException_whenUserDoesNotExist() {
         when(userRepository.existsById(99L))
                 .thenReturn(false);
@@ -443,6 +489,7 @@ class UserServiceImplTest {
         );
 
         verify(userRepository, never()).deleteById(anyLong());
+        verifyNoInteractions(contentCleanupService, courseRepository);
     }
 
     @Test

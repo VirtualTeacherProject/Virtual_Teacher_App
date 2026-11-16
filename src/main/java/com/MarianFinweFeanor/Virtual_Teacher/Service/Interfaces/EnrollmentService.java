@@ -24,6 +24,9 @@ public interface EnrollmentService {
 
     void recalculateProgress(Long studentUserId, Long courseId);
 
+    /** Recalculates every enrollment of the course, e.g. after a lecture was deleted. */
+    void recalculateProgressForCourse(Long courseId);
+
     void ensureCanRateCourse(Long studentUserId, Long courseId);
 
     void ensureStudentEnrolled(String studentEmail, Long courseId);

@@ -32,7 +32,7 @@ public class AdminCourseController {
 
     @PostMapping("/{id}/delete")
     public String deleteCourse(@PathVariable Long id, RedirectAttributes ra) {
-        courseService.deleteCourse(id); // your service should handle cascades or rely on DB ON DELETE CASCADE
+        courseService.deleteCourse(id); // SCRUM-15: removes the course's lectures and enrollments, never users
         ra.addFlashAttribute("msg", "Course deleted.");
         return "redirect:/admin/courses";
     }

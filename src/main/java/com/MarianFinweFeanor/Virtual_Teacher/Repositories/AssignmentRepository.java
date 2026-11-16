@@ -17,6 +17,11 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByLecture_LectureIdOrderBySubmittedAtDesc(Long lectureId);
 
+    // SCRUM-15: everything that has to go with a lecture, a course or a user
+    List<Assignment> findByLecture_LectureId(Long lectureId);
+    List<Assignment> findByLecture_Course_CourseId(Long courseId);
+    List<Assignment> findByStudent_UserId(Long userId);
+
     @Query("""
   select avg(a.grade)
   from Assignment a

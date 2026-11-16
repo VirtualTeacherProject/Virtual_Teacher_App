@@ -108,6 +108,13 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
+    public void recalculateProgressForCourse(Long courseId) {
+        for (Enrollment enrollment : enrollmentRepo.findByCourse_CourseId(courseId)) {
+            recalculateProgress(enrollment.getStudent().getUserId(), courseId);
+        }
+    }
+
+    @Override
     public void ensureCanRateCourse(Long studentUserId, Long courseId) {
         Enrollment e = enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(studentUserId, courseId)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));

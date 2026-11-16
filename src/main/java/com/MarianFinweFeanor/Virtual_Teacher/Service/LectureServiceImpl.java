@@ -5,6 +5,8 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +20,18 @@ public class LectureServiceImpl implements LectureService {
 
     private final LectureRepository lectureRepository;
     private final CourseRepository courseRepository;
+    private final ContentCleanupService contentCleanupService;
+    private final EnrollmentService enrollmentService;
 
     @Autowired
-    public LectureServiceImpl(LectureRepository lectureRepository, CourseRepository courseRepository) {
+    public LectureServiceImpl(LectureRepository lectureRepository,
+                              CourseRepository courseRepository,
+                              ContentCleanupService contentCleanupService,
+                              EnrollmentService enrollmentService) {
         this.lectureRepository = lectureRepository;
         this.courseRepository = courseRepository;
+        this.contentCleanupService = contentCleanupService;
+        this.enrollmentService = enrollmentService;
     }
 
     public Lecture saveLecture(Lecture lecture) {
@@ -69,11 +78,18 @@ public class LectureServiceImpl implements LectureService {
 
 
     @Override
+    @Transactional
     public void delete(long id) {
-        if (!lectureRepository.existsById(id)) {
-            throw new EntityNotFoundException("Lecture", id);
-        }else {
-            lectureRepository.deleteById(id);
+        Lecture lecture = lectureRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", id));
+
+        // SCRUM-15: submissions and comments belong to the lecture and go with it.
+        contentCleanupService.deleteLectureContent(id);
+        lectureRepository.delete(lecture);
+
+        // Grades and completion depend on the course's lectures, so refresh them.
+        if (lecture.getCourse() != null) {
+            enrollmentService.recalculateProgressForCourse(lecture.getCourse().getCourseId());
         }
     }
     @Override

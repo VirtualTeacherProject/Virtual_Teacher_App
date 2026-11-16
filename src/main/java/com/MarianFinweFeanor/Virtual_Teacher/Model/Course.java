@@ -47,8 +47,9 @@ public class Course {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "DRAFT";
 
+    // Nullable since SCRUM-15: a course outlives the deletion of its teacher.
     @ManyToOne
-    @JoinColumn(name = "teacher_id", nullable = false)
+    @JoinColumn(name = "teacher_id")
     private User teacher;
 
 

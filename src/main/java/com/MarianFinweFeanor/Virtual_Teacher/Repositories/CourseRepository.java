@@ -19,6 +19,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findByTeacher_Email(String email);
 
+    List<Course> findByTeacher_UserId(Long userId);
+
     List<Course> findByTeacher_EmailAndTitleContainingIgnoreCase(String email, String title);
 
     List<Course> findByStatusOrTeacher_Email(String status, String email);

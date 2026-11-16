@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
@@ -28,16 +29,22 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final EnrollmentService enrollmentService;
     private final PasswordEncoder passwordEncoder;
+    private final CourseRepository courseRepository;
+    private final ContentCleanupService contentCleanupService;
 
     private static final Sort USER_SORT = Sort.by("lastName", "firstName", "email");
 
     @Autowired
     public UserServiceImpl(UserRepository userRepo,
                            EnrollmentService enrollmentService,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           CourseRepository courseRepository,
+                           ContentCleanupService contentCleanupService) {
         this.userRepository = userRepo;
         this.enrollmentService = enrollmentService;
         this.passwordEncoder = passwordEncoder;
+        this.courseRepository = courseRepository;
+        this.contentCleanupService = contentCleanupService;
     }
 
 //    @Override
@@ -200,12 +207,24 @@ public class UserServiceImpl implements UserService {
         if (!userRepository.existsById(userId)) {
             throw new EntityNotFoundException("User", userId);
         }
+
+        // SCRUM-15: only what belongs to the user goes with them — their
+        // submissions and comments here, their enrollments through the cascade
+        // on User.enrollments. Courses they taught are kept, without a teacher.
+        contentCleanupService.deleteUserContent(userId);
+
+        for (Course course : courseRepository.findByTeacher_UserId(userId)) {
+            course.setTeacher(null);
+            courseRepository.save(course);
+        }
+
         userRepository.deleteById(userId);
     }
 
     @Override
-    public long countByRole(UserRole teacher) {
-        return 0;
+    @Transactional(readOnly = true)
+    public long countByRole(UserRole role) {
+        return userRepository.countByRole(role);
     }
 
 

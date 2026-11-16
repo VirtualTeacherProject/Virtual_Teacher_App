@@ -812,4 +812,48 @@ class EnrollmentServiceImplTest {
 
         assertNull(enrollmentService.getAverageRating(10L));
     }
+
+    // --- SCRUM-15: progress refresh after a lecture is deleted ---------------
+
+    @Test
+    void recalculateProgressForCourse_shouldRecalculateEveryEnrollmentOfTheCourse() {
+        User other = new User();
+        other.setUserId(2L);
+
+        Enrollment second = new Enrollment();
+        second.setStudent(other);
+        second.setCourse(course);
+
+        when(enrollmentRepo.findByCourse_CourseId(10L))
+                .thenReturn(List.of(enrollment, second));
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L))
+                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(2L, 10L))
+                .thenReturn(Optional.of(second));
+
+        // one lecture left, only the first student has a graded submission for it
+        when(lectureRepository.countLecturesByCourseId(10L)).thenReturn(1L);
+        when(assignmentRepo.avgGradeForCourse(1L, 10L)).thenReturn(90.0);
+        when(assignmentRepo.countGradedLectures(1L, 10L)).thenReturn(1L);
+        when(assignmentRepo.avgGradeForCourse(2L, 10L)).thenReturn(null);
+        when(assignmentRepo.countGradedLectures(2L, 10L)).thenReturn(0L);
+
+        enrollmentService.recalculateProgressForCourse(10L);
+
+        assertEquals(Enrollment.CompletionStatus.COMPLETED, enrollment.getCompletionStatus());
+        assertEquals(90.0, enrollment.getAverageGrade());
+        assertEquals(Enrollment.CompletionStatus.IN_PROGRESS, second.getCompletionStatus());
+        assertNull(second.getAverageGrade());
+        verify(enrollmentRepo).save(enrollment);
+        verify(enrollmentRepo).save(second);
+    }
+
+    @Test
+    void recalculateProgressForCourse_shouldDoNothing_whenCourseHasNoEnrollments() {
+        when(enrollmentRepo.findByCourse_CourseId(10L)).thenReturn(List.of());
+
+        enrollmentService.recalculateProgressForCourse(10L);
+
+        verify(enrollmentRepo, never()).save(any());
+    }
 }
