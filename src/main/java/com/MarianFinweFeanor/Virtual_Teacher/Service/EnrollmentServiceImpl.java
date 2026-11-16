@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -107,6 +108,13 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
+    public void recalculateProgressForCourse(Long courseId) {
+        for (Enrollment enrollment : enrollmentRepo.findByCourse_CourseId(courseId)) {
+            recalculateProgress(enrollment.getStudent().getUserId(), courseId);
+        }
+    }
+
+    @Override
     public void ensureCanRateCourse(Long studentUserId, Long courseId) {
         Enrollment e = enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(studentUserId, courseId)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));
@@ -126,6 +134,49 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             if (e.getAverageGrade() < passingGrade) {
                 throw new IllegalStateException("Your grade is: " + e.getAverageGrade() +  " you can rate only after passing the course.");
             }
+    }
+
+    @Override
+    public void rateCourse(String studentEmail, Long courseId, Integer rating, String reviewText) {
+        Enrollment e = enrollmentRepo.findByStudent_EmailAndCourse_CourseId(studentEmail, courseId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Enrollment for user", studentEmail + " & course " + courseId));
+
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5.");
+        }
+
+        String review = reviewText == null ? "" : reviewText.trim();
+
+        if (review.length() < MIN_REVIEW_LENGTH) {
+            throw new IllegalArgumentException(
+                    "Please write a review of at least " + MIN_REVIEW_LENGTH
+                            + " characters (you wrote " + review.length() + ").");
+        }
+
+        if (review.length() > MAX_REVIEW_LENGTH) {
+            throw new IllegalArgumentException(
+                    "A review can have at most " + MAX_REVIEW_LENGTH + " characters.");
+        }
+
+        ensureCanRateCourse(e.getStudent().getUserId(), courseId);
+
+        e.setRating(rating);
+        e.setReviewText(review);
+        e.setRatedAt(LocalDateTime.now());
+        enrollmentRepo.save(e);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Enrollment> getCourseReviews(Long courseId) {
+        return enrollmentRepo.findByCourse_CourseIdAndRatingIsNotNullOrderByRatedAtDesc(courseId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Double getAverageRating(Long courseId) {
+        return enrollmentRepo.averageRatingForCourse(courseId);
     }
 
     @Override

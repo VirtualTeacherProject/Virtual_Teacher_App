@@ -2,11 +2,15 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,13 +20,18 @@ public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
-
-
+    private final LectureRepository lectureRepository;
+    private final ContentCleanupService contentCleanupService;
 
     // Constructor Injection
-    public CourseServiceImpl(CourseRepository courseRepository, UserRepository userRepository) {
+    public CourseServiceImpl(CourseRepository courseRepository,
+                             UserRepository userRepository,
+                             LectureRepository lectureRepository,
+                             ContentCleanupService contentCleanupService) {
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
+        this.lectureRepository = lectureRepository;
+        this.contentCleanupService = contentCleanupService;
     }
 
     //  1. Create a New Course
@@ -168,14 +177,46 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
     }
 
+    @Override
+    @Transactional
+    public Course assignTeacher(Long courseId, Long teacherId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new EntityNotFoundException("User", teacherId));
+
+        boolean mayTeach = teacher.getRole() == UserRole.ADMIN
+                || (teacher.getRole() == UserRole.TEACHER && teacher.isTeacherApproved());
+
+        if (!mayTeach) {
+            throw new IllegalArgumentException(
+                    "Only an admin or an approved teacher can be assigned to a course.");
+        }
+
+        if (!"ACTIVE".equalsIgnoreCase(teacher.getStatus())) {
+            throw new IllegalArgumentException(
+                    "A deactivated user cannot be assigned to a course.");
+        }
+
+        course.setTeacher(teacher);
+        return courseRepository.save(course);
+    }
+
     // 5. Delete a Course
     @Override
+    @Transactional
     public void deleteCourse(Long id) {
-        if (courseRepository.existsById(id)) {
-            courseRepository.deleteById(id);
-        } else {
+        if (!courseRepository.existsById(id)) {
             throw new EntityNotFoundException("Course", id);
         }
+
+        // SCRUM-15: the lectures are part of the course and go with it, together
+        // with their submissions and comments. Enrollments are removed by the
+        // cascade on Course.enrollments. No user is deleted.
+        contentCleanupService.deleteCourseContent(id);
+        lectureRepository.deleteAll(lectureRepository.findAllByCourse_CourseId(id));
+        courseRepository.deleteById(id);
     }
 
     //  6. Get Courses by Status (e.g., Published, Draft)

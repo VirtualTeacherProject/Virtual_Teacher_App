@@ -48,6 +48,16 @@ public class GlobalRestExceptionHandler {
         );
     }
 
+    @ExceptionHandler(EntityInUseException.class)
+    public ResponseEntity<ApiErrorResponse> handleInUse(EntityInUseException ex,
+                                                        HttpServletRequest request) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleBadRequest(IllegalArgumentException ex,
                                                              HttpServletRequest request) {

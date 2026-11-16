@@ -111,6 +111,12 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/courses/*/students", "GET"))
                         .hasAnyRole("TEACHER","ADMIN")
 
+                        // 5b) Student search (SCRUM-6): teachers/admins only
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/students"),
+                                new AntPathRequestMatcher("/students/**")
+                        ).hasAnyRole("TEACHER", "ADMIN")
+
                         // 6) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses/*/enroll", "POST"),
@@ -132,6 +138,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 new AntPathRequestMatcher("/api/users/**", "DELETE")
                         ).hasRole("ADMIN")
+
+                        // 6c) Listing/searching users over the API (SCRUM-19) is not for students.
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/api/users", "GET"),
+                                new AntPathRequestMatcher("/api/users/**", "GET")
+                        ).hasAnyRole("TEACHER", "ADMIN")
 
                         // 7) Secure all other API endpoints
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()

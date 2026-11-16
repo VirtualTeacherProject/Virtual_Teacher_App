@@ -21,6 +21,15 @@ public class GlobalMvcExceptionHandler {
         return "errors/404"; //templates/errorhtml
     }
 
+    @ExceptionHandler(EntityInUseException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String handleInUse(EntityInUseException ex, Model model) {
+        model.addAttribute("status", 400);
+        model.addAttribute("error", "Bad Request");
+        model.addAttribute("message", ex.getMessage());
+        return "errors/400";
+    }
+
     @ExceptionHandler(EntityDuplicateException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String handleDuplicate(EntityDuplicateException ex, Model model) {

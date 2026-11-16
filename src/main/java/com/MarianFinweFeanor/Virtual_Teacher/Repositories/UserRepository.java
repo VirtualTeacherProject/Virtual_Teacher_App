@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     List<User> findByRole(UserRole student);
 
+    long countByRole(UserRole role);
+
 
     List<User> findByRoleAndTeacherApprovedFalse(UserRole role);
 

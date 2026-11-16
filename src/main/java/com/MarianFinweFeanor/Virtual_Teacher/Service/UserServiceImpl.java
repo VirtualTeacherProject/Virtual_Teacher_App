@@ -3,12 +3,15 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.MarianFinweFeanor.Virtual_Teacher.util.UserSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -27,14 +31,22 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final EnrollmentService enrollmentService;
     private final PasswordEncoder passwordEncoder;
+    private final CourseRepository courseRepository;
+    private final ContentCleanupService contentCleanupService;
+
+    private static final Sort USER_SORT = Sort.by("lastName", "firstName", "email");
 
     @Autowired
     public UserServiceImpl(UserRepository userRepo,
                            EnrollmentService enrollmentService,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           CourseRepository courseRepository,
+                           ContentCleanupService contentCleanupService) {
         this.userRepository = userRepo;
         this.enrollmentService = enrollmentService;
         this.passwordEncoder = passwordEncoder;
+        this.courseRepository = courseRepository;
+        this.contentCleanupService = contentCleanupService;
     }
 
 //    @Override
@@ -140,8 +152,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers(String firstName, String lastName, String email) {
-        // implement your filtering or return userRepo.findAll();
-        return userRepository.findAll();
+        // Each filter is optional; the ones provided must all match.
+        Specification<User> spec = Specification
+                .where(UserSpecification.hasFirstName(firstName))
+                .and(UserSpecification.hasLastName(lastName))
+                .and(UserSpecification.hasEmail(email));
+
+        return userRepository.findAll(spec, USER_SORT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> searchUsers(String query, UserRole role) {
+        Specification<User> spec = Specification
+                .where(UserSpecification.matchesAnyField(query))
+                .and(UserSpecification.hasRole(role));
+
+        return userRepository.findAll(spec, USER_SORT);
     }
 
     // Get a user by ID
@@ -182,12 +209,61 @@ public class UserServiceImpl implements UserService {
         if (!userRepository.existsById(userId)) {
             throw new EntityNotFoundException("User", userId);
         }
+
+        // SCRUM-15: a user who still teaches courses cannot be deleted; the
+        // courses must be handed to another teacher first (or the user is
+        // deactivated instead, which keeps everything in place).
+        List<Course> taught = courseRepository.findByTeacher_UserId(userId);
+        if (!taught.isEmpty()) {
+            String titles = taught.stream()
+                    .map(Course::getTitle)
+                    .collect(Collectors.joining(", "));
+
+            throw new EntityInUseException(
+                    "This user still teaches " + taught.size()
+                            + (taught.size() == 1 ? " course (" : " courses (") + titles
+                            + "). Reassign them to another teacher first, or deactivate the user instead.");
+        }
+
+        // Only what belongs to the user goes with them: their submissions and
+        // comments here, their enrollments through the cascade on User.enrollments.
+        // No course or lecture is deleted.
+        contentCleanupService.deleteUserContent(userId);
+
         userRepository.deleteById(userId);
     }
 
     @Override
-    public long countByRole(UserRole teacher) {
-        return 0;
+    public User deactivateUser(Long userId) {
+        return changeStatus(userId, STATUS_PASSIVE);
+    }
+
+    @Override
+    public User activateUser(Long userId) {
+        return changeStatus(userId, STATUS_ACTIVE);
+    }
+
+    private User changeStatus(Long userId, String status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User", userId));
+        user.setStatus(status);
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findAssignableTeachers() {
+        return userRepository.findAll(USER_SORT).stream()
+                .filter(u -> STATUS_ACTIVE.equalsIgnoreCase(u.getStatus()))
+                .filter(u -> u.getRole() == UserRole.ADMIN
+                        || (u.getRole() == UserRole.TEACHER && u.isTeacherApproved()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countByRole(UserRole role) {
+        return userRepository.countByRole(role);
     }
 
 

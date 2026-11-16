@@ -31,6 +31,26 @@
         ⏳ View Pending Teacher Approvals
     </a>
 
+    <!-- Search (SCRUM-19) -->
+    <form th:action="@{/admin/users}" method="get" class="row g-2 mb-3">
+        <div class="col-md-6">
+            <input type="text"
+                   name="q"
+                   class="form-control"
+                   th:value="${q}"
+                   maxlength="254"
+                   placeholder="Search by first name, last name or email">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary">Search</button>
+            <a th:if="${q != null and !q.isEmpty()}"
+               th:href="@{/admin/users}"
+               class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </form>
+
+    <p class="text-muted" th:if="${#lists.isEmpty(users)}">No users found.</p>
+
     <div class="card shadow">
         <div class="card-body">
 
@@ -92,13 +112,33 @@
                             </button>
                         </form>
 
-                        <!-- Delete -->
+                        <!-- Deactivate: the normal way to remove a user (nothing is deleted) -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/deactivate'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.status == 'ACTIVE'}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Deactivate
+                            </button>
+                        </form>
+
+                        <!-- Activate again -->
+                        <form th:action="@{'/admin/users/' + ${u.userId} + '/activate'}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${u.status != 'ACTIVE'}">
+                            <button type="submit" class="btn btn-sm btn-success">
+                                Activate
+                            </button>
+                        </form>
+
+                        <!-- Delete permanently: refused while the user still teaches courses -->
                         <form th:action="@{'/admin/users/' + ${u.userId} + '/delete'}"
                               method="post"
                               style="display:inline"
-                              onsubmit="return confirm('Delete this user?');">
+                              onsubmit="return confirm('Permanently delete this user together with their enrollments, submissions and comments? This cannot be undone. Use Deactivate to only block the account.');">
                             <button type="submit" class="btn btn-sm btn-danger">
-                                Delete
+                                Delete permanently
                             </button>
                         </form>
                     </td>

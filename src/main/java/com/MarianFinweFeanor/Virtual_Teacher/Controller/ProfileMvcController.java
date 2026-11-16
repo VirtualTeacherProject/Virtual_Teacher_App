@@ -46,7 +46,8 @@ public class ProfileMvcController {
 
         //  Whitelist status (prevents whitelabel if someone posts bad data)
         String requestedStatus = formUser.getStatus();
-        if ("ACTIVE".equalsIgnoreCase(requestedStatus) || "INACTIVE".equalsIgnoreCase(requestedStatus)) {
+        if (UserService.STATUS_ACTIVE.equalsIgnoreCase(requestedStatus)
+                || UserService.STATUS_PASSIVE.equalsIgnoreCase(requestedStatus)) {
             existing.setStatus(requestedStatus.toUpperCase());
         } else {
             // keep previous valid status (or default to ACTIVE if you prefer)

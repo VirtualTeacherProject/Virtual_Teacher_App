@@ -3,16 +3,22 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityDuplicateException;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityInUseException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -34,6 +40,12 @@ class UserServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private CourseRepository courseRepository;
+
+    @Mock
+    private ContentCleanupService contentCleanupService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -315,10 +327,10 @@ class UserServiceImplTest {
     }
 
     @Test
-    void getAllUsersWithFilters_shouldReturnAllUsersFromRepository() {
+    void getAllUsersWithFilters_shouldQueryRepositoryWithSpecification() {
         List<User> expected = List.of(student, teacher);
 
-        when(userRepository.findAll())
+        when(userRepository.findAll(any(Specification.class), any(Sort.class)))
                 .thenReturn(expected);
 
         List<User> result = userService.getAllUsers(
@@ -328,7 +340,23 @@ class UserServiceImplTest {
         );
 
         assertEquals(expected, result);
-        verify(userRepository).findAll();
+        verify(userRepository).findAll(any(Specification.class), any(Sort.class));
+        verify(userRepository, never()).findAll();
+    }
+
+    @Test
+    void searchUsers_shouldQueryRepositoryWithSpecification_sortedByName() {
+        List<User> expected = List.of(student);
+
+        when(userRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(expected);
+
+        List<User> result = userService.searchUsers("stud", UserRole.STUDENT);
+
+        assertEquals(expected, result);
+        verify(userRepository).findAll(
+                any(Specification.class),
+                eq(Sort.by("lastName", "firstName", "email")));
     }
 
     @Test
@@ -415,6 +443,57 @@ class UserServiceImplTest {
     }
 
     @Test
+    void deleteUserById_shouldDeleteTheUsersOwnContentFirst() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+
+        userService.deleteUserById(1L);
+
+        InOrder inOrder = inOrder(contentCleanupService, userRepository);
+        inOrder.verify(contentCleanupService).deleteUserContent(1L);
+        inOrder.verify(userRepository).deleteById(1L);
+    }
+
+    @Test
+    void deleteUserById_shouldBeRefused_whileTheUserStillTeachesCourses() {
+        Course java = new Course();
+        java.setCourseId(10L);
+        java.setTitle("Java Basics");
+        java.setTeacher(teacher);
+
+        Course python = new Course();
+        python.setCourseId(11L);
+        python.setTitle("Python Basics");
+        python.setTeacher(teacher);
+
+        when(userRepository.existsById(2L)).thenReturn(true);
+        when(courseRepository.findByTeacher_UserId(2L)).thenReturn(List.of(java, python));
+
+        EntityInUseException exception = assertThrows(
+                EntityInUseException.class,
+                () -> userService.deleteUserById(2L)
+        );
+
+        // SCRUM-15: the message tells the admin what to do and which courses block it
+        assertTrue(exception.getMessage().contains("2 courses"));
+        assertTrue(exception.getMessage().contains("Java Basics"));
+        assertTrue(exception.getMessage().contains("Python Basics"));
+        assertTrue(exception.getMessage().contains("Reassign"));
+
+        // nothing is deleted or changed
+        assertEquals(teacher, java.getTeacher());
+        verify(userRepository, never()).deleteById(anyLong());
+        verify(courseRepository, never()).save(any());
+        verifyNoInteractions(contentCleanupService);
+    }
+
+    @Test
+    void countByRole_shouldReturnCountFromRepository() {
+        when(userRepository.countByRole(UserRole.TEACHER)).thenReturn(3L);
+
+        assertEquals(3L, userService.countByRole(UserRole.TEACHER));
+    }
+
+    @Test
     void deleteUserById_shouldThrowEntityNotFoundException_whenUserDoesNotExist() {
         when(userRepository.existsById(99L))
                 .thenReturn(false);
@@ -425,6 +504,7 @@ class UserServiceImplTest {
         );
 
         verify(userRepository, never()).deleteById(anyLong());
+        verifyNoInteractions(contentCleanupService, courseRepository);
     }
 
     @Test
@@ -474,4 +554,73 @@ class UserServiceImplTest {
 
 
 
+
+    // --- SCRUM-12: deactivate / activate / assignable teachers ---------------
+
+    @Test
+    void deactivateUser_shouldSetStatusPassive_andKeepTheUser() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.save(student)).thenReturn(student);
+
+        User result = userService.deactivateUser(1L);
+
+        assertEquals("PASSIVE", result.getStatus());
+        verify(userRepository).save(student);
+        verify(userRepository, never()).deleteById(anyLong());
+        verifyNoInteractions(contentCleanupService, courseRepository);
+    }
+
+    @Test
+    void activateUser_shouldSetStatusActive() {
+        student.setStatus("PASSIVE");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(userRepository.save(student)).thenReturn(student);
+
+        User result = userService.activateUser(1L);
+
+        assertEquals("ACTIVE", result.getStatus());
+        verify(userRepository).save(student);
+    }
+
+    @Test
+    void deactivateUser_shouldThrowEntityNotFoundException_whenUserDoesNotExist() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> userService.deactivateUser(99L)
+        );
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void findAssignableTeachers_shouldReturnOnlyActiveAdminsAndActiveApprovedTeachers() {
+        User admin = new User();
+        admin.setUserId(3L);
+        admin.setRole(UserRole.ADMIN);
+        admin.setStatus("ACTIVE");
+
+        User pendingTeacher = new User();
+        pendingTeacher.setUserId(4L);
+        pendingTeacher.setRole(UserRole.TEACHER);
+        pendingTeacher.setStatus("ACTIVE");
+        pendingTeacher.setTeacherApproved(false);
+
+        User deactivatedTeacher = new User();
+        deactivatedTeacher.setUserId(5L);
+        deactivatedTeacher.setRole(UserRole.TEACHER);
+        deactivatedTeacher.setStatus("PASSIVE");
+        deactivatedTeacher.setTeacherApproved(true);
+
+        // students carry teacherApproved = true after registration
+        student.setTeacherApproved(true);
+
+        when(userRepository.findAll(any(Sort.class)))
+                .thenReturn(List.of(student, teacher, admin, pendingTeacher, deactivatedTeacher));
+
+        List<User> result = userService.findAssignableTeachers();
+
+        assertEquals(List.of(teacher, admin), result);
+    }
 }

@@ -233,6 +233,12 @@ public class EnrollmentMvcController {
                     .findByEmail(principal.getName()));
         }
 
+        // SCRUM-31: reviews are shown to everyone who can see the course
+        model.addAttribute("reviews", enrollmentService.getCourseReviews(id));
+        model.addAttribute("averageRating", enrollmentService.getAverageRating(id));
+        model.addAttribute("minReviewLength", EnrollmentService.MIN_REVIEW_LENGTH);
+        model.addAttribute("maxReviewLength", EnrollmentService.MAX_REVIEW_LENGTH);
+
         model.addAttribute("enrollment", enrollment);
 
         model.addAttribute("course", course);

@@ -8,6 +8,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -648,4 +649,211 @@ class EnrollmentServiceImplTest {
 
 
 
+
+    // --- SCRUM-31: rateCourse ------------------------------------------------
+
+    private static final String VALID_REVIEW =
+            "This course explained every topic clearly and the assignments were really useful.";
+
+    private void givenStudentMayRate() {
+        enrollment.setAverageGrade(80.0);
+        enrollment.setCompletionStatus(Enrollment.CompletionStatus.COMPLETED);
+
+        when(enrollmentRepo.findByStudent_EmailAndCourse_CourseId("student@test.com", 10L))
+                .thenReturn(Optional.of(enrollment));
+    }
+
+    @Test
+    void rateCourse_shouldSaveRatingAndTrimmedReview_whenValid() {
+        assertTrue(VALID_REVIEW.length() >= EnrollmentService.MIN_REVIEW_LENGTH);
+        givenStudentMayRate();
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L))
+                .thenReturn(Optional.of(enrollment));
+
+        enrollmentService.rateCourse("student@test.com", 10L, 4, "  " + VALID_REVIEW + "  ");
+
+        assertEquals(4, enrollment.getRating());
+        assertEquals(VALID_REVIEW, enrollment.getReviewText());
+        assertNotNull(enrollment.getRatedAt());
+        verify(enrollmentRepo).save(enrollment);
+    }
+
+    @Test
+    void rateCourse_shouldAcceptReviewOfExactlyMinimumLength() {
+        givenStudentMayRate();
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L))
+                .thenReturn(Optional.of(enrollment));
+
+        String review = "a".repeat(EnrollmentService.MIN_REVIEW_LENGTH);
+
+        enrollmentService.rateCourse("student@test.com", 10L, 5, review);
+
+        assertEquals(review, enrollment.getReviewText());
+        verify(enrollmentRepo).save(enrollment);
+    }
+
+    @Test
+    void rateCourse_shouldThrowIllegalArgumentException_whenReviewIsMissing() {
+        givenStudentMayRate();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> enrollmentService.rateCourse("student@test.com", 10L, 5, null)
+        );
+
+        verify(enrollmentRepo, never()).save(any());
+    }
+
+    @Test
+    void rateCourse_shouldThrowIllegalArgumentException_whenReviewIsOneCharacterTooShort() {
+        givenStudentMayRate();
+
+        String review = "a".repeat(EnrollmentService.MIN_REVIEW_LENGTH - 1);
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> enrollmentService.rateCourse("student@test.com", 10L, 5, review)
+        );
+
+        assertTrue(ex.getMessage().contains("75"));
+        verify(enrollmentRepo, never()).save(any());
+    }
+
+    @Test
+    void rateCourse_shouldNotCountSurroundingWhitespaceTowardsTheMinimum() {
+        givenStudentMayRate();
+
+        String review = "short review" + " ".repeat(100);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> enrollmentService.rateCourse("student@test.com", 10L, 5, review)
+        );
+
+        verify(enrollmentRepo, never()).save(any());
+    }
+
+    @Test
+    void rateCourse_shouldThrowIllegalArgumentException_whenReviewIsTooLong() {
+        givenStudentMayRate();
+
+        String review = "a".repeat(EnrollmentService.MAX_REVIEW_LENGTH + 1);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> enrollmentService.rateCourse("student@test.com", 10L, 5, review)
+        );
+
+        verify(enrollmentRepo, never()).save(any());
+    }
+
+    @Test
+    void rateCourse_shouldThrowIllegalArgumentException_whenRatingIsOutOfRange() {
+        givenStudentMayRate();
+
+        for (Integer invalid : new Integer[]{null, 0, 6}) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> enrollmentService.rateCourse("student@test.com", 10L, invalid, VALID_REVIEW)
+            );
+        }
+
+        verify(enrollmentRepo, never()).save(any());
+    }
+
+    @Test
+    void rateCourse_shouldThrowIllegalStateException_whenCourseIsNotCompleted() {
+        enrollment.setAverageGrade(80.0);
+        enrollment.setCompletionStatus(Enrollment.CompletionStatus.IN_PROGRESS);
+
+        when(enrollmentRepo.findByStudent_EmailAndCourse_CourseId("student@test.com", 10L))
+                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L))
+                .thenReturn(Optional.of(enrollment));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> enrollmentService.rateCourse("student@test.com", 10L, 5, VALID_REVIEW)
+        );
+
+        assertNull(enrollment.getRating());
+        verify(enrollmentRepo, never()).save(any());
+    }
+
+    @Test
+    void rateCourse_shouldThrowEntityNotFoundException_whenStudentIsNotEnrolled() {
+        when(enrollmentRepo.findByStudent_EmailAndCourse_CourseId("student@test.com", 10L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> enrollmentService.rateCourse("student@test.com", 10L, 5, VALID_REVIEW)
+        );
+    }
+
+    @Test
+    void getCourseReviews_shouldReturnRatedEnrollmentsFromRepository() {
+        when(enrollmentRepo.findByCourse_CourseIdAndRatingIsNotNullOrderByRatedAtDesc(10L))
+                .thenReturn(List.of(enrollment));
+
+        assertEquals(List.of(enrollment), enrollmentService.getCourseReviews(10L));
+    }
+
+    @Test
+    void getAverageRating_shouldReturnAverageFromRepository() {
+        when(enrollmentRepo.averageRatingForCourse(10L)).thenReturn(4.5);
+
+        assertEquals(4.5, enrollmentService.getAverageRating(10L));
+    }
+
+    @Test
+    void getAverageRating_shouldReturnNull_whenCourseHasNoRatings() {
+        when(enrollmentRepo.averageRatingForCourse(10L)).thenReturn(null);
+
+        assertNull(enrollmentService.getAverageRating(10L));
+    }
+
+    // --- SCRUM-15: progress refresh after a lecture is deleted ---------------
+
+    @Test
+    void recalculateProgressForCourse_shouldRecalculateEveryEnrollmentOfTheCourse() {
+        User other = new User();
+        other.setUserId(2L);
+
+        Enrollment second = new Enrollment();
+        second.setStudent(other);
+        second.setCourse(course);
+
+        when(enrollmentRepo.findByCourse_CourseId(10L))
+                .thenReturn(List.of(enrollment, second));
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L))
+                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(2L, 10L))
+                .thenReturn(Optional.of(second));
+
+        // one lecture left, only the first student has a graded submission for it
+        when(lectureRepository.countLecturesByCourseId(10L)).thenReturn(1L);
+        when(assignmentRepo.avgGradeForCourse(1L, 10L)).thenReturn(90.0);
+        when(assignmentRepo.countGradedLectures(1L, 10L)).thenReturn(1L);
+        when(assignmentRepo.avgGradeForCourse(2L, 10L)).thenReturn(null);
+        when(assignmentRepo.countGradedLectures(2L, 10L)).thenReturn(0L);
+
+        enrollmentService.recalculateProgressForCourse(10L);
+
+        assertEquals(Enrollment.CompletionStatus.COMPLETED, enrollment.getCompletionStatus());
+        assertEquals(90.0, enrollment.getAverageGrade());
+        assertEquals(Enrollment.CompletionStatus.IN_PROGRESS, second.getCompletionStatus());
+        assertNull(second.getAverageGrade());
+        verify(enrollmentRepo).save(enrollment);
+        verify(enrollmentRepo).save(second);
+    }
+
+    @Test
+    void recalculateProgressForCourse_shouldDoNothing_whenCourseHasNoEnrollments() {
+        when(enrollmentRepo.findByCourse_CourseId(10L)).thenReturn(List.of());
+
+        enrollmentService.recalculateProgressForCourse(10L);
+
+        verify(enrollmentRepo, never()).save(any());
+    }
 }

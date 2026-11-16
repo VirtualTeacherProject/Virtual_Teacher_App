@@ -38,5 +38,11 @@ public interface CourseService {
     long countCourses();
     Course getCourse(Long id);
 
+    /**
+     * Hands the course to another teacher (SCRUM-12). The new teacher must be an
+     * active admin or an active, approved teacher; otherwise IllegalArgumentException.
+     */
+    Course assignTeacher(Long courseId, Long teacherId);
+
 
 }
