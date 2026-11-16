@@ -50,27 +50,30 @@ public class AdminCourseController {
                                    @ModelAttribute("course") @Valid Course form,
                                    BindingResult br,
                                    RedirectAttributes ra) {
+
         if (br.hasErrors()) {
             return "admin/course-edit";
         }
 
-        Course existing = courseService.getCourseById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+        String requestedStatus = form.getStatus();
 
-        existing.setTitle(form.getTitle());
-        existing.setTopic(form.getTopic());
-        existing.setDescription(form.getDescription());
-
-        // normalize status similar to your teacher edit logic
-        String incoming = form.getStatus();
-        if (incoming == null || incoming.isBlank()) {
-            existing.setStatus(existing.getStatus() != null ? existing.getStatus() : "ACTIVE");
-        } else {
-            var s = incoming.trim().toUpperCase();
-            existing.setStatus(("ACTIVE".equals(s) || "PASSIVE".equals(s)) ? s : "ACTIVE");
+        if (!"DRAFT".equalsIgnoreCase(requestedStatus)
+                && !"PUBLISHED".equalsIgnoreCase(requestedStatus)) {
+            br.rejectValue(
+                    "status",
+                    "invalid.status",
+                    "Status must be DRAFT or PUBLISHED."
+            );
+            return "admin/course-edit";
         }
 
-        courseService.updateCourse(id, existing);
+        courseService.updateCourse(id, form);
+
+        if ("PUBLISHED".equalsIgnoreCase(requestedStatus)) {
+            courseService.publishCourse(id);
+        } else {
+            courseService.moveCourseToDraft(id);
+        }
 
         ra.addFlashAttribute("msg", "Course updated.");
         return "redirect:/admin/courses";

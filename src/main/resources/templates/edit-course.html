@@ -43,12 +43,26 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Status</label>
-            <select class="form-select" th:field="*{status}">
-                <option th:value="DRAFT">DRAFT</option>
-                <option th:value="PUBLISHED">PUBLISHED</option>
-            </select>
+            <label class="form-label">Passing Grade</label>
+
+            <input type="number"
+                   class="form-control"
+                   th:field="*{passingGrade}"
+                   min="0"
+                   max="100"
+                   step="1">
+
+            <div class="text-danger small"
+                 th:if="${#fields.hasErrors('passingGrade')}"
+                 th:errors="*{passingGrade}">
+                Passing grade error
+            </div>
+
+            <div class="form-text">
+                Leave empty to keep the current passing grade.
+            </div>
         </div>
+
 
 
         <button class="btn btn-primary">Save Changes</button>

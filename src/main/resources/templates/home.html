@@ -88,43 +88,7 @@
     </div>
 </nav>
 
-<!--<div class="container mt-4">-->
-<!--    &lt;!&ndash; Flash / success message &ndash;&gt;-->
-<!--    <div th:if="${msg}" class="alert alert-success alert-dismissible fade show" role="alert">-->
-<!--        <span th:text="${msg}">Success</span>-->
-<!--        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>-->
-<!--    </div>-->
 
-<!--    &lt;!&ndash; main page content &ndash;&gt;-->
-<!--    <h1>Welcome back!</h1>-->
-<!--    <p>This is your dashboard. Choose a section to get started:</p>-->
-<!--</div>-->
-
-<!--<div class="container mt-5">-->
-<!--    &lt;!&ndash; landing page for guests &ndash;&gt;-->
-<!--    <section sec:authorize="isAnonymous()">-->
-<!--        <h1>Welcome to Virtual Teacher</h1>-->
-<!--        <p>Explore our courses or <a th:href="@{/register}">create an account</a>.</p>-->
-<!--        <a class="btn btn-primary" th:href="@{/courses}">Browse Courses</a>-->
-<!--    </section>-->
-
-<!--    &lt;!&ndash; dashboard for logged-in users &ndash;&gt;-->
-<!--    <section sec:authorize="isAuthenticated()">-->
-<!--        <a class="btn btn-secondary me-2" th:href="@{/courses}">All Courses</a>-->
-<!--        <a class="btn btn-secondary"-->
-<!--           th:href="@{/courses/my-courses}"-->
-<!--           sec:authorize="hasRole('STUDENT')">-->
-<!--            My Courses-->
-<!--        </a>-->
-<!--    </section>-->
-
-<!--    <hr class="mt-5">-->
-<!--    <footer class="text-center text-muted small">-->
-<!--        Virtual Teacher © 2025 — Built with Java Spring Boot + Thymeleaf + Bootstrap.-->
-<!--        <br>-->
-<!--        This demo app runs on Railway with a PostgreSQL backend.-->
-<!--    </footer>-->
-<!--</div>-->
 
 <div class="container hero">
 
@@ -170,7 +134,10 @@
 
                 <a class="btn btn-outline-secondary btn-lg"
                    th:href="@{/courses/add}"
-                   sec:authorize="hasRole('TEACHER')">
+                   sec:authorize="hasAnyRole('TEACHER', 'ADMIN')"
+                   th:if="${currentUserData['role'] == 'ADMIN'
+           or (currentUserData['role'] == 'TEACHER'
+               and currentUserData['teacherApproved'])}">
                     Create Course
                 </a>
             </div>

@@ -27,6 +27,7 @@ data/*.trace.db
 /dist/
 /nbdist/
 /.nb-gradle/
+/uploads/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/

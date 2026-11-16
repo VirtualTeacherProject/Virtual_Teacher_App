@@ -112,7 +112,7 @@ public class EnrollmentMvcController {
 
     /** GET /courses/add (TEACHER) */
     @GetMapping("/add")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String showAddCourseForm(Model model, Principal principal) {
         userService.ensureApprovedTeacher(principal.getName());
         model.addAttribute("course", new Course());
@@ -121,7 +121,7 @@ public class EnrollmentMvcController {
 
     /** POST /courses/add (TEACHER) */
     @PostMapping("/add")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String submitAddCourse(@Valid @ModelAttribute("course") Course course,
                                   BindingResult br,
                                   Principal principal,
@@ -150,7 +150,7 @@ public class EnrollmentMvcController {
 
     /** GET /courses/{id}/edit (TEACHER) */
     @GetMapping("/{id}/edit")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String showEditCourseForm(@PathVariable Long id, Model model, Principal principal) {
 
         userService.ensureApprovedTeacher(principal.getName());
@@ -163,7 +163,7 @@ public class EnrollmentMvcController {
 
     /** POST /courses/{id}/edit (TEACHER) */
     @PostMapping("/{id}/edit")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String submitEditCourse(@PathVariable Long id,
                                    @ModelAttribute("course") Course updated,
                                    BindingResult br,
@@ -182,6 +182,10 @@ public class EnrollmentMvcController {
         existing.setTitle(updated.getTitle());
         existing.setTopic(updated.getTopic());
         existing.setDescription(updated.getDescription());
+
+        if (updated.getPassingGrade() != null) {
+            existing.setPassingGrade(updated.getPassingGrade());
+        }
 
         if (existing.getStatus() == null || existing.getStatus().isBlank()) {
             existing.setStatus("DRAFT");
@@ -302,18 +306,12 @@ public class EnrollmentMvcController {
     }
 
     @PostMapping("/{id}/publish")
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public String publishCourse(@PathVariable Long id,
                                 Principal principal,
                                 RedirectAttributes ra) {
 
-        Course course = courseService.getCourseById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Course", id));
-
-        if (!canViewCourse(course, principal)) {
-            ra.addFlashAttribute("error", "You cannot publish this course.");
-            return "redirect:/courses";
-        }
+        userService.ensureApprovedTeacher(principal.getName());
 
         try {
             courseService.publishCourse(id);
@@ -355,23 +353,7 @@ public class EnrollmentMvcController {
             return true;
         }
 
-        if (principal == null) {
-            return false;
-        }
-
-        if (hasRole("ROLE_ADMIN")) {
-            return true;
-        }
-
-        if (hasRole("ROLE_TEACHER")) {
-            User user = userService.findByEmail(principal.getName());
-
-            return Boolean.TRUE.equals(user.isTeacherApproved())
-                    && course.getTeacher() != null
-                    && course.getTeacher().getUserId().equals(user.getUserId());
-        }
-
-        return false;
+        return canManageCourses(principal);
     }
 }
 

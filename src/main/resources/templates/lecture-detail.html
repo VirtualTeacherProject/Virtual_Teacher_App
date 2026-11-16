@@ -1,244 +1,345 @@
 <!doctype html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head>
     <meta charset="UTF-8">
-    <title th:text="${lecture.title}">Lecture</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title th:text="${lecture.title}">
+        Lecture
+    </title>
+
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
     <style>
-  /* Optional: keep the wiki card width stable */
-  .wiki-search-card {
-    width: 280px;
-  }
+        .wiki-search-card {
+            width: 280px;
+        }
 
-  /* This is the important part */
-  #wikiResults {
-    max-height: 260px !important;
-    overflow-y: auto !important;
-    overflow-x: hidden;
-    display: block;
-  }
+        #wikiResults {
+            max-height: 260px !important;
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            display: block;
+        }
 
-  #wikiResults .list-group-item {
-    white-space: normal;
-    word-break: break-word;
-  }
+        #wikiResults .list-group-item {
+            white-space: normal;
+            word-break: break-word;
+        }
 
-  #wikiResults .text-muted {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;      /* show max 2 lines */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-</style>
+        #wikiResults .text-muted {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
 </head>
 
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
     <div class="container-fluid">
-        <a class="navbar-brand fw-semibold" th:href="@{/home}">Virtual Teacher</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#nav" aria-controls="nav" aria-expanded="false"
-                aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+
+        <a class="navbar-brand fw-semibold"
+           th:href="@{/home}">
+            Virtual Teacher
+        </a>
+
+        <button class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#nav"
+                aria-controls="nav"
+                aria-expanded="false"
+                aria-label="Toggle navigation">
+
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
         <div id="nav" class="collapse navbar-collapse">
+
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" th:href="@{/home}">Home</a></li>
-                <li class="nav-item"><a class="nav-link" th:href="@{/courses}">Courses</a></li>
-            </ul>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item" sec:authorize="isAnonymous()"><a class="nav-link" th:href="@{/login}">Login</a></li>
-                <li class="nav-item" sec:authorize="isAnonymous()"><a class="nav-link" th:href="@{/register}">Register</a></li>
-                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <span th:text="${currentUserData['email']}">user@example.com</span>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/home}">
+                        Home
                     </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/courses}">
+                        Courses
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav ms-auto">
+
+                <li class="nav-item"
+                    sec:authorize="isAnonymous()">
+                    <a class="nav-link" th:href="@{/login}">
+                        Login
+                    </a>
+                </li>
+
+                <li class="nav-item"
+                    sec:authorize="isAnonymous()">
+                    <a class="nav-link" th:href="@{/register}">
+                        Register
+                    </a>
+                </li>
+
+                <li class="nav-item dropdown"
+                    sec:authorize="isAuthenticated()">
+
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       role="button"
+                       data-bs-toggle="dropdown">
+
+                        <span th:text="${currentUserData['email']}">
+                            user@example.com
+                        </span>
+                    </a>
+
                     <ul class="dropdown-menu dropdown-menu-end">
+
                         <li class="px-3 py-2">
-                            <div class="fw-semibold" th:text="${currentUserData['email']}">email@example.com</div>
+                            <div class="fw-semibold"
+                                 th:text="${currentUserData['email']}">
+                                email@example.com
+                            </div>
+
                             <div class="text-muted small"
-                                 th:text="${(currentUserData['firstName'] ?: '') + (currentUserData['lastName'] != null ? ' ' + currentUserData['lastName'] : '')}">
+                                 th:text="${(currentUserData['firstName'] ?: '')
+                                 + (currentUserData['lastName'] != null
+                                 ? ' ' + currentUserData['lastName']
+                                 : '')}">
                                 Full Name
                             </div>
+
                             <span class="badge bg-secondary mt-1"
                                   th:text="${currentUserData['role']}">
                                 Role
                             </span>
                         </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" th:href="@{/profile}">My Profile</a></li>
-                        <li><a class="dropdown-item" th:href="@{/logout}">Logout</a></li>
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item"
+                               th:href="@{/profile}">
+                                My Profile
+                            </a>
+                        </li>
+
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item"
+                               th:href="@{/admin}">
+                                Admin Panel
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item"
+                               th:href="@{/logout}">
+                                Logout
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>
         </div>
     </div>
-
-
-    <div class="card shadow-sm mt-4 wiki-search-card">
-        <div class="card-body">
-            <h2 class="h6 mb-3">Wikipedia search</h2>
-
-            <div class="input-group mb-2">
-                <input id="wikiQuery" class="form-control" placeholder="Search Wikipedia…">
-                <button class="btn btn-outline-primary" type="button" onclick="wikiSearch()">Search</button>
-            </div>
-
-            <div id="wikiResults" class="list-group small"></div>
-        </div>
-    </div>
-
-
-    <script>
-  async function wikiSearch() {
-    const q = document.getElementById("wikiQuery").value.trim();
-    const box = document.getElementById("wikiResults");
-    box.innerHTML = "";
-    if (!q) return;
-
-    const res = await fetch(`/api/wiki/search?q=${encodeURIComponent(q)}`);
-    if (!res.ok) {
-      box.innerHTML = `<div class="text-danger">Search failed.</div>`;
-      return;
-    }
-
-    const items = await res.json();
-    if (!items.length) {
-      box.innerHTML = `<div class="text-muted">No results.</div>`;
-      return;
-    }
-
-    box.innerHTML = items.map(x => {
-      // IMPORTANT: build external absolute URL from title only
-      const title = (x.title || "").trim();
-      const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(" ", "_"))}`;
-      console.log("wiki item:", x, "generatedUrl:", wikiUrl);
-
-      return `
-        <a class="list-group-item list-group-item-action"
-           href="${wikiUrl}"
-           target="_blank"
-           rel="noopener noreferrer">
-          <div class="fw-semibold">${escapeHtml(title || "Untitled")}</div>
-          <div class="text-muted small">${escapeHtml(x.snippet || "")}</div>
-        </a>
-      `;
-    }).join("");
-  }
-
-  function escapeHtml(str) {
-    str = String(str ?? "");
-    return str.replace(/[&<>"']/g, m => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-    }[m]));
-  }
-</script>
-
 </nav>
-
-
 
 <div class="container py-4">
 
-    <!-- Flash -->
-    <div th:if="${msg}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <!-- Flash messages -->
+    <div th:if="${msg}"
+         class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
         <span th:text="${msg}">Message</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
     </div>
 
+    <div th:if="${error}"
+         class="alert alert-warning alert-dismissible fade show"
+         role="alert">
+
+        <span th:text="${error}">Error</span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+    </div>
+
+    <!-- Lecture -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <h1 class="h4 mb-2" th:text="${lecture.title}">Lecture Title</h1>
-            <p class="text-muted mb-1">Course</p>
-            <p class="mb-3">
-                <a th:href="@{/courses/{c}(c=${courseId})}" th:text="'Course #' + ${courseId}">Course</a>
+
+            <h1 class="h4 mb-2"
+                th:text="${lecture.title}">
+                Lecture Title
+            </h1>
+
+            <p class="text-muted mb-1">
+                Course
             </p>
 
-            <p class="text-muted mb-1">Description</p>
-            <p class="mb-0" th:text="${lecture.description}">Description…</p>
+            <p class="mb-3">
+                <a th:href="@{/courses/{id}(id=${courseId})}"
+                   th:text="'Course #' + ${courseId}">
+                    Course
+                </a>
+            </p>
 
-            <!-- Video section: can show an embedded player or a fallback link -->
-            <div class="mt-3" th:if="${lecture.videoUrl}">
-                <p class="text-muted mb-1">Video</p>
+            <p class="text-muted mb-1">
+                Description
+            </p>
 
-                <!-- B) Embedded YouTube player -->
-                <div th:if="${#strings.containsIgnoreCase(lecture.videoUrl,'youtube.com')
-            or #strings.containsIgnoreCase(lecture.videoUrl,'youtu.be') }">
+            <p class="mb-0"
+               th:text="${lecture.description}">
+                Description
+            </p>
+
+            <!-- Video: SCRUM-10 protection will be added later -->
+            <div class="mt-3"
+                 th:if="${lecture.videoUrl != null
+                         and !lecture.videoUrl.isBlank()}">
+
+                <p class="text-muted mb-1">
+                    Video
+                </p>
+
+                <!-- Embedded YouTube player -->
+                <div th:if="${#strings.containsIgnoreCase(
+                                    lecture.videoUrl, 'youtube.com')
+                                or #strings.containsIgnoreCase(
+                                    lecture.videoUrl, 'youtu.be')}">
+
                     <div class="ratio ratio-16x9 mb-2">
                         <iframe
-                                th:src="${'https://www.youtube.com/embed/' +
-                 (#strings.containsIgnoreCase(lecture.videoUrl,'watch?v=')
-                   ? #strings.substringAfter(lecture.videoUrl,'watch?v=')
-                   : #strings.substringAfter(lecture.videoUrl,'youtu.be/')) }"
-                                title="Lecture video" allowfullscreen></iframe>
+                                th:src="${'https://www.youtube.com/embed/'
+                                + (#strings.containsIgnoreCase(
+                                      lecture.videoUrl, 'watch?v=')
+                                ? #strings.substringAfter(
+                                      lecture.videoUrl, 'watch?v=')
+                                : #strings.substringAfter(
+                                      lecture.videoUrl, 'youtu.be/'))}"
+                                title="Lecture video"
+                                allowfullscreen>
+                        </iframe>
                     </div>
                 </div>
 
-                <!-- A) Simple fallback link (for non-YouTube or if embed fails) -->
+                <!-- Fallback/external video link -->
                 <a class="btn btn-sm btn-outline-primary"
-                   th:href="${lecture.videoUrl}" target="_blank" rel="noopener">
+                   th:href="${lecture.videoUrl}"
+                   target="_blank"
+                   rel="noopener noreferrer">
                     Watch video
                 </a>
             </div>
 
+            <!-- Teacher/admin lecture management -->
+            <div class="mt-3 d-flex gap-2"
+                 sec:authorize="hasAnyRole('TEACHER', 'ADMIN')"
+                 th:if="${currentUserData['canManageCourses']}">
 
-            <div class="mt-3 d-flex gap-2" sec:authorize="hasRole('TEACHER')">
                 <a class="btn btn-outline-secondary"
                    th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/edit|}">
                     ✎ Edit Lecture
                 </a>
             </div>
 
-            <div sec:authorize="hasRole('TEACHER')" class="mt-3">
+            <!-- Teacher/admin assignment management -->
+            <div class="mt-3"
+                 sec:authorize="hasAnyRole('TEACHER', 'ADMIN')"
+                 th:if="${currentUserData['canManageCourses']}">
+
                 <a class="btn btn-outline-primary btn-sm"
                    th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/assignments|}">
                     View / Grade submissions
                 </a>
             </div>
-
         </div>
     </div>
 
-    <!-- Assignment submission (only if enrolled) -->
-    <div sec:authorize="isAuthenticated()" th:if="${enrolled}">
+    <!-- Assignment submission: enrolled users only -->
+    <div sec:authorize="isAuthenticated()"
+         th:if="${enrolled}">
+
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h5 mb-3">Submit Assignment</h2>
+
+                <h2 class="h5 mb-3">
+                    Submit Assignment
+                </h2>
+
                 <form th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/assignments|}"
-                      method="post" enctype="multipart/form-data" class="row gy-2">
-                    <!-- If you enable CSRF later, add the token hidden field here -->
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row gy-2">
+
                     <div class="col-12">
-                        <input class="form-control" type="file" name="file" required>
+                        <input class="form-control"
+                               type="file"
+                               name="file"
+                               required>
                     </div>
+
                     <div class="col-12">
-                        <textarea class="form-control" name="comment" placeholder="Any notes…"></textarea>
+                        <textarea class="form-control"
+                                  name="comment"
+                                  placeholder="Any notes…"></textarea>
                     </div>
+
                     <div class="col-12">
-                        <button class="btn btn-primary">Upload</button>
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Upload
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Your submissions -->
+        <!-- Current student's submissions -->
         <div class="card shadow-sm mt-3">
             <div class="card-body">
+
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h2 class="h6 mb-0">Your Submissions</h2>
+                    <h2 class="h6 mb-0">
+                        Your Submissions
+                    </h2>
+
                     <a class="btn btn-sm btn-outline-secondary"
                        th:href="@{/assignments/my}">
                         View all my submissions
                     </a>
                 </div>
 
-                <div th:if="${#lists.isEmpty(submissions)}" class="text-muted">
+                <div th:if="${#lists.isEmpty(submissions)}"
+                     class="text-muted">
                     No submissions yet.
                 </div>
 
-                <div th:if="${!#lists.isEmpty(submissions)}" class="table-responsive">
+                <div th:if="${!#lists.isEmpty(submissions)}"
+                     class="table-responsive">
+
                     <table class="table table-sm align-middle">
                         <thead>
                         <tr>
@@ -248,6 +349,7 @@
                             <th>Comment</th>
                         </tr>
                         </thead>
+
                         <tbody>
                         <tr th:each="sub : ${submissions}">
                             <td>
@@ -255,74 +357,216 @@
                                     Download
                                 </a>
                             </td>
-                            <td th:text="${#temporals.format(sub.submittedAt, 'yyyy-MM-dd HH:mm')}">—</td>
-                            <td>
-                                <span th:if="${sub.grade == null}" class="badge text-bg-warning">Pending</span>
-                                <span th:if="${sub.grade != null}" class="badge text-bg-success"
-                                      th:text="${'Grade: ' + sub.grade}">Grade</span>
+
+                            <td th:text="${#temporals.format(
+                                            sub.submittedAt,
+                                            'yyyy-MM-dd HH:mm')}">
+                                —
                             </td>
-                            <td th:text="${sub.studentComment}">—</td>
+
+                            <td>
+                                <span th:if="${sub.grade == null}"
+                                      class="badge text-bg-warning">
+                                    Pending
+                                </span>
+
+                                <span th:if="${sub.grade != null}"
+                                      class="badge text-bg-success"
+                                      th:text="${'Grade: ' + sub.grade}">
+                                    Grade
+                                </span>
+                            </td>
+
+                            <td th:text="${sub.studentComment}">
+                                —
+                            </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- Comments Section -->
+    <!-- Wikipedia search -->
+    <div class="card shadow-sm mt-4 wiki-search-card">
+        <div class="card-body">
+
+            <h2 class="h6 mb-3">
+                Wikipedia search
+            </h2>
+
+            <div class="input-group mb-2">
+                <input id="wikiQuery"
+                       class="form-control"
+                       placeholder="Search Wikipedia…">
+
+                <button class="btn btn-outline-primary"
+                        type="button"
+                        onclick="wikiSearch()">
+                    Search
+                </button>
+            </div>
+
+            <div id="wikiResults"
+                 class="list-group small">
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments -->
     <div class="card mt-4">
         <div class="card-body">
-            <h3 class="h5">Comments / Questions</h3>
 
-            <div th:if="${msg}" class="alert alert-success" th:text="${msg}"></div>
-            <div th:if="${error}" class="alert alert-warning" th:text="${error}"></div>
+            <h3 class="h5">
+                Comments / Questions
+            </h3>
 
             <form th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/comments|}"
                   method="post"
                   sec:authorize="isAuthenticated()">
 
                 <div class="mb-3">
-                <textarea name="comment"
-                          class="form-control"
-                          rows="3"
-                          placeholder="Ask a question or leave a comment..."
-                          required></textarea>
+                    <textarea name="comment"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Ask a question or leave a comment..."
+                              required></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+                <button type="submit"
+                        class="btn btn-primary btn-sm">
+                    Post Comment
+                </button>
             </form>
 
             <hr>
 
-            <div th:if="${#lists.isEmpty(comments)}" class="text-muted">
+            <div th:if="${#lists.isEmpty(comments)}"
+                 class="text-muted">
                 No comments yet.
             </div>
 
-            <div th:each="c : ${comments}" class="border rounded p-2 mb-2">
+            <div th:each="comment : ${comments}"
+                 class="border rounded p-2 mb-2">
+
                 <div class="fw-semibold">
-                    <span th:text="${c.author.firstName + ' ' + c.author.lastName}">User Name</span>
+                    <span th:text="${comment.author.firstName
+                                   + ' '
+                                   + comment.author.lastName}">
+                        User Name
+                    </span>
                 </div>
 
                 <div class="text-muted small">
-                    <span th:text="${#temporals.format(c.createdAt, 'dd MMM yyyy HH:mm')}">date</span>
+                    <span th:text="${#temporals.format(
+                                      comment.createdAt,
+                                      'dd MMM yyyy HH:mm')}">
+                        Date
+                    </span>
                 </div>
 
-                <p class="mb-0" th:text="${c.comment}">
+                <p class="mb-0"
+                   th:text="${comment.comment}">
                     Comment text
                 </p>
             </div>
         </div>
     </div>
 
+    <!-- Navigation -->
     <div class="mt-4 d-flex gap-3">
-        <a class="btn btn-secondary" th:href="@{/courses/{c}/lectures(c=${courseId})}">&larr; Back to Lectures</a>
-        <a class="btn btn-outline-secondary" th:href="@{/courses/{c}(c=${courseId})}">Course</a>
-    </div>
 
+        <a class="btn btn-secondary"
+           th:href="@{/courses/{id}/lectures(id=${courseId})}">
+            &larr; Back to Lectures
+        </a>
+
+        <a class="btn btn-outline-secondary"
+           th:href="@{/courses/{id}(id=${courseId})}">
+            Course
+        </a>
+    </div>
 </div>
 
+<script>
+    async function wikiSearch() {
+        const query =
+            document.getElementById("wikiQuery").value.trim();
+
+        const resultsBox =
+            document.getElementById("wikiResults");
+
+        resultsBox.innerHTML = "";
+
+        if (!query) {
+            return;
+        }
+
+        const response =
+            await fetch(
+                `/api/wiki/search?q=${encodeURIComponent(query)}`
+            );
+
+        if (!response.ok) {
+            resultsBox.innerHTML =
+                `<div class="text-danger">Search failed.</div>`;
+            return;
+        }
+
+        const items = await response.json();
+
+        if (!items.length) {
+            resultsBox.innerHTML =
+                `<div class="text-muted">No results.</div>`;
+            return;
+        }
+
+        resultsBox.innerHTML = items.map(item => {
+            const title = (item.title || "").trim();
+
+            const wikiUrl =
+                `https://en.wikipedia.org/wiki/${
+                    encodeURIComponent(
+                        title.replaceAll(" ", "_")
+                    )
+                }`;
+
+            return `
+                <a class="list-group-item list-group-item-action"
+                   href="${wikiUrl}"
+                   target="_blank"
+                   rel="noopener noreferrer">
+
+                    <div class="fw-semibold">
+                        ${escapeHtml(title || "Untitled")}
+                    </div>
+
+                    <div class="text-muted small">
+                        ${escapeHtml(item.snippet || "")}
+                    </div>
+                </a>
+            `;
+        }).join("");
+    }
+
+    function escapeHtml(value) {
+        const stringValue = String(value ?? "");
+
+        return stringValue.replace(
+            /[&<>"']/g,
+            character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "\"": "&quot;",
+                "'": "&#039;"
+            })[character]
+        );
+    }
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
