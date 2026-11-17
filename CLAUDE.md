@@ -73,7 +73,8 @@ Passwords use a `DelegatingPasswordEncoder` (bcrypt default, `{noop}` accepted f
 
 ### Persistence and profiles
 
-- Default profile: H2 file database at `./data/virtual_teacher_db`, `ddl-auto=update`, SQL logging on. The schema comes from the entities; `src/main/resources/db/database.sql` is a stale MySQL-dialect reference and is not executed (`insert.sql` is a no-op `SELECT 1`).
+- Default profile: H2 file database at `./data/virtual_teacher_db`, SQL logging on. `src/main/resources/db/database.sql` is a stale MySQL-dialect reference and is not executed (`insert.sql` is a no-op `SELECT 1`).
+- **Schema is owned by Flyway (SCRUM-50)**, in `src/main/resources/db/migration`; both profiles use `ddl-auto=validate`. Any entity change that touches the schema needs a new `V<n>__description.sql` that runs on both H2 and PostgreSQL — never edit a migration that has already been applied. Databases from before Flyway are baselined at version 0, so `V1` (all `if not exists`) also runs on them. `PostgresMigrationTest` runs the migrations on an embedded PostgreSQL.
 - `prod` profile (`application-prod.properties`): PostgreSQL configured from `PORT`, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`.
 - `data/` and `uploads/` hold local runtime state. Both are gitignored now, but older files in them are still tracked — don't commit new ones.
 
