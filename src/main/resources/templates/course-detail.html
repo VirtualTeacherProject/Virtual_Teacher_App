@@ -161,6 +161,66 @@
         </div>
     </div>
 
+    <!-- Additional resources (SCRUM-34): only after enrollment, or for course managers -->
+    <div class="card shadow-sm mt-3" id="course-resources" th:if="${canAccessContent}">
+        <div class="card-body">
+            <h2 class="h6 mb-2">Additional resources</h2>
+
+            <p class="text-muted mb-0" th:if="${#lists.isEmpty(resources)}">
+                No additional resources yet.
+            </p>
+
+            <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-start gap-3"
+                 th:each="res : ${resources}">
+                <div>
+                    <a th:href="${res.url}" th:text="${res.title}"
+                       target="_blank" rel="noopener noreferrer">Resource title</a>
+                    <p class="mb-0 text-muted small" style="white-space: pre-line"
+                       th:if="${res.description != null}"
+                       th:text="${res.description}">Description</p>
+                </div>
+
+                <form th:if="${currentUserData['canManageCourses']}"
+                      th:action="@{|/courses/${course.courseId}/resources/${res.resourceId}/delete|}"
+                      method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                </form>
+            </div>
+
+            <form th:if="${currentUserData['canManageCourses']}"
+                  id="add-resource-form"
+                  th:action="@{|/courses/${course.courseId}/resources|}"
+                  method="post" class="row gy-2 mt-3 border-top pt-3">
+                <div class="col-12 col-md-5">
+                    <input type="text" name="title" class="form-control"
+                           placeholder="Title" maxlength="120" required>
+                </div>
+                <div class="col-12 col-md-7">
+                    <input type="url" name="url" class="form-control"
+                           placeholder="https://…" maxlength="500" required>
+                </div>
+                <div class="col-12">
+                    <textarea name="description" class="form-control" rows="2"
+                              maxlength="1000" placeholder="Description (optional)"></textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary btn-sm">Add resource</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resources locked: SCRUM-34 -->
+    <div class="alert alert-secondary mt-3 mb-0" id="course-resources-locked"
+         th:if="${!canAccessContent and hasResources}">
+        <span sec:authorize="isAnonymous()">
+            <a th:href="@{/login}">Log in</a> and enroll in this course to see its additional resources.
+        </span>
+        <span sec:authorize="isAuthenticated()">
+            This course has additional resources. They are available after you enroll.
+        </span>
+    </div>
+
     <div class="mt-4">
         <a class="link-secondary me-3" th:href="@{/courses}">All Courses</a>
 

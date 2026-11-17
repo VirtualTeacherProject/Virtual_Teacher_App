@@ -6,6 +6,8 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseResourceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
@@ -36,15 +38,21 @@ public class EnrollmentMvcController {
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
     private EnrollmentRepository enrollmentRepository;
+    private final CourseAccessService courseAccessService;      // SCRUM-34 resource gate
+    private final CourseResourceService courseResourceService;  // SCRUM-34
 
     public EnrollmentMvcController(UserService userService,
                                    CourseService courseService,
                                    EnrollmentRepository enrollmentRepository,
-                                   EnrollmentService enrollmentService) {
+                                   EnrollmentService enrollmentService,
+                                   CourseAccessService courseAccessService,
+                                   CourseResourceService courseResourceService) {
         this.userService = userService;
         this.courseService = courseService;
         this.enrollmentService = enrollmentService;
         this.enrollmentRepository = enrollmentRepository;
+        this.courseAccessService = courseAccessService;
+        this.courseResourceService = courseResourceService;
     }
 
     // --- List Courses (public) ----------------------------------------------
@@ -238,6 +246,14 @@ public class EnrollmentMvcController {
         model.addAttribute("averageRating", enrollmentService.getAverageRating(id));
         model.addAttribute("minReviewLength", EnrollmentService.MIN_REVIEW_LENGTH);
         model.addAttribute("maxReviewLength", EnrollmentService.MAX_REVIEW_LENGTH);
+
+        // SCRUM-34: additional resources only after enrollment (or for course managers)
+        String email = principal == null ? null : principal.getName();
+        boolean canAccessContent = courseAccessService.canAccessCourseContent(course, email);
+        model.addAttribute("canAccessContent", canAccessContent);
+        model.addAttribute("resources",
+                canAccessContent ? courseResourceService.getResources(id, email) : List.of());
+        model.addAttribute("hasResources", courseResourceService.hasResources(id));
 
         model.addAttribute("enrollment", enrollment);
 

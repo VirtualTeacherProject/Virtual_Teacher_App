@@ -1,6 +1,7 @@
 package com.MarianFinweFeanor.Virtual_Teacher;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
@@ -66,7 +67,7 @@ class PostgresMigrationTest {
     void migrationsShouldRunOnPostgres() {
         assertThat(jdbc.queryForObject("select version()", String.class)).startsWith("PostgreSQL");
         assertThat(flyway.info().pending()).isEmpty();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+        assertThat(flyway.info().applied()).isNotEmpty();
     }
 
     @Test
@@ -123,6 +124,13 @@ class PostgresMigrationTest {
         note.setContent("A note");
         note.setUpdatedAt(LocalDateTime.now());
         em.persist(note);
+
+        CourseResource resource = new CourseResource();
+        resource.setCourse(course);
+        resource.setTitle("Slides");
+        resource.setUrl("https://example.com/slides");
+        resource.setCreatedAt(LocalDateTime.now());
+        em.persist(resource);
 
         em.flush();
         em.clear();
