@@ -1,6 +1,6 @@
->Note: statuses were verified against the code in docs/backlog-audit.md (2026-11-16). Evidence and file references live there; this file only tracks grouping, status and order. Tickets finished after the audit are marked in the Completed list with the branch they are on.
+>Note: statuses were verified against the code in docs/backlog-audit.md (2026-11-16). Evidence and file references live there; this file only tracks grouping, status and order. Tickets finished after the audit are listed in Completed; one that is not merged yet names the branch it is on.
 
-## Completed — 16 tickets
+## Completed — 18 tickets
 # Ticket	Description	Notes
 SCRUM-5	Proper exception handling and propagation	Global MVC/REST exception handlers and custom exceptions implemented.
 SCRUM-7	Swagger documentation	Springdoc/Swagger UI implemented.
@@ -12,12 +12,14 @@ SCRUM-25	Link to Swagger documentation	Link is in README only.
 SCRUM-27	Course completion/rating eligibility based on final grade, average and course passing grade	Implemented (git history files it under SCRUM-21).
 SCRUM-42	Lecture/course comments	Implemented and merged.
 SCRUM-10	Course videos are accessible only after enrollment	Merged. Also closed the SCRUM-22 lecture-page gap, the unauthenticated submission download and the open REST write endpoints.
-SCRUM-19	Search users by first name, last name or email	Done on feature/SCRUM-19-user-search (not merged yet). Admin user list search and GET /api/users filters.
-SCRUM-6	Approved teachers receive course administration and student-search functionality	Done on feature/SCRUM-6-teacher-student-search (not merged yet). /students search page.
-SCRUM-31	Students rate courses 1–5 with a mandatory comment of at least 75 characters	Done on feature/SCRUM-31-mandatory-course-review (not merged yet). Reviews and average shown on the course page.
-SCRUM-15	Decide how deletion works for entities connected through foreign keys	Done on feature/SCRUM-15-deletion-policy (not merged yet). Course -> lectures -> submissions/comments. Deleting a user removes only their own enrollments, submissions and comments, and is refused while they still teach courses (reassign first). Deactivating is the normal way to remove a user.
-SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	Done on feature/SCRUM-15-deletion-policy (not merged yet). Deletes work for rows with dependants, Deactivate/Activate on the user list, teacher select on the course edit page, dashboard teacher count fixed.
-SCRUM-20	Users can write plain-text notes for each lecture	Done on feature/SCRUM-20-lecture-notes (not merged yet). One private note per user per lecture (max 5000 characters) on the lecture page, for users with content access. Notes follow the SCRUM-15 deletion policy.
+SCRUM-19	Search users by first name, last name or email	Merged. Admin user list search and GET /api/users filters.
+SCRUM-6	Approved teachers receive course administration and student-search functionality	Merged. /students search page.
+SCRUM-31	Students rate courses 1–5 with a mandatory comment of at least 75 characters	Merged. Reviews and average shown on the course page.
+SCRUM-15	Decide how deletion works for entities connected through foreign keys	Merged. Course -> lectures -> submissions/comments. Deleting a user removes only their own enrollments, submissions and comments, and is refused while they still teach courses (reassign first). Deactivating is the normal way to remove a user.
+SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	Merged. Deletes work for rows with dependants, Deactivate/Activate on the user list, teacher select on the course edit page, dashboard teacher count fixed.
+SCRUM-20	Users can write plain-text notes for each lecture	Merged. One private note per user per lecture (max 5000 characters) on the lecture page, for users with content access. Notes follow the SCRUM-15 deletion policy.
+SCRUM-24	Add/edit a user’s lecture notes	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it. One note per lecture is enough for now.
+SCRUM-50	Adopt Flyway and switch ddl-auto to validate	Done on feature/SCRUM-50-flyway-migrations (not merged yet). V1 baseline for H2 and PostgreSQL in src/main/resources/db/migration; both profiles validate. Existing databases are baselined at version 0 and V1 creates only missing tables. Every schema change now needs a new migration. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
 
 
 ## Partially done — previously listed as completed
@@ -34,7 +36,7 @@ SCRUM-34	Teachers provide additional resources accessible only after enrollment	
 SCRUM-35	Enrolled students request additional resources using at least 100 characters	Not started. Needs SCRUM-34.
 SCRUM-36	Teachers manage resource requests as resolved, irrelevant or in progress and can assign them to another student	Not started. Needs SCRUM-35.
 SCRUM-38	Course Lessons Availability — full requirements unavailable	Blocked on requirements. If it means scheduled release of lectures, it belongs to this guard.
-Order: SCRUM-34 -> 35 -> 36. New entities must follow the SCRUM-15 deletion policy (ContentCleanupService).
+Order: SCRUM-34 -> 35 -> 36. New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) and come with a Flyway migration (SCRUM-50).
 
 ### 2. User search — done (SCRUM-19, SCRUM-6)
 
@@ -42,12 +44,7 @@ Order: SCRUM-34 -> 35 -> 36. New entities must follow the SCRUM-15 deletion poli
 
 ### 4. Deletion policy — done (SCRUM-15)
 
-### 5. Lecture notes
-# Ticket	Description	Status
-SCRUM-20	Users can write plain-text notes for each lecture	Done (see Completed).
-SCRUM-24	Add/edit a user’s lecture notes	Mostly covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it. Remaining: confirm whether one note per lecture is enough or several separate notes are wanted.
-SCRUM-41	Users can take plain-text notes for each lecture	Duplicate of SCRUM-20 — close as duplicate.
-SCRUM-20 added the lecture_notes table through ddl-auto=update, before the Flyway ticket (group 11).
+### 5. Lecture notes — done (SCRUM-20, SCRUM-24). SCRUM-41 closed as a duplicate of SCRUM-20.
 
 ### 6. Attendance
 # Ticket	Description	Status
@@ -86,9 +83,7 @@ SCRUM-37	A student can become an assistant teacher and edit a teacher’s course
 SCRUM-30	Courses can contain groups of enrolled students	Not started.
 SCRUM-32	Teachers show tutoring availability and available times on their profiles	Not started.
 
-### 11. Technical debt
-# Ticket	Description	Status
-NEW (no Jira key yet)	Adopt Flyway and switch ddl-auto to validate	Not started. Today both profiles use ddl-auto=update and there is no migration tool, so a schema change that relaxes or removes something cannot reach existing databases. Scope: add Flyway, write a V1 baseline of the current schema that runs on H2 and PostgreSQL, set baseline-on-migrate for existing databases, switch ddl-auto to validate. Do this before the next ticket that adds tables (notes, resources, attendance, exams).
+### 11. Technical debt — done (SCRUM-50)
 
 ### 12. Documentation and engagement (any time)
 # Ticket	Description	Status
