@@ -2,8 +2,10 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +31,9 @@ class ContentCleanupServiceImplTest {
     @Mock
     private LectureCommentRepository lectureCommentRepository;
 
+    @Mock
+    private LectureNoteRepository lectureNoteRepository;
+
     @TempDir
     Path uploadDir;
 
@@ -40,7 +45,8 @@ class ContentCleanupServiceImplTest {
     @BeforeEach
     void setUp() {
         cleanupService = new ContentCleanupServiceImpl(
-                assignmentRepository, lectureCommentRepository, uploadDir.toString());
+                assignmentRepository, lectureCommentRepository, lectureNoteRepository,
+                uploadDir.toString());
     }
 
     private Assignment submission(Path file) {
@@ -60,12 +66,15 @@ class ContentCleanupServiceImplTest {
         List<LectureComment> comments = List.of(new LectureComment());
 
         when(assignmentRepository.findByLecture_LectureId(100L)).thenReturn(submissions);
+        List<LectureNote> notes = List.of(new LectureNote());
         when(lectureCommentRepository.findByLecture_LectureId(100L)).thenReturn(comments);
+        when(lectureNoteRepository.findByLecture_LectureId(100L)).thenReturn(notes);
 
         cleanupService.deleteLectureContent(100L);
 
         verify(assignmentRepository).deleteAll(submissions);
         verify(lectureCommentRepository).deleteAll(comments);
+        verify(lectureNoteRepository).deleteAll(notes);
         assertFalse(Files.exists(file));
     }
 
@@ -77,12 +86,15 @@ class ContentCleanupServiceImplTest {
         List<LectureComment> comments = List.of(new LectureComment(), new LectureComment());
 
         when(assignmentRepository.findByLecture_Course_CourseId(10L)).thenReturn(submissions);
+        List<LectureNote> notes = List.of(new LectureNote(), new LectureNote());
         when(lectureCommentRepository.findByLecture_Course_CourseId(10L)).thenReturn(comments);
+        when(lectureNoteRepository.findByLecture_Course_CourseId(10L)).thenReturn(notes);
 
         cleanupService.deleteCourseContent(10L);
 
         verify(assignmentRepository).deleteAll(submissions);
         verify(lectureCommentRepository).deleteAll(comments);
+        verify(lectureNoteRepository).deleteAll(notes);
         assertFalse(Files.exists(first));
         assertFalse(Files.exists(second));
     }
@@ -95,12 +107,15 @@ class ContentCleanupServiceImplTest {
         List<LectureComment> comments = List.of(new LectureComment());
 
         when(assignmentRepository.findByStudent_UserId(1L)).thenReturn(submissions);
+        List<LectureNote> notes = List.of(new LectureNote());
         when(lectureCommentRepository.findByAuthor_UserId(1L)).thenReturn(comments);
+        when(lectureNoteRepository.findByUser_UserId(1L)).thenReturn(notes);
 
         cleanupService.deleteUserContent(1L);
 
         verify(assignmentRepository).deleteAll(submissions);
         verify(lectureCommentRepository).deleteAll(comments);
+        verify(lectureNoteRepository).deleteAll(notes);
         assertFalse(Files.exists(mine));
         assertTrue(Files.exists(someoneElses));
     }

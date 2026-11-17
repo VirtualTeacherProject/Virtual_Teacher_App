@@ -6,6 +6,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.LectureServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import jakarta.validation.Valid;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,6 +33,7 @@ public class LectureMvcController {
     private final LectureCommentService lectureCommentService;
     private final EnrollmentService enrollmentService;
     private final CourseAccessService courseAccessService;  // draft visibility + enrollment-gated content
+    private final LectureNoteService lectureNoteService;    // SCRUM-20 private notes
 
     @Autowired
     public LectureMvcController(LectureService lectureService,
@@ -40,7 +42,8 @@ public class LectureMvcController {
                                 AssignmentService assignmentService,
                                 LectureCommentService lectureCommentService,
                                 EnrollmentService enrollmentService,
-                                CourseAccessService courseAccessService) {
+                                CourseAccessService courseAccessService,
+                                LectureNoteService lectureNoteService) {
         this.lectureService = lectureService;
         this.userService = userService;
         this.courseService = courseService;
@@ -48,6 +51,7 @@ public class LectureMvcController {
         this.lectureCommentService = lectureCommentService;
         this.enrollmentService = enrollmentService;
         this.courseAccessService = courseAccessService;
+        this.lectureNoteService = lectureNoteService;
     }
 
     // --- Add Lecture (form) --------------------------------------------------
@@ -235,6 +239,13 @@ public class LectureMvcController {
         model.addAttribute("newAssignment", new Assignment());
         model.addAttribute("comments", lectureCommentService.getCommentsForLecture(lectureId));
 
+        // SCRUM-20: private notes, for users who can access the course content.
+        boolean canTakeNotes = principal != null && canAccessContent;
+        model.addAttribute("canTakeNotes", canTakeNotes);
+        model.addAttribute("noteContent",
+                canTakeNotes ? lectureNoteService.getNoteContent(lectureId, email) : "");
+        model.addAttribute("noteMaxLength", LectureNote.MAX_LENGTH);
+
         return "lecture-detail";
     }
 
@@ -290,7 +301,30 @@ public class LectureMvcController {
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
     }
 
+    // --- Notes (SCRUM-20) ----------------------------------------------------
 
+    /** POST /courses/{courseId}/lectures/{lectureId}/notes — saves the caller's own note. */
+    @PostMapping("/{lectureId}/notes")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
+    public String saveNote(@PathVariable Long courseId,
+                           @PathVariable Long lectureId,
+                           @RequestParam(value = "content", required = false) String content,
+                           Principal principal,
+                           RedirectAttributes ra) {
+
+        if (principal == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            lectureNoteService.saveNote(lectureId, principal.getName(), content);
+            ra.addFlashAttribute("msg", "Notes saved.");
+        } catch (IllegalArgumentException | AccessDeniedException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+
+        return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
+    }
 
     private static String emailOf(Principal principal) {
         return principal == null ? null : principal.getName();

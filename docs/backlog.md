@@ -1,6 +1,6 @@
 >Note: statuses were verified against the code in docs/backlog-audit.md (2026-11-16). Evidence and file references live there; this file only tracks grouping, status and order. Tickets finished after the audit are marked in the Completed list with the branch they are on.
 
-## Completed — 15 tickets
+## Completed — 16 tickets
 # Ticket	Description	Notes
 SCRUM-5	Proper exception handling and propagation	Global MVC/REST exception handlers and custom exceptions implemented.
 SCRUM-7	Swagger documentation	Springdoc/Swagger UI implemented.
@@ -17,6 +17,7 @@ SCRUM-6	Approved teachers receive course administration and student-search funct
 SCRUM-31	Students rate courses 1–5 with a mandatory comment of at least 75 characters	Done on feature/SCRUM-31-mandatory-course-review (not merged yet). Reviews and average shown on the course page.
 SCRUM-15	Decide how deletion works for entities connected through foreign keys	Done on feature/SCRUM-15-deletion-policy (not merged yet). Course -> lectures -> submissions/comments. Deleting a user removes only their own enrollments, submissions and comments, and is refused while they still teach courses (reassign first). Deactivating is the normal way to remove a user.
 SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	Done on feature/SCRUM-15-deletion-policy (not merged yet). Deletes work for rows with dependants, Deactivate/Activate on the user list, teacher select on the course edit page, dashboard teacher count fixed.
+SCRUM-20	Users can write plain-text notes for each lecture	Done on feature/SCRUM-20-lecture-notes (not merged yet). One private note per user per lecture (max 5000 characters) on the lecture page, for users with content access. Notes follow the SCRUM-15 deletion policy.
 
 
 ## Partially done — previously listed as completed
@@ -43,10 +44,10 @@ Order: SCRUM-34 -> 35 -> 36. New entities must follow the SCRUM-15 deletion poli
 
 ### 5. Lecture notes
 # Ticket	Description	Status
-SCRUM-20	Users can write plain-text notes for each lecture	Not started.
-SCRUM-24	Add/edit a user’s lecture notes	Not started. Same screen as SCRUM-20.
+SCRUM-20	Users can write plain-text notes for each lecture	Done (see Completed).
+SCRUM-24	Add/edit a user’s lecture notes	Mostly covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it. Remaining: confirm whether one note per lecture is enough or several separate notes are wanted.
 SCRUM-41	Users can take plain-text notes for each lecture	Duplicate of SCRUM-20 — close as duplicate.
-Implement SCRUM-20 and 24 as one piece of work.
+SCRUM-20 added the lecture_notes table through ddl-auto=update, before the Flyway ticket (group 11).
 
 ### 6. Attendance
 # Ticket	Description	Status

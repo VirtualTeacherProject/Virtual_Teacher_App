@@ -297,6 +297,40 @@
         </div>
     </div>
 
+    <!-- My notes: SCRUM-20 — private, only for users with content access -->
+    <div class="card shadow-sm mb-3"
+         id="lecture-notes"
+         th:if="${canTakeNotes}">
+        <div class="card-body">
+
+            <h2 class="h5 mb-1">
+                My Notes
+            </h2>
+
+            <p class="text-muted small mb-3">
+                Plain text. Only you can see your notes.
+            </p>
+
+            <form th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/notes|}"
+                  method="post">
+
+                <div class="mb-3">
+                    <textarea name="content"
+                              class="form-control"
+                              rows="6"
+                              th:maxlength="${noteMaxLength}"
+                              placeholder="Write your notes for this lecture…"
+                              th:text="${noteContent}"></textarea>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary btn-sm">
+                    Save Notes
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Assignment submission: enrolled users only -->
     <div sec:authorize="isAuthenticated()"
          th:if="${enrolled}">

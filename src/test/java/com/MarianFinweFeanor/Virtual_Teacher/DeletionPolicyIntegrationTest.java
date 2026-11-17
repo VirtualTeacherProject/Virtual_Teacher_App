@@ -5,12 +5,14 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.ContentCleanupServiceImpl;
@@ -45,7 +47,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Fixture: one course taught by "teacher" with two lectures. "anna" and
  * "boris" are enrolled; each has a submission and a comment on lecture 1.
  * A second course taught by the same teacher has one lecture with a
- * submission from anna.
+ * submission from anna. Notes (SCRUM-20): anna and boris on lecture 1, anna on
+ * lecture 2 and on the other course's lecture.
  */
 @DataJpaTest
 @ActiveProfiles("test")
@@ -66,6 +69,7 @@ class DeletionPolicyIntegrationTest {
     @Autowired private EnrollmentRepository enrollmentRepository;
     @Autowired private AssignmentRepository assignmentRepository;
     @Autowired private LectureCommentRepository commentRepository;
+    @Autowired private LectureNoteRepository noteRepository;
 
     @MockBean private PasswordEncoder passwordEncoder;
 
@@ -103,6 +107,11 @@ class DeletionPolicyIntegrationTest {
         comment(boris, lecture1);
         comment(teacher, lecture2);
 
+        note(anna, lecture1);
+        note(boris, lecture1);
+        note(anna, lecture2);
+        note(anna, otherLecture);
+
         flushAndClear();
     }
 
@@ -126,6 +135,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(assignmentRepository.count()).isEqualTo(1);
         assertThat(enrollmentRepository.count()).isEqualTo(1);
         assertThat(commentRepository.count()).isZero();
+        assertThat(noteRepository.count()).isEqualTo(1);
     }
 
     // --- deleting a lecture --------------------------------------------------
@@ -138,11 +148,13 @@ class DeletionPolicyIntegrationTest {
         assertThat(lectureRepository.findById(lecture1.getLectureId())).isEmpty();
         assertThat(assignmentRepository.findByLecture_LectureId(lecture1.getLectureId())).isEmpty();
         assertThat(commentRepository.findByLecture_LectureId(lecture1.getLectureId())).isEmpty();
+        assertThat(noteRepository.findByLecture_LectureId(lecture1.getLectureId())).isEmpty();
 
         // the course, its other lecture, the enrollments and the users stay
         assertThat(courseRepository.findById(course.getCourseId())).isPresent();
         assertThat(lectureRepository.findById(lecture2.getLectureId())).isPresent();
         assertThat(commentRepository.count()).isEqualTo(1);
+        assertThat(noteRepository.count()).isEqualTo(2);
         assertThat(assignmentRepository.count()).isEqualTo(1);
         assertThat(enrollmentRepository.count()).isEqualTo(3);
         assertThat(userRepository.count()).isEqualTo(3);
@@ -159,6 +171,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(enrollmentRepository.findByStudent_Email("anna@test.com")).isEmpty();
         assertThat(assignmentRepository.findByStudent_UserId(anna.getUserId())).isEmpty();
         assertThat(commentRepository.findByAuthor_UserId(anna.getUserId())).isEmpty();
+        assertThat(noteRepository.findByUser_UserId(anna.getUserId())).isEmpty();
 
         // nothing that belongs to a course or to someone else is touched
         assertThat(courseRepository.count()).isEqualTo(2);
@@ -167,6 +180,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(enrollmentRepository.count()).isEqualTo(1);
         assertThat(assignmentRepository.count()).isEqualTo(1);
         assertThat(commentRepository.count()).isEqualTo(2);
+        assertThat(noteRepository.count()).isEqualTo(1);
     }
 
     @Test
@@ -184,6 +198,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(enrollmentRepository.count()).isEqualTo(3);
         assertThat(assignmentRepository.count()).isEqualTo(3);
         assertThat(commentRepository.count()).isEqualTo(3);
+        assertThat(noteRepository.count()).isEqualTo(4);
     }
 
     @Test
@@ -272,5 +287,14 @@ class DeletionPolicyIntegrationTest {
         c.setComment("A comment");
         c.setCreatedAt(LocalDateTime.now());
         em.persist(c);
+    }
+
+    private void note(User user, Lecture lecture) {
+        LectureNote n = new LectureNote();
+        n.setUser(user);
+        n.setLecture(lecture);
+        n.setContent("A note");
+        n.setUpdatedAt(LocalDateTime.now());
+        em.persist(n);
     }
 }
