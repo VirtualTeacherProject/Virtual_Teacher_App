@@ -65,6 +65,20 @@ class SecurityRulesTest {
     }
 
     @Test
+    void resourceRequest_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        mockMvc.perform(post("/courses/1/resource-requests").param("message", "x"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void resourceRequest_shouldBeForbidden_forTeacher() throws Exception {
+        mockMvc.perform(post("/courses/1/resource-requests").param("message", "x"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(roles = "STUDENT")
     void lectureApi_shouldBeForbidden_forStudent() throws Exception {
         mockMvc.perform(get("/api/lectures")).andExpect(status().isForbidden());

@@ -7,6 +7,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
@@ -15,6 +16,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceReposito
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.ResourceRequestRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.ContentCleanupServiceImpl;
@@ -73,6 +75,7 @@ class DeletionPolicyIntegrationTest {
     @Autowired private LectureCommentRepository commentRepository;
     @Autowired private LectureNoteRepository noteRepository;
     @Autowired private CourseResourceRepository resourceRepository;
+    @Autowired private ResourceRequestRepository requestRepository;
 
     @MockBean private PasswordEncoder passwordEncoder;
 
@@ -120,6 +123,11 @@ class DeletionPolicyIntegrationTest {
         resource(course);
         resource(otherCourse);
 
+        // SCRUM-35: anna and boris on the course, anna on the other course
+        request(anna, course);
+        request(boris, course);
+        request(anna, otherCourse);
+
         flushAndClear();
     }
 
@@ -146,6 +154,8 @@ class DeletionPolicyIntegrationTest {
         assertThat(noteRepository.count()).isEqualTo(1);
         assertThat(resourceRepository.findByCourse_CourseId(course.getCourseId())).isEmpty();
         assertThat(resourceRepository.count()).isEqualTo(1);
+        assertThat(requestRepository.findByCourse_CourseId(course.getCourseId())).isEmpty();
+        assertThat(requestRepository.count()).isEqualTo(1);
     }
 
     // --- deleting a lecture --------------------------------------------------
@@ -166,6 +176,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(commentRepository.count()).isEqualTo(1);
         assertThat(noteRepository.count()).isEqualTo(2);
         assertThat(resourceRepository.count()).isEqualTo(3);
+        assertThat(requestRepository.count()).isEqualTo(3);
         assertThat(assignmentRepository.count()).isEqualTo(1);
         assertThat(enrollmentRepository.count()).isEqualTo(3);
         assertThat(userRepository.count()).isEqualTo(3);
@@ -183,6 +194,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(assignmentRepository.findByStudent_UserId(anna.getUserId())).isEmpty();
         assertThat(commentRepository.findByAuthor_UserId(anna.getUserId())).isEmpty();
         assertThat(noteRepository.findByUser_UserId(anna.getUserId())).isEmpty();
+        assertThat(requestRepository.findByStudent_UserId(anna.getUserId())).isEmpty();
 
         // nothing that belongs to a course or to someone else is touched
         assertThat(courseRepository.count()).isEqualTo(2);
@@ -193,6 +205,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(commentRepository.count()).isEqualTo(2);
         assertThat(noteRepository.count()).isEqualTo(1);
         assertThat(resourceRepository.count()).isEqualTo(3);
+        assertThat(requestRepository.count()).isEqualTo(1);
     }
 
     @Test
@@ -211,6 +224,7 @@ class DeletionPolicyIntegrationTest {
         assertThat(assignmentRepository.count()).isEqualTo(3);
         assertThat(commentRepository.count()).isEqualTo(3);
         assertThat(noteRepository.count()).isEqualTo(4);
+        assertThat(requestRepository.count()).isEqualTo(3);
     }
 
     @Test
@@ -315,6 +329,16 @@ class DeletionPolicyIntegrationTest {
         r.setCourse(course);
         r.setTitle("Slides");
         r.setUrl("https://example.com/slides");
+        r.setCreatedAt(LocalDateTime.now());
+        em.persist(r);
+    }
+
+    private void request(User student, Course course) {
+        ResourceRequest r = new ResourceRequest();
+        r.setStudent(student);
+        r.setCourse(course);
+        r.setMessage("Please share more exercises. ".repeat(4));
+        r.setStatus(ResourceRequest.STATUS_OPEN);
         r.setCreatedAt(LocalDateTime.now());
         em.persist(r);
     }

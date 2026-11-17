@@ -28,7 +28,7 @@ class FlywayMigrationTest {
 
     private static final List<String> TABLES = List.of(
             "USERS", "COURSES", "LECTURES", "ENROLLMENTS",
-            "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES");
+            "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES", "RESOURCE_REQUESTS");
 
     private DataSource dataSource;
     private JdbcTemplate jdbc;

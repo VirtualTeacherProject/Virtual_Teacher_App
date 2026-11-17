@@ -187,6 +187,49 @@
                 </form>
             </div>
 
+            <!-- SCRUM-35: an enrolled student asks for a resource and sees their own requests -->
+            <div th:if="${canRequestResources}" id="resource-request-section" class="border-top pt-3 mt-3">
+                <h3 class="h6">Request a resource</h3>
+                <form th:action="@{|/courses/${course.courseId}/resource-requests|}" method="post">
+                    <textarea name="message" class="form-control" rows="3" required
+                              th:minlength="${minRequestLength}"
+                              th:maxlength="${maxRequestLength}"
+                              th:placeholder="|Describe what you need (at least ${minRequestLength} characters)|"
+                              th:text="${requestDraft}"></textarea>
+                    <div class="form-text">
+                        Only you and the course teachers can see your requests.
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary btn-sm mt-2">Send request</button>
+                </form>
+
+                <div id="own-resource-requests" th:if="${!#lists.isEmpty(ownResourceRequests)}" class="mt-3">
+                    <h4 class="h6 text-muted">Your requests</h4>
+                    <div class="border rounded p-2 mb-2" th:each="req : ${ownResourceRequests}">
+                        <div class="small text-muted">
+                            <span th:text="${#temporals.format(req.createdAt, 'yyyy-MM-dd HH:mm')}">date</span>
+                            <span class="badge text-bg-light border ms-1" th:text="${req.status}">OPEN</span>
+                        </div>
+                        <p class="mb-0" style="white-space: pre-line" th:text="${req.message}">Request</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCRUM-35: teachers and admins see every request (SCRUM-36 adds the actions) -->
+            <div th:if="${currentUserData['canManageCourses']}" id="course-resource-requests"
+                 class="border-top pt-3 mt-3">
+                <h3 class="h6">Resource requests from students</h3>
+                <p class="text-muted mb-0" th:if="${#lists.isEmpty(resourceRequests)}">No requests yet.</p>
+                <div class="border rounded p-2 mb-2" th:each="req : ${resourceRequests}">
+                    <div class="small text-muted">
+                        <span class="fw-semibold"
+                              th:text="|${req.student.firstName} ${req.student.lastName}|">Student</span>
+                        <span th:text="${#temporals.format(req.createdAt, 'yyyy-MM-dd HH:mm')}">date</span>
+                        <span class="badge text-bg-light border ms-1" th:text="${req.status}">OPEN</span>
+                    </div>
+                    <p class="mb-0" style="white-space: pre-line" th:text="${req.message}">Request</p>
+                </div>
+            </div>
+
             <form th:if="${currentUserData['canManageCourses']}"
                   id="add-resource-form"
                   th:action="@{|/courses/${course.courseId}/resources|}"

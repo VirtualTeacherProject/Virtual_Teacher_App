@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher;
 import com.MarianFinweFeanor.Virtual_Teacher.Controller.EnrollmentMvcController;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
@@ -11,6 +12,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseResourceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ResourceRequestService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +41,10 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** Renders the public course page: reviews (SCRUM-31) and additional resources (SCRUM-34). */
+/**
+ * Renders the public course page: reviews (SCRUM-31), additional resources (SCRUM-34)
+ * and resource requests (SCRUM-35).
+ */
 @ActiveProfiles("test")
 @WebMvcTest(EnrollmentMvcController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -55,6 +60,7 @@ class CourseDetailPageTest {
     @MockBean private UserRepository userRepository;
     @MockBean private CourseAccessService courseAccessService;
     @MockBean private CourseResourceService courseResourceService;
+    @MockBean private ResourceRequestService resourceRequestService;
 
     private Course course;
 
@@ -235,5 +241,120 @@ class CourseDetailPageTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("No additional resources yet.")))
                 .andExpect(content().string(containsString("id=\"add-resource-form\"")));
+    }
+
+    // --- SCRUM-35: resource requests -----------------------------------------
+
+    private ResourceRequest request(String firstName, String message) {
+        User author = new User();
+        author.setFirstName(firstName);
+        author.setLastName("Student");
+
+        ResourceRequest request = new ResourceRequest();
+        request.setRequestId(3L);
+        request.setCourse(course);
+        request.setStudent(author);
+        request.setMessage(message);
+        request.setStatus(ResourceRequest.STATUS_OPEN);
+        request.setCreatedAt(LocalDateTime.of(2026, 11, 17, 9, 30));
+        return request;
+    }
+
+    private Principal enrolledStudent() {
+        Principal principal = loggedIn(STUDENT, UserRole.STUDENT);
+        Enrollment enrollment = new Enrollment();
+        enrollment.setCourse(course);
+        given(enrollmentRepository.findByStudent_EmailAndCourse_CourseId(STUDENT, 10L))
+                .willReturn(Optional.of(enrollment));
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(true);
+        return principal;
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldOfferRequestFormAndOwnRequests_toEnrolledStudent() throws Exception {
+        Principal principal = enrolledStudent();
+        given(resourceRequestService.getOwnRequests(10L, STUDENT))
+                .willReturn(List.of(request("Anna", "Please add more <b>practice</b> exercises.")));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canRequestResources", true))
+                .andExpect(content().string(containsString("id=\"resource-request-section\"")))
+                .andExpect(content().string(containsString("minlength=\"100\"")))
+                .andExpect(content().string(containsString("id=\"own-resource-requests\"")))
+                // plain text: markup in a request is escaped
+                .andExpect(content().string(containsString("Please add more &lt;b&gt;practice&lt;/b&gt; exercises.")))
+                .andExpect(content().string(not(containsString("id=\"course-resource-requests\""))));
+
+        verify(resourceRequestService, never()).getRequestsForCourse(any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldKeepTheDraft_afterAFailedRequest() throws Exception {
+        Principal principal = enrolledStudent();
+
+        mockMvc.perform(get("/courses/10").principal(principal).flashAttr("requestDraft", "My unfinished request"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("My unfinished request</textarea>")));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldNotOfferRequestForm_toStudentWhoIsNotEnrolled() throws Exception {
+        Principal principal = loggedIn(STUDENT, UserRole.STUDENT);
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(false);
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canRequestResources", false))
+                .andExpect(content().string(not(containsString("resource-request-section"))));
+
+        verify(resourceRequestService, never()).getOwnRequests(any(), any());
+        verify(resourceRequestService, never()).getRequestsForCourse(any(), any());
+    }
+
+    @Test
+    void courseDetail_shouldShowNoRequests_toAnonymousVisitor() throws Exception {
+        mockMvc.perform(get("/courses/10"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("resource-request"))));
+
+        verify(resourceRequestService, never()).getOwnRequests(any(), any());
+        verify(resourceRequestService, never()).getRequestsForCourse(any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void courseDetail_shouldShowAllRequests_toTeacher_withoutTheRequestForm() throws Exception {
+        Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
+        given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(resourceRequestService.getRequestsForCourse(10L, TEACHER)).willReturn(List.of(
+                request("Anna", "Slides for week two, please."),
+                request("Boris", "A reading list on recursion.")));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"course-resource-requests\"")))
+                .andExpect(content().string(containsString("Anna Student")))
+                .andExpect(content().string(containsString("Slides for week two, please.")))
+                .andExpect(content().string(containsString("A reading list on recursion.")))
+                .andExpect(content().string(containsString("2026-11-17 09:30")))
+                .andExpect(content().string(not(containsString("resource-request-section"))));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void courseDetail_shouldSayNoRequestsYet_toTeacher() throws Exception {
+        Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
+        given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(resourceRequestService.getRequestsForCourse(10L, TEACHER)).willReturn(List.of());
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("No requests yet.")));
     }
 }
