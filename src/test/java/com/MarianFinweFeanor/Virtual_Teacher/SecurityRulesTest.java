@@ -41,6 +41,13 @@ class SecurityRulesTest {
     }
 
     @Test
+    void savingLectureNotes_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        mockMvc.perform(post("/courses/1/lectures/1/notes").param("content", "x"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
     @WithMockUser(roles = "STUDENT")
     void lectureApi_shouldBeForbidden_forStudent() throws Exception {
         mockMvc.perform(get("/api/lectures")).andExpect(status().isForbidden());

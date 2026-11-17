@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,14 +29,17 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
 
     private final AssignmentRepository assignmentRepository;
     private final LectureCommentRepository lectureCommentRepository;
+    private final LectureNoteRepository lectureNoteRepository;
     private final Path uploadDir;
 
     @Autowired
     public ContentCleanupServiceImpl(AssignmentRepository assignmentRepository,
                                      LectureCommentRepository lectureCommentRepository,
+                                     LectureNoteRepository lectureNoteRepository,
                                      @Value("${app.upload.dir}") String uploadDir) {
         this.assignmentRepository = assignmentRepository;
         this.lectureCommentRepository = lectureCommentRepository;
+        this.lectureNoteRepository = lectureNoteRepository;
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
@@ -44,6 +48,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
         deleteSubmissions(assignmentRepository.findByLecture_LectureId(lectureId));
         lectureCommentRepository.deleteAll(
                 lectureCommentRepository.findByLecture_LectureId(lectureId));
+        lectureNoteRepository.deleteAll(
+                lectureNoteRepository.findByLecture_LectureId(lectureId));
     }
 
     @Override
@@ -51,6 +57,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
         deleteSubmissions(assignmentRepository.findByLecture_Course_CourseId(courseId));
         lectureCommentRepository.deleteAll(
                 lectureCommentRepository.findByLecture_Course_CourseId(courseId));
+        lectureNoteRepository.deleteAll(
+                lectureNoteRepository.findByLecture_Course_CourseId(courseId));
     }
 
     @Override
@@ -58,6 +66,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
         deleteSubmissions(assignmentRepository.findByStudent_UserId(userId));
         lectureCommentRepository.deleteAll(
                 lectureCommentRepository.findByAuthor_UserId(userId));
+        lectureNoteRepository.deleteAll(
+                lectureNoteRepository.findByUser_UserId(userId));
     }
 
     private void deleteSubmissions(List<Assignment> submissions) {

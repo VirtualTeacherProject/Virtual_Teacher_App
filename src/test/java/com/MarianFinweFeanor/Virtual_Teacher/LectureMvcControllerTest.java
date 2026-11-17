@@ -9,6 +9,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessServ
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureCommentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureNoteService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -35,12 +37,16 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * SCRUM-10: the lecture video is rendered only for users with content access.
  * SCRUM-22: lecture pages of a draft course are hidden from non-managers.
+ * SCRUM-20: the private notes card and its save endpoint.
  */
 @ActiveProfiles("test")
 @WebMvcTest(LectureMvcController.class)
@@ -63,6 +69,7 @@ class LectureMvcControllerTest {
     @MockBean private LectureCommentService lectureCommentService;
     @MockBean private EnrollmentService enrollmentService;
     @MockBean private CourseAccessService courseAccessService;
+    @MockBean private LectureNoteService lectureNoteService;
     @MockBean private UserRepository userRepository;
 
     private Course course;
@@ -166,5 +173,83 @@ class LectureMvcControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("lectures"))
                 .andExpect(content().string(not(containsString(VIDEO_ID))));
+    }
+
+    // --- SCRUM-20: notes -----------------------------------------------------
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldShowOwnNote_forEnrolledStudent() throws Exception {
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(true);
+        given(userService.getEnrolledCourses(STUDENT)).willReturn(Set.of(course));
+        given(lectureNoteService.getNoteContent(5L, STUDENT)).willReturn("Remember <generics>");
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canTakeNotes", true))
+                .andExpect(model().attribute("noteContent", "Remember <generics>"))
+                .andExpect(content().string(containsString("id=\"lecture-notes\"")))
+                // plain text: markup in a note is escaped, never rendered
+                .andExpect(content().string(containsString("Remember &lt;generics&gt;")));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldHideNotes_forStudentWhoIsNotEnrolled() throws Exception {
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(false);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canTakeNotes", false))
+                .andExpect(content().string(not(containsString("id=\"lecture-notes\""))));
+
+        verify(lectureNoteService, never()).getNoteContent(any(), any());
+    }
+
+    @Test
+    void lectureDetail_shouldHideNotes_forAnonymousVisitor() throws Exception {
+        mockMvc.perform(get("/courses/1/lectures/5"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canTakeNotes", false))
+                .andExpect(content().string(not(containsString("id=\"lecture-notes\""))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void saveNote_shouldSaveForTheLoggedInUser_andRedirectToTheLecture() throws Exception {
+        mockMvc.perform(post("/courses/1/lectures/5/notes")
+                        .principal(STUDENT_PRINCIPAL)
+                        .param("content", "My note"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/courses/1/lectures/5"))
+                .andExpect(flash().attribute("msg", "Notes saved."));
+
+        verify(lectureNoteService).saveNote(5L, STUDENT, "My note");
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void saveNote_shouldShowError_whenStudentIsNotEnrolled() throws Exception {
+        doThrow(new AccessDeniedException("Enroll in this course to take notes"))
+                .when(lectureNoteService).saveNote(5L, STUDENT, "My note");
+
+        mockMvc.perform(post("/courses/1/lectures/5/notes")
+                        .principal(STUDENT_PRINCIPAL)
+                        .param("content", "My note"))
+                .andExpect(redirectedUrl("/courses/1/lectures/5"))
+                .andExpect(flash().attribute("error", "Enroll in this course to take notes"));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void saveNote_shouldShowError_whenNoteIsTooLong() throws Exception {
+        doThrow(new IllegalArgumentException("Notes cannot be longer than 5000 characters"))
+                .when(lectureNoteService).saveNote(eq(5L), eq(STUDENT), any());
+
+        mockMvc.perform(post("/courses/1/lectures/5/notes")
+                        .principal(STUDENT_PRINCIPAL)
+                        .param("content", "x"))
+                .andExpect(redirectedUrl("/courses/1/lectures/5"))
+                .andExpect(flash().attribute("error", "Notes cannot be longer than 5000 characters"));
     }
 }
