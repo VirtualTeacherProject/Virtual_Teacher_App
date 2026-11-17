@@ -1,6 +1,6 @@
 >Note: statuses were verified against the code in docs/backlog-audit.md (2026-11-16). Evidence and file references live there; this file only tracks grouping, status and order. Tickets finished after the audit are listed in Completed; one that is not merged yet names the branch it is on.
 
-## Completed — 18 tickets
+## Completed — 19 tickets
 # Ticket	Description	Notes
 SCRUM-5	Proper exception handling and propagation	Global MVC/REST exception handlers and custom exceptions implemented.
 SCRUM-7	Swagger documentation	Springdoc/Swagger UI implemented.
@@ -19,7 +19,8 @@ SCRUM-15	Decide how deletion works for entities connected through foreign keys	M
 SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	Merged. Deletes work for rows with dependants, Deactivate/Activate on the user list, teacher select on the course edit page, dashboard teacher count fixed.
 SCRUM-20	Users can write plain-text notes for each lecture	Merged. One private note per user per lecture (max 5000 characters) on the lecture page, for users with content access. Notes follow the SCRUM-15 deletion policy.
 SCRUM-24	Add/edit a user’s lecture notes	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it. One note per lecture is enough for now.
-SCRUM-50	Adopt Flyway and switch ddl-auto to validate	Done on feature/SCRUM-50-flyway-migrations (not merged yet). V1 baseline for H2 and PostgreSQL in src/main/resources/db/migration; both profiles validate. Existing databases are baselined at version 0 and V1 creates only missing tables. Every schema change now needs a new migration. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
+SCRUM-50	Adopt Flyway and switch ddl-auto to validate	Merged. V1 baseline for H2 and PostgreSQL in src/main/resources/db/migration; both profiles validate. Existing databases are baselined at version 0 and V1 creates only missing tables. Every schema change now needs a new migration. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
+SCRUM-34	Teachers provide additional resources accessible only after enrollment	Done on feature/SCRUM-34-course-resources (not merged yet). Resources are links (title, URL, optional description) on the course page; approved teachers and admins add and remove them, enrolled students see them. Uploaded files are not supported. Migration V2.
 
 
 ## Partially done — previously listed as completed
@@ -32,11 +33,10 @@ SCRUM-22	Courses can be drafts or published; students cannot see drafts	Lecture 
 
 ### 1. Access to course content (shared enrollment guard)
 # Ticket	Description	Status
-SCRUM-34	Teachers provide additional resources accessible only after enrollment	Not started. Next in this group. Reuses the SCRUM-10 guard (CourseAccessService).
-SCRUM-35	Enrolled students request additional resources using at least 100 characters	Not started. Needs SCRUM-34.
+SCRUM-35	Enrolled students request additional resources using at least 100 characters	Not started. Next in this group (SCRUM-34 is done).
 SCRUM-36	Teachers manage resource requests as resolved, irrelevant or in progress and can assign them to another student	Not started. Needs SCRUM-35.
 SCRUM-38	Course Lessons Availability — full requirements unavailable	Blocked on requirements. If it means scheduled release of lectures, it belongs to this guard.
-Order: SCRUM-34 -> 35 -> 36. New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) and come with a Flyway migration (SCRUM-50).
+Order: SCRUM-35 -> 36 (SCRUM-34 done). New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) and come with a Flyway migration (SCRUM-50).
 
 ### 2. User search — done (SCRUM-19, SCRUM-6)
 
