@@ -28,7 +28,7 @@ class FlywayMigrationTest {
 
     private static final List<String> TABLES = List.of(
             "USERS", "COURSES", "LECTURES", "ENROLLMENTS",
-            "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES");
+            "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES");
 
     private DataSource dataSource;
     private JdbcTemplate jdbc;
@@ -42,13 +42,16 @@ class FlywayMigrationTest {
     }
 
     @Test
-    void emptyDatabase_shouldGetTheWholeSchemaFromV1() {
+    void emptyDatabase_shouldGetTheWholeSchemaFromTheMigrations() {
+        int available = flyway().info().pending().length;
+
         MigrateResult result = flyway().migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(1);
+        assertThat(available).isPositive();
+        assertThat(result.migrationsExecuted).isEqualTo(available);
         assertThat(tables()).containsAll(TABLES);
         assertThat(sequences()).contains("LECTURE_COMMENTS_SEQ");
-        assertThat(currentVersion()).isEqualTo("1");
+        assertThat(flyway().info().pending()).isEmpty();
     }
 
     @Test
@@ -65,8 +68,9 @@ class FlywayMigrationTest {
 
         flyway().migrate();
 
-        // baselined, then V1 ran on top of the existing tables
-        assertThat(appliedVersions()).containsExactly("0", "1");
+        // baselined, then V1 ran on top of the existing tables, then the later migrations
+        assertThat(appliedVersions()).startsWith("0", "1");
+        assertThat(flyway().info().pending()).isEmpty();
         assertThat(tables()).containsAll(TABLES);
 
         // existing rows and existing columns are untouched
@@ -137,10 +141,6 @@ class FlywayMigrationTest {
         return jdbc.queryForList(
                 "select sequence_name from information_schema.sequences where sequence_schema = 'PUBLIC'",
                 String.class);
-    }
-
-    private String currentVersion() {
-        return flyway().info().current().getVersion().getVersion();
     }
 
     private List<String> appliedVersions() {

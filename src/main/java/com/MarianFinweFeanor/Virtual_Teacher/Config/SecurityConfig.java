@@ -104,7 +104,10 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "GET"),
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST"),
                                 new AntPathRequestMatcher("/courses/*/lectures/*/edit", "GET"),
-                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST")
+                                new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST"),
+                                // SCRUM-34: managing additional course resources
+                                new AntPathRequestMatcher("/courses/*/resources", "POST"),
+                                new AntPathRequestMatcher("/courses/*/resources/**", "POST")
                         ).hasAnyRole("TEACHER", "ADMIN")
 
                         // 5) only teachers/admins can see list of enrolled students

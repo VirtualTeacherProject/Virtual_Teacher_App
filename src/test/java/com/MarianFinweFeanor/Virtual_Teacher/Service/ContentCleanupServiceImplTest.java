@@ -1,9 +1,11 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,9 @@ class ContentCleanupServiceImplTest {
     @Mock
     private LectureNoteRepository lectureNoteRepository;
 
+    @Mock
+    private CourseResourceRepository courseResourceRepository;
+
     @TempDir
     Path uploadDir;
 
@@ -46,6 +51,7 @@ class ContentCleanupServiceImplTest {
     void setUp() {
         cleanupService = new ContentCleanupServiceImpl(
                 assignmentRepository, lectureCommentRepository, lectureNoteRepository,
+                courseResourceRepository,
                 uploadDir.toString());
     }
 
@@ -75,6 +81,7 @@ class ContentCleanupServiceImplTest {
         verify(assignmentRepository).deleteAll(submissions);
         verify(lectureCommentRepository).deleteAll(comments);
         verify(lectureNoteRepository).deleteAll(notes);
+        verifyNoInteractions(courseResourceRepository);   // resources belong to the course
         assertFalse(Files.exists(file));
     }
 
@@ -89,12 +96,15 @@ class ContentCleanupServiceImplTest {
         List<LectureNote> notes = List.of(new LectureNote(), new LectureNote());
         when(lectureCommentRepository.findByLecture_Course_CourseId(10L)).thenReturn(comments);
         when(lectureNoteRepository.findByLecture_Course_CourseId(10L)).thenReturn(notes);
+        List<CourseResource> resources = List.of(new CourseResource());
+        when(courseResourceRepository.findByCourse_CourseId(10L)).thenReturn(resources);
 
         cleanupService.deleteCourseContent(10L);
 
         verify(assignmentRepository).deleteAll(submissions);
         verify(lectureCommentRepository).deleteAll(comments);
         verify(lectureNoteRepository).deleteAll(notes);
+        verify(courseResourceRepository).deleteAll(resources);
         assertFalse(Files.exists(first));
         assertFalse(Files.exists(second));
     }

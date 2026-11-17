@@ -5,7 +5,8 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces;
  *
  * - A lecture owns its submissions, its comments and the notes written on it (SCRUM-20).
  * - A course owns its lectures (and therefore their submissions, comments and notes)
- *   and its enrollments. Deleting a course never deletes a user.
+ *   its additional resources (SCRUM-34) and its enrollments. Deleting a course
+ *   never deletes a user.
  * - A user owns only what they produced as a participant: their enrollments,
  *   their submissions, their comments and their notes. Deleting a user never deletes a
  *   course or a lecture. A user who still teaches courses cannot be deleted
@@ -19,7 +20,7 @@ public interface ContentCleanupService {
     /** Submissions, comments and notes of one lecture. */
     void deleteLectureContent(Long lectureId);
 
-    /** Submissions, comments and notes of every lecture in the course. */
+    /** Submissions, comments and notes of every lecture in the course, and the course's resources. */
     void deleteCourseContent(Long courseId);
 
     /** Submissions, comments and notes written by the user. */

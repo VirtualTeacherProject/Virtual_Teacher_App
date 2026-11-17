@@ -2,6 +2,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ContentCleanupService;
@@ -30,16 +31,19 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
     private final AssignmentRepository assignmentRepository;
     private final LectureCommentRepository lectureCommentRepository;
     private final LectureNoteRepository lectureNoteRepository;
+    private final CourseResourceRepository courseResourceRepository;
     private final Path uploadDir;
 
     @Autowired
     public ContentCleanupServiceImpl(AssignmentRepository assignmentRepository,
                                      LectureCommentRepository lectureCommentRepository,
                                      LectureNoteRepository lectureNoteRepository,
+                                     CourseResourceRepository courseResourceRepository,
                                      @Value("${app.upload.dir}") String uploadDir) {
         this.assignmentRepository = assignmentRepository;
         this.lectureCommentRepository = lectureCommentRepository;
         this.lectureNoteRepository = lectureNoteRepository;
+        this.courseResourceRepository = courseResourceRepository;
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
@@ -59,6 +63,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                 lectureCommentRepository.findByLecture_Course_CourseId(courseId));
         lectureNoteRepository.deleteAll(
                 lectureNoteRepository.findByLecture_Course_CourseId(courseId));
+        courseResourceRepository.deleteAll(
+                courseResourceRepository.findByCourse_CourseId(courseId));
     }
 
     @Override

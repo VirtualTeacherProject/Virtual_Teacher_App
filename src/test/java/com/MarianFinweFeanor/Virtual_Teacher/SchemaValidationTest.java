@@ -25,6 +25,6 @@ class SchemaValidationTest {
     void schemaShouldComeFromFlyway_andHibernateShouldOnlyValidateIt() {
         assertThat(environment.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
         assertThat(flyway.info().pending()).isEmpty();
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+        assertThat(flyway.info().applied()).isNotEmpty();
     }
 }
