@@ -6,6 +6,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
@@ -132,12 +133,21 @@ class PostgresMigrationTest {
         resource.setCreatedAt(LocalDateTime.now());
         em.persist(resource);
 
+        ResourceRequest request = new ResourceRequest();
+        request.setCourse(course);
+        request.setStudent(teacher);
+        request.setMessage("Please share more exercises. ".repeat(4));
+        request.setCreatedAt(LocalDateTime.now());
+        em.persist(request);
+
         em.flush();
         em.clear();
 
         assertThat(em.find(LectureComment.class, comment.getCommentId()).getComment())
                 .isEqualTo("A comment");
         assertThat(em.find(LectureNote.class, note.getNoteId()).getContent()).isEqualTo("A note");
+        assertThat(em.find(ResourceRequest.class, request.getRequestId()).getStatus())
+                .isEqualTo(ResourceRequest.STATUS_OPEN);
         assertThat(em.find(Enrollment.class, enrollment.getEnrollmentId()).getAverageGrade())
                 .isEqualTo(75.5);
     }
