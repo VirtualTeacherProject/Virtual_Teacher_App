@@ -78,6 +78,8 @@ class FlywayMigrationTest {
                 "select email from users where first_name = 'Anna'", String.class))
                 .isEqualTo("anna@test.com");
         assertThat(jdbc.queryForObject("select count(*) from courses", Integer.class)).isEqualTo(1);
+        // SCRUM-45 (V5): existing courses do not require attendance
+        assertThat(jdbc.queryForObject("select attendance_required from courses", Boolean.class)).isFalse();
 
         // the table that was missing is usable
         jdbc.update("insert into lectures (title, description, video_url, assignment_file_path, course_id) "

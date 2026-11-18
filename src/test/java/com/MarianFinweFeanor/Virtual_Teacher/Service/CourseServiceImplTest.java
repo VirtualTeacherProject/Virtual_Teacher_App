@@ -513,6 +513,22 @@ class CourseServiceImplTest {
     }
 
     @Test
+    void updateCourse_shouldUpdateAttendanceRequired() {   // SCRUM-45
+        Course updatedCourse = new Course();
+        updatedCourse.setTitle("Java");
+        updatedCourse.setTopic("Programming");
+        updatedCourse.setAttendanceRequired(true);
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseRepository.save(course)).thenReturn(course);
+
+        assertTrue(courseService.updateCourse(1L, updatedCourse).isAttendanceRequired());
+
+        updatedCourse.setAttendanceRequired(false);
+        assertFalse(courseService.updateCourse(1L, updatedCourse).isAttendanceRequired());
+    }
+
+    @Test
     void updateCourse_shouldNotChangeCourseStatus() {
         course.setStatus("DRAFT");
 

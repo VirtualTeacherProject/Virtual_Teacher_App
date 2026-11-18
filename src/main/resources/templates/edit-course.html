@@ -63,6 +63,16 @@
             </div>
         </div>
 
+        <!-- SCRUM-45 -->
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" th:field="*{attendanceRequired}">
+            <label class="form-check-label" th:for="${#ids.prev('attendanceRequired')}">
+                Attendance required
+            </label>
+            <div class="form-text">Students' attendance will be tracked for every lecture.</div>
+        </div>
+
+
 
 
         <button class="btn btn-primary">Save Changes</button>

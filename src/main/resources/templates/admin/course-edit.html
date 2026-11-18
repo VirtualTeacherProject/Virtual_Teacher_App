@@ -99,6 +99,14 @@
                     </div>
                 </div>
 
+                <!-- Attendance (SCRUM-45) -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" th:field="*{attendanceRequired}">
+                    <label class="form-check-label" th:for="${#ids.prev('attendanceRequired')}">
+                        Attendance required
+                    </label>
+                </div>
+
                 <!-- Status -->
                 <div class="mb-3">
                     <label for="status" class="form-label">Status</label>

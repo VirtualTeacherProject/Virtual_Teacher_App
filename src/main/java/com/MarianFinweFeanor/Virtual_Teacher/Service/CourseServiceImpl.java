@@ -169,6 +169,7 @@ public class CourseServiceImpl implements CourseService {
                     course.setDescription(updatedCourse.getDescription());
                     course.setStartDate(updatedCourse.getStartDate());
                     course.setPassingGrade(updatedCourse.getPassingGrade());
+                    course.setAttendanceRequired(updatedCourse.isAttendanceRequired());
 
                     // Status is intentionally not changed here.
                     // Publishing is handled only through publishCourse().

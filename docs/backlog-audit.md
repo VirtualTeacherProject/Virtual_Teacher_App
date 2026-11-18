@@ -1,6 +1,6 @@
 # Backlog audit
 
-Audit of every ticket in `docs/backlog.md` against git history and the code on `main` at `85c4c7c` (2026-11-18), updated for SCRUM-22 on `feature/SCRUM-22-hide-drafts-in-api`. Previous audit: `ff442fd` (2026-11-16).
+Audit of every ticket in `docs/backlog.md` against git history and the code on `main` at `85c4c7c` (2026-11-18), updated for SCRUM-22 (`773407b`) and SCRUM-45 (`feature/SCRUM-45-attendance-required`). Previous audit: `ff442fd` (2026-11-16).
 
 **How this was checked.** `git log` on `main` (all `SCRUM-<n>` commits, merges and PRs) and `git branch --no-merged main` (only the stale `origin/exception-handling` remains unmerged; nothing in it changes a status). Each claimed feature was then checked in the controllers, services, entities, migrations, `SecurityConfig` and templates. NOT STARTED tickets were confirmed by searching `src/main` for their entities and keywords (attendance, prerequisite, exam/quiz, mail/verification, PDF/certificate, group, tutoring, assistant). Tests were not re-run for this update; the coverage figure for SCRUM-8 is from the 2026-11-16 run (`*ServiceImplTest` with JaCoCo, then 125 tests, 0 failures). Ticket wording comes only from `backlog.md`; Jira was not consulted.
 
@@ -12,9 +12,9 @@ Sizes: **S** = up to a day, **M** = 2–4 days, **L** = a week or more, for one 
 
 | Status | Count | Tickets |
 |---|---|---|
-| DONE | 24 | 5, 6, 7, 8, 9, 10, 11, 12, 15, 19, 20, 22, 23, 24, 25, 27, 31, 34, 35, 36, 41 (duplicate of 20), 42, 49, 50 |
+| DONE | 25 | 5, 6, 7, 8, 9, 10, 11, 12, 15, 19, 20, 22, 23, 24, 25, 27, 31, 34, 35, 36, 41 (duplicate of 20), 42, 45, 49, 50 |
 | PARTIAL | 2 | 13, 40 |
-| NOT STARTED | 19 | 16, 17, 18, 26, 28, 29, 30, 32, 33, 37, 39, 43, 44, 45, 46, 47, 48, plus 14 and 38 (requirements unclear) |
+| NOT STARTED | 18 | 16, 17, 18, 26, 28, 29, 30, 32, 33, 37, 39, 43, 44, 46, 47, 48, plus 14 and 38 (requirements unclear) |
 
 ### Status changes since the 2026-11-16 audit
 
@@ -26,13 +26,14 @@ Sizes: **S** = up to a day, **M** = 2–4 days, **L** = a week or more, for one 
 | SCRUM-15 | NOT STARTED | DONE | `d8bf3d1`, `e695d8b` [`eca7feb`] |
 | SCRUM-19 | PARTIAL | DONE | `cfe08f6` [`eca7feb`] |
 | SCRUM-20 | NOT STARTED | DONE | `a0d77bc` [`1490a55`] |
-| SCRUM-22 | PARTIAL | DONE | `feature/SCRUM-22-hide-drafts-in-api` |
+| SCRUM-22 | PARTIAL | DONE | `773407b` |
 | SCRUM-24 | NOT STARTED | DONE | `a0d77bc` [`1490a55`] |
 | SCRUM-31 | PARTIAL | DONE | `f540e6f` [`eca7feb`] |
 | SCRUM-34 | NOT STARTED | DONE | `c69e3f8` [`4a50276`] |
 | SCRUM-35 | NOT STARTED | DONE | `750b2e2` [`508cff2`] |
 | SCRUM-36 | NOT STARTED | DONE | `caae73e` [`a3da031`] |
 | SCRUM-41 | NOT STARTED | DONE (duplicate) | Closed as a duplicate of SCRUM-20 |
+| SCRUM-45 | NOT STARTED | DONE | `feature/SCRUM-45-attendance-required` |
 | SCRUM-49 | not audited | DONE | `4ba7128` [PR #13 `5937900`] |
 | SCRUM-50 | not audited | DONE | `eac9a74` [`7e46e27`] |
 
@@ -45,7 +46,7 @@ SCRUM-13 and SCRUM-40 stay PARTIAL. All other tickets keep their status.
 | SCRUM-5 Exception handling | `9d25b93`, `bf00898`, `1c155bb`. `exceptions/GlobalMvcExceptionHandler.java`, `exceptions/GlobalRestExceptionHandler.java` (`ApiErrorResponse`), custom `EntityNotFoundException`, `EntityDuplicateException`, `EntityInUseException`, `FileStorageException`. | Bare `RuntimeException` is still thrown in `Controller/AdminUserController.java` (6×, "User not found"), `Service/EnrollmentServiceImpl.java` (2×, "Enrollment not found") and `Service/UserServiceImpl.java` (1×), which surface as a 500 instead of a 404. |
 | SCRUM-6 Approved teachers get course admin and student search | `0a7bd61` [`eca7feb`]. `Controller/StudentSearchMvcController.java` (`/students`), `templates/students.html`. | — |
 | SCRUM-7 Swagger documentation | `c1b3cad`, `9a837b4`. `springdoc-openapi-starter-webmvc-ui` in `pom.xml`, `Config/OpenApiConfig.java`. | Only `WikiRestController` has `@Operation`/`@Tag`. `SwaggerRestController` is an empty class. |
-| SCRUM-8 Service coverage ≥ 80% | `ff69e34` [PR #11 `909ef03`]. Measured 2026-11-16: `Service` package 96.0% instruction, 87.0% branch. | Not re-measured after SCRUM-20/34/35/36 added services. The JaCoCo plugin in `pom.xml` has only `prepare-agent` and `report`, no `check` goal, so CI does not enforce the threshold. |
+| SCRUM-8 Service coverage ≥ 80% | `ff69e34` [PR #11 `909ef03`]. Measured 2026-11-18 (`mvn verify`, full suite, 417 tests): `Service` package 97.5% instruction, 93.1% branch. | The JaCoCo plugin in `pom.xml` has only `prepare-agent` and `report`, no `check` goal, so CI does not enforce the threshold. |
 | SCRUM-9 CI on main | `9794fa0`, `b01c2a3` [PR #12 `d2519ae`]. `.github/workflows/main.yml` runs `mvn -B clean package` on push and PR to `main`. | Run results not checked. |
 | SCRUM-10 Videos only after enrolment | `c300588` [PR #15 `eb3664c`]. `Service/CourseAccessServiceImpl.java` (`canViewCourse`, `canAccessCourseContent`, `ensureCanViewCourse`), used by `LectureMvcController`; `canAccessContent` gate in `templates/lecture-detail.html`. Also restricted REST writes in `SecurityConfig` and added an owner/manager check to `AssignmentMvcController.download`. | Video URLs are external (YouTube), so hiding them is not real protection. |
 | SCRUM-11 Admins have teacher functionality | `64f6e3e` [PR #14 `2c3b95c`]. `UserServiceImpl.ensureApprovedTeacher` returns early for admins; `canManageCourses` in `Config/GlobalModelAttributes.java`. | — |
@@ -53,7 +54,7 @@ SCRUM-13 and SCRUM-40 stay PARTIAL. All other tickets keep their status.
 | SCRUM-15 Deletion policy | `d8bf3d1`, `e695d8b` [`eca7feb`]. `Service/ContentCleanupServiceImpl.java` (`deleteLectureContent`, `deleteCourseContent`, `deleteUserContent`); `EntityInUseException` when a user still teaches courses. | — |
 | SCRUM-19 User search | `cfe08f6` [`eca7feb`]. `UserServiceImpl.getAllUsers(firstName, lastName, email)` builds a `UserSpecification`; search on `templates/admin/users.html` and `GET /api/users`. | — |
 | SCRUM-20 Lecture notes | `a0d77bc` [`1490a55`]. `Model/LectureNote.java` (max 5000), `Service/LectureNoteServiceImpl.java`, notes panel in `templates/lecture-detail.html`. | — |
-| SCRUM-22 Drafts hidden from students | `ff69e34`, `c300588`, `feature/SCRUM-22-hide-drafts-in-api`. `CourseServiceImpl.getVisibleCourses` / `searchVisibleCoursesByTitle`, `CourseAccessServiceImpl.ensureCanViewCourse` on the lecture routes, enrolment refused for drafts. `CourseRestController`: `GET /api/courses` returns `getVisibleCourses(email, canManageCourses)`, and `GET /api/courses/{id}` answers 404 when `canViewCourse` is false. `CourseRestControllerTest` (6 tests). | Any user who can manage courses can open any draft by id (same as the course page); the list shows only their own drafts. |
+| SCRUM-22 Drafts hidden from students | `ff69e34`, `c300588`, `773407b`. `CourseServiceImpl.getVisibleCourses` / `searchVisibleCoursesByTitle`, `CourseAccessServiceImpl.ensureCanViewCourse` on the lecture routes, enrolment refused for drafts. `CourseRestController`: `GET /api/courses` returns `getVisibleCourses(email, canManageCourses)`, and `GET /api/courses/{id}` answers 404 when `canViewCourse` is false. `CourseRestControllerTest` (6 tests). | Any user who can manage courses can open any draft by id (same as the course page); the list shows only their own drafts. |
 | SCRUM-23 Students comment on lectures | `10e2b28` [PR #10 `76dfd04`]. `Model/LectureComment.java`, `Service/LectureCommentServiceImpl.java`, form in `templates/lecture-detail.html`. | Comments are readable by anyone who can view the lecture page. No edit or delete. |
 | SCRUM-24 Add/edit lecture notes | Same as SCRUM-20: saving overwrites, an empty save deletes. | — |
 | SCRUM-25 Link to Swagger | `4ce7935` [PR #8 `eaa762f`]. `README.md` lines 7–8. | No template links to Swagger. |
@@ -64,6 +65,7 @@ SCRUM-13 and SCRUM-40 stay PARTIAL. All other tickets keep their status.
 | SCRUM-36 Teachers manage resource requests | `caae73e` [`a3da031`]. `ResourceRequestMvcController` `/status`, `/assign`, `/response`; `Service/ResourceRequestServiceImpl.java`; `db/migration/V4__resource_request_assignment.sql`. | — |
 | SCRUM-41 Notes per lecture | Duplicate of SCRUM-20; closed. | — |
 | SCRUM-42 Lecture comments | `10e2b28`, `0ecc6c3` [PR #10 `76dfd04`]. Same code as SCRUM-23, plus `LectureCommentServiceImplTest`. | Same as SCRUM-23. |
+| SCRUM-45 Courses can require attendance | `feature/SCRUM-45-attendance-required`. `Model/Course.attendanceRequired` (default `false`), `db/migration/V5__course_attendance_required.sql` (`boolean default false not null`, so existing courses do not require attendance). Set by `EnrollmentMvcController.submitAddCourse` / `submitEditCourse` (checkbox in `templates/add-course.html`, `templates/edit-course.html`), `AdminCourseController` (`templates/admin/course-edit.html`) and `CourseServiceImpl.updateCourse`. Shown in `templates/courses.html` (badge) and `templates/course-detail.html`. Tests: `CourseAttendanceRequiredTest` (9), `AdminCourseControllerTest` (+2), `CourseServiceImplTest` (+1), V5 checked in `FlywayMigrationTest` and `PostgresMigrationTest`. | Only the flag; nothing is tracked yet (SCRUM-28). The REST `PUT /api/courses/{id}` sets it to `false` when the field is left out of the JSON, like the other fields. |
 | SCRUM-49 Pull request template | `4ba7128` [PR #13 `5937900`]. `.github/pull_request_template.md`. | Was not listed in `backlog.md` before this update. |
 | SCRUM-50 Flyway, `ddl-auto=validate` | `eac9a74`, `589abb5` [`7e46e27`]. `flyway-core` in `pom.xml`, `db/migration/V1__baseline_schema.sql` to `V4`. | `courses.teacher_id` is still nullable in databases created before Flyway. |
 
@@ -85,7 +87,7 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 | SCRUM-17 Exam start/end times | — | part of 16 | None |
 | SCRUM-18 MCQ, MSQ, teacher-graded OEQ | — | part of 16 | None |
 | SCRUM-26 Database relationship diagrams | No diagram in `README.md` or `docs/`. `db/migration/V1`–`V4` are now the accurate schema source (`db/database.sql` is stale). | S | None |
-| SCRUM-28 Attendance tracker | No attendance entity. | M (with 29, 45) | None |
+| SCRUM-28 Attendance tracker | No attendance entity. The SCRUM-45 flag (`Course.attendanceRequired`) exists. | M (with 29) | None |
 | SCRUM-29 Students see own attendance | — | part of 28 | None |
 | SCRUM-30 Groups of enrolled students | No group entity. | M | None |
 | SCRUM-32 Tutoring availability on teacher profile | `Controller/ProfileMvcController.java` edits only names, picture and status; no public teacher profile. | M | None |
@@ -95,14 +97,13 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 | SCRUM-39 Easter eggs | Only the themed 404 page (`templates/errors/404.html`). | S | None |
 | SCRUM-43 Email verification | No mail dependency in `pom.xml`, no token entity; `UserMvcController` activates accounts on registration. | M | **SMTP/email provider, public base URL** |
 | SCRUM-44 Refer a friend | — | M after 43 | **Email provider** |
-| SCRUM-45 Courses can require attendance | No flag on `Model/Course.java`. | part of 28 | None |
 | SCRUM-46 Enrolment confirmation email | — | S after 43 | **Email provider** |
 | SCRUM-47 PDF certificate | No PDF library in `pom.xml`. Completion status already exists on `Enrollment`. | M | PDF library; "receive" needs the email provider |
 | SCRUM-48 Prerequisite courses | No prerequisite relation on `Course`. | S–M | None |
 
 ## Groupings
 
-- **SCRUM-28 / 29 / 45 (attendance).** One feature: 45 is the flag, 28 the tracker, 29 the student view. Build in that order.
+- **SCRUM-28 / 29 / 45 (attendance).** One feature: 45 is the flag (done), 28 the tracker, 29 the student view. Build in that order.
 - **SCRUM-16 / 17 / 18 / 33 (entrance exams).** One epic; 33 is a small rule on top of 17.
 - **SCRUM-16 / 48 (enrolment preconditions).** Both add a rule before `EnrollmentServiceImpl.enroll`; design one eligibility hook.
 - **SCRUM-43 / 44 / 46, plus the emailed half of 47 (email).** Same mail configuration; 43 owns the setup and tokens.
@@ -135,7 +136,7 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 
 | Step | Tickets | Size | Why here |
 |---|---|---|---|
-| 1 | SCRUM-45 → 28 → 29 | M | Self-contained. |
+| 1 | SCRUM-28 → 29 | M | Builds on the SCRUM-45 flag. |
 | 2 | SCRUM-48 | S–M | Introduces the enrolment eligibility hook. |
 | 3 | SCRUM-43 → 46 → 44 | M + S + M | Needs the email provider; 43 carries the setup. |
 | 4 | SCRUM-47 | M | Completion logic exists; email is available after step 3. |

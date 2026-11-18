@@ -87,6 +87,7 @@ class PostgresMigrationTest {
         course.setTopic("Programming");
         course.setStatus("PUBLISHED");
         course.setTeacher(teacher);
+        course.setAttendanceRequired(true);   // SCRUM-45 column (V5)
         em.persist(course);
 
         Lecture lecture = new Lecture();
@@ -157,5 +158,6 @@ class PostgresMigrationTest {
         assertThat(storedRequest.getResponse()).isEqualTo("See the docs.");
         assertThat(em.find(Enrollment.class, enrollment.getEnrollmentId()).getAverageGrade())
                 .isEqualTo(75.5);
+        assertThat(em.find(Course.class, course.getCourseId()).isAttendanceRequired()).isTrue();
     }
 }

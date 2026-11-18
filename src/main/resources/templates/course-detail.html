@@ -92,6 +92,11 @@
                     <p class="text-muted mb-1">Status</p>
                     <span class="badge text-bg-light border" th:text="${course.status}">Published</span>
                 </div>
+                <div class="col-md-4">
+                    <p class="text-muted mb-1">Attendance</p>
+                    <span class="badge text-bg-warning" th:if="${course.attendanceRequired}">Required</span>
+                    <span class="text-muted" th:unless="${course.attendanceRequired}">Not required</span>
+                </div>
                 <div class="col-md-4" th:if="${course.startDate}">
                     <p class="text-muted mb-1">Start Date</p>
                     <div th:text="${#temporals.format(course.startDate, 'dd MMM yyyy HH:mm')}">01 Jan 2025</div>

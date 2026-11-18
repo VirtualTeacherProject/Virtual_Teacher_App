@@ -47,6 +47,10 @@ public class Course {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "DRAFT";
 
+    // SCRUM-45: attendance is tracked only for courses that require it (SCRUM-28).
+    @Column(name = "attendance_required", nullable = false)
+    private boolean attendanceRequired = false;
+
     @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)
     private User teacher;

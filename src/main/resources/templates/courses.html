@@ -164,6 +164,10 @@
                         Topic: <span th:text="${c.topic}">Programming</span>
                     </div>
 
+                    <div class="mb-2" th:if="${c.attendanceRequired}">
+                        <span class="badge text-bg-warning">Attendance required</span>
+                    </div>
+
                     <div class="text-muted small mb-2" th:if="${c.startDate != null}">
                         Starts:
                         <span th:text="${#temporals.format(c.startDate, 'dd MMM yyyy HH:mm')}">01 Jan 2025</span>

@@ -1,6 +1,6 @@
->Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 finished on its feature branch; details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
+>Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b) and SCRUM-45 (finished on its feature branch); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
 
-## Completed — 24 tickets
+## Completed — 25 tickets
 # Ticket	Description	Status	Evidence	Notes
 SCRUM-5	Proper exception handling and propagation	DONE	9d25b93, bf00898, 1c155bb	Global MVC/REST exception handlers and custom exceptions. A few paths still throw bare RuntimeException (see audit).
 SCRUM-6	Approved teachers receive course administration and student-search functionality	DONE	0a7bd61 [merge eca7feb]	/students search page.
@@ -13,7 +13,7 @@ SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	
 SCRUM-15	Decide how deletion works for entities connected through foreign keys	DONE	d8bf3d1, e695d8b [merge eca7feb]	Course -> lectures -> submissions/comments. Deleting a user removes only their own enrollments, submissions and comments, and is refused while they still teach courses. Deactivating is the normal way to remove a user.
 SCRUM-19	Search users by first name, last name or email	DONE	cfe08f6 [merge eca7feb]	Admin user list search and GET /api/users filters.
 SCRUM-20	Users can write plain-text notes for each lecture	DONE	a0d77bc [merge 1490a55]	One private note per user per lecture (max 5000 characters) for users with content access.
-SCRUM-22	Courses can be drafts or published; students cannot see drafts	DONE	ff69e34, c300588, branch feature/SCRUM-22-hide-drafts-in-api	Lecture pages fixed with SCRUM-10. GET /api/courses now returns the same visible list as /courses, and GET /api/courses/{id} answers 404 for a draft the caller cannot view (CourseRestController, CourseRestControllerTest).
+SCRUM-22	Courses can be drafts or published; students cannot see drafts	DONE	ff69e34, c300588, 773407b	Lecture pages fixed with SCRUM-10. GET /api/courses now returns the same visible list as /courses, and GET /api/courses/{id} answers 404 for a draft the caller cannot view (CourseRestController, CourseRestControllerTest).
 SCRUM-23	Students can comment on lectures and ask questions	DONE	10e2b28 [PR #10 76dfd04]	Same implementation as SCRUM-42.
 SCRUM-24	Add/edit a user’s lecture notes	DONE	a0d77bc [merge 1490a55]	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it.
 SCRUM-25	Link to Swagger documentation	DONE	4ce7935 [PR #8 eaa762f]	Link is in README only.
@@ -24,6 +24,7 @@ SCRUM-35	Enrolled students request additional resources using at least 100 chara
 SCRUM-36	Teachers manage resource requests as resolved, irrelevant or in progress and can assign them to another student	DONE	caae73e [merge a3da031]	Statuses OPEN, IN_PROGRESS, RESOLVED, IRRELEVANT; assign to another enrolled student who answers it. Migration V4.
 SCRUM-41	Plain-text notes per lecture (duplicate)	DONE	a0d77bc	Closed as a duplicate of SCRUM-20; no separate work.
 SCRUM-42	Lecture/course comments	DONE	10e2b28, 0ecc6c3 [PR #10 76dfd04]	
+SCRUM-45	Some courses can require attendance	DONE	branch feature/SCRUM-45-attendance-required	Course.attendanceRequired (default false), set on the teacher add/edit forms and the admin course edit; shown as a badge on the course list and an Attendance field on the course page. Migration V5. The tracker itself is SCRUM-28.
 SCRUM-49	Add a pull request template	DONE	4ba7128 [PR #13 5937900]	.github/pull_request_template.md. Was missing from this backlog.
 SCRUM-50	Adopt Flyway and switch ddl-auto to validate	DONE	eac9a74 [7e46e27]	V1 baseline in src/main/resources/db/migration; both profiles validate. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
 
@@ -52,10 +53,9 @@ New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) an
 
 ### 6. Attendance
 # Ticket	Description	Status	Evidence / notes
-SCRUM-45	Some courses can require attendance	NOT STARTED	No attendance flag on Model/Course. The per-course flag.
-SCRUM-28	Required attendance with a tracker for each lecture; teachers mark absent students	NOT STARTED	No attendance entity. Needs SCRUM-45.
+SCRUM-28	Required attendance with a tracker for each lecture; teachers mark absent students	NOT STARTED	No attendance entity. Builds on the SCRUM-45 flag (Course.attendanceRequired).
 SCRUM-29	Students can see only their own attendance records	NOT STARTED	Needs SCRUM-28.
-Order: SCRUM-45 -> 28 -> 29.
+Order: SCRUM-45 (done) -> 28 -> 29.
 
 ### 7. Enrollment preconditions (shared eligibility check before enrolling)
 # Ticket	Description	Status	Evidence / notes

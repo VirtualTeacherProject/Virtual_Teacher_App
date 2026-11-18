@@ -127,6 +127,25 @@ class AdminCourseControllerTest {
     }
 
     @Test
+    void submitEdit_shouldSaveAttendanceRequired() throws Exception {   // SCRUM-45
+        mockMvc.perform(editForm("40")
+                        .param("attendanceRequired", "true")
+                        .param("_attendanceRequired", "on"))
+                .andExpect(status().is3xxRedirection());
+
+        org.mockito.ArgumentCaptor<Course> saved = org.mockito.ArgumentCaptor.forClass(Course.class);
+        verify(courseService).updateCourse(eq(1L), saved.capture());
+        org.assertj.core.api.Assertions.assertThat(saved.getValue().isAttendanceRequired()).isTrue();
+    }
+
+    @Test
+    void editForm_shouldOfferTheAttendanceCheckbox() throws Exception {   // SCRUM-45
+        mockMvc.perform(get("/admin/courses/1/edit"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("name=\"attendanceRequired\"")));
+    }
+
+    @Test
     void submitEdit_shouldNotReassign_whenTheTeacherIsUnchanged() throws Exception {
         mockMvc.perform(editForm("40"))
                 .andExpect(status().is3xxRedirection());
