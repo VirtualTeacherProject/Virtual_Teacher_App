@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Renders the public course page: reviews (SCRUM-31), additional resources (SCRUM-34)
- * and resource requests (SCRUM-35).
+ * and resource requests (SCRUM-35, SCRUM-36).
  */
 @ActiveProfiles("test")
 @WebMvcTest(EnrollmentMvcController.class)
@@ -356,5 +356,161 @@ class CourseDetailPageTest {
         mockMvc.perform(get("/courses/10").principal(principal))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("No requests yet.")));
+    }
+
+    // --- SCRUM-36: assigning requests and answering them ---------------------
+
+    private User student(Long id, String firstName) {
+        User user = new User();
+        user.setUserId(id);
+        user.setFirstName(firstName);
+        user.setLastName("Student");
+        user.setRole(UserRole.STUDENT);
+        return user;
+    }
+
+    private ResourceRequest assignedRequest(String status, String response) {
+        ResourceRequest request = request("Anna", "Extra C++ material, please.");
+        request.getStudent().setUserId(1L);
+        request.setAssignee(student(2L, "Boris"));
+        request.setStatus(status);
+        request.setResponse(response);
+        if (response != null) {
+            request.setRespondedAt(LocalDateTime.of(2026, 11, 18, 14, 0));
+        }
+        return request;
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldShowAssignedRequestWithAnswerForm_toAssignedStudent() throws Exception {
+        Principal principal = enrolledStudent();
+        given(resourceRequestService.getAssignedRequests(10L, STUDENT))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IN_PROGRESS, null)));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"assigned-resource-requests\"")))
+                .andExpect(content().string(containsString("Anna Student")))
+                .andExpect(content().string(containsString("Extra C++ material, please.")))
+                .andExpect(content().string(containsString("IN PROGRESS")))
+                .andExpect(content().string(containsString("/courses/10/resource-requests/3/response")))
+                .andExpect(content().string(containsString("maxlength=\"2000\"")))
+                .andExpect(content().string(containsString("Send answer")))
+                // no management controls for a student
+                .andExpect(content().string(not(containsString("/resource-requests/3/assign"))))
+                .andExpect(content().string(not(containsString("/resource-requests/3/status"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldPrefillTheAnswer_andOfferUpdate_whenAlreadyAnswered() throws Exception {
+        Principal principal = enrolledStudent();
+        given(resourceRequestService.getAssignedRequests(10L, STUDENT))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IN_PROGRESS, "See cppreference.com")));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("See cppreference.com</textarea>")))
+                .andExpect(content().string(containsString("Update answer")));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldKeepTheAnswerDraft_afterAFailedAnswer() throws Exception {
+        Principal principal = enrolledStudent();
+        given(resourceRequestService.getAssignedRequests(10L, STUDENT))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IN_PROGRESS, "Saved answer")));
+
+        mockMvc.perform(get("/courses/10").principal(principal)
+                        .flashAttr("responseDraftId", 3L)
+                        .flashAttr("responseDraft", "My unfinished answer"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("My unfinished answer</textarea>")));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldShowAnswerWithoutForm_whenAssignedRequestIsClosed() throws Exception {
+        Principal principal = enrolledStudent();
+        given(resourceRequestService.getAssignedRequests(10L, STUDENT))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_RESOLVED, "See cppreference.com")));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Your answer")))
+                .andExpect(content().string(containsString("See cppreference.com")))
+                .andExpect(content().string(not(containsString("/resource-requests/3/response"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldNotShowAssignedSection_toStudentWithoutAssignments() throws Exception {
+        Principal principal = enrolledStudent();
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("assigned-resource-requests"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldShowAssigneeAndAnswer_toRequestAuthor() throws Exception {
+        Principal principal = enrolledStudent();
+        given(resourceRequestService.getOwnRequests(10L, STUDENT))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IN_PROGRESS, "See <i>cppreference</i>")));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Assigned to")))
+                .andExpect(content().string(containsString("Boris Student")))
+                .andExpect(content().string(containsString("own-request-response")))
+                // plain text: markup in an answer is escaped
+                .andExpect(content().string(containsString("See &lt;i&gt;cppreference&lt;/i&gt;")));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void courseDetail_shouldShowStatusAndAssignControlsAndAnswer_toTeacher() throws Exception {
+        Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
+        given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(resourceRequestService.getRequestsForCourse(10L, TEACHER))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IN_PROGRESS, "See cppreference.com")));
+        User enrolledTeacher = user("other-teacher@test.com", UserRole.TEACHER);
+        enrolledTeacher.setUserId(4L);
+        enrolledTeacher.setFirstName("Enrolled");
+        enrolledTeacher.setLastName("Teacher");
+        given(enrollmentService.getStudentsInCourse(10L)).willReturn(List.of(
+                student(1L, "Anna"), student(2L, "Boris"), student(5L, "Carla"), enrolledTeacher));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/courses/10/resource-requests/3/status")))
+                .andExpect(content().string(containsString("/courses/10/resource-requests/3/assign")))
+                .andExpect(content().string(containsString("<option value=\"RESOLVED\">RESOLVED</option>")))
+                .andExpect(content().string(containsString("<option value=\"IN_PROGRESS\" selected=\"selected\">IN PROGRESS</option>")))
+                // the current assignee is selected; the author and enrolled teachers are not offered
+                .andExpect(content().string(containsString("<option value=\"2\" selected=\"selected\">Boris Student</option>")))
+                .andExpect(content().string(containsString("<option value=\"5\">Carla Student</option>")))
+                .andExpect(content().string(not(containsString("<option value=\"1\">"))))
+                .andExpect(content().string(not(containsString("Enrolled Teacher"))))
+                .andExpect(content().string(containsString("See cppreference.com")))
+                .andExpect(content().string(containsString("2026-11-18 14:00")));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void courseDetail_shouldNotOfferAssigning_forClosedRequest() throws Exception {
+        Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
+        given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(resourceRequestService.getRequestsForCourse(10L, TEACHER))
+                .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IRRELEVANT, null)));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/courses/10/resource-requests/3/status")))
+                .andExpect(content().string(not(containsString("/resource-requests/3/assign"))));
     }
 }

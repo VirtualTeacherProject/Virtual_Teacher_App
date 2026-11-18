@@ -78,6 +78,32 @@ class SecurityRulesTest {
                 .andExpect(status().isForbidden());
     }
 
+    // SCRUM-36
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void managingResourceRequests_shouldBeForbidden_forStudent() throws Exception {
+        mockMvc.perform(post("/courses/1/resource-requests/1/status").param("status", "RESOLVED"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/courses/1/resource-requests/1/assign").param("assigneeId", "2"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void answeringResourceRequest_shouldBeForbidden_forTeacher() throws Exception {
+        mockMvc.perform(post("/courses/1/resource-requests/1/response").param("response", "x"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void resourceRequestActions_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        for (String action : new String[]{"status", "assign", "response"}) {
+            mockMvc.perform(post("/courses/1/resource-requests/1/" + action))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrlPattern("**/login"));
+        }
+    }
+
     @Test
     @WithMockUser(roles = "STUDENT")
     void lectureApi_shouldBeForbidden_forStudent() throws Exception {

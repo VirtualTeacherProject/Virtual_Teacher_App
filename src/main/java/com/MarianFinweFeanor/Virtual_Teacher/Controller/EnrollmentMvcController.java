@@ -268,6 +268,17 @@ public class EnrollmentMvcController {
                 canManage ? resourceRequestService.getRequestsForCourse(id, email) : List.of());
         model.addAttribute("ownResourceRequests",
                 canRequestResources ? resourceRequestService.getOwnRequests(id, email) : List.of());
+        // SCRUM-36: an enrolled student also sees the requests a teacher assigned to them;
+        // managers get the statuses and the students they can assign
+        model.addAttribute("assignedResourceRequests",
+                canAccessContent && !canManage ? resourceRequestService.getAssignedRequests(id, email) : List.of());
+        model.addAttribute("requestStatuses", ResourceRequest.STATUSES);
+        model.addAttribute("assignableStudents", canManage
+                ? enrollmentService.getStudentsInCourse(id).stream()
+                        .filter(u -> u.getRole() == UserRole.STUDENT)
+                        .toList()
+                : List.of());
+        model.addAttribute("maxResponseLength", ResourceRequest.MAX_RESPONSE_LENGTH);
         model.addAttribute("minRequestLength", ResourceRequest.MIN_MESSAGE_LENGTH);
         model.addAttribute("maxRequestLength", ResourceRequest.MAX_MESSAGE_LENGTH);
 

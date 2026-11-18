@@ -14,6 +14,8 @@ import java.security.Principal;
 
 /**
  * SCRUM-35: enrolled students ask for additional resources.
+ * SCRUM-36: teachers set a request's status and assign it to another enrolled
+ * student, who answers it.
  * Requests are listed on the course page (EnrollmentMvcController.courseDetail).
  */
 @Controller
@@ -41,6 +43,63 @@ public class ResourceRequestMvcController {
             ra.addFlashAttribute("error", ex.getMessage());
             // keep what the student typed so they can fix it
             ra.addFlashAttribute("requestDraft", message);
+        }
+        return "redirect:/courses/" + courseId;
+    }
+
+    /** POST /courses/{courseId}/resource-requests/{requestId}/status (TEACHER/ADMIN) */
+    @PostMapping("/{requestId}/status")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public String updateStatus(@PathVariable Long courseId,
+                               @PathVariable Long requestId,
+                               @RequestParam(value = "status", required = false) String status,
+                               Principal principal,
+                               RedirectAttributes ra) {
+        try {
+            resourceRequestService.updateStatus(courseId, requestId, status, principal.getName());
+            ra.addFlashAttribute("msg", "Request status updated.");
+        } catch (IllegalArgumentException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/courses/" + courseId;
+    }
+
+    /**
+     * POST /courses/{courseId}/resource-requests/{requestId}/assign (TEACHER/ADMIN)
+     * An empty assigneeId removes the assignment.
+     */
+    @PostMapping("/{requestId}/assign")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public String assign(@PathVariable Long courseId,
+                         @PathVariable Long requestId,
+                         @RequestParam(value = "assigneeId", required = false) Long assigneeId,
+                         Principal principal,
+                         RedirectAttributes ra) {
+        try {
+            resourceRequestService.assign(courseId, requestId, assigneeId, principal.getName());
+            ra.addFlashAttribute("msg", assigneeId == null
+                    ? "Assignment removed." : "Request assigned.");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/courses/" + courseId;
+    }
+
+    /** POST /courses/{courseId}/resource-requests/{requestId}/response (STUDENT, the assignee) */
+    @PostMapping("/{requestId}/response")
+    @PreAuthorize("hasRole('STUDENT')")
+    public String respond(@PathVariable Long courseId,
+                          @PathVariable Long requestId,
+                          @RequestParam(value = "response", required = false) String response,
+                          Principal principal,
+                          RedirectAttributes ra) {
+        try {
+            resourceRequestService.respond(courseId, requestId, principal.getName(), response);
+            ra.addFlashAttribute("msg", "Your answer was saved.");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+            ra.addFlashAttribute("responseDraftId", requestId);
+            ra.addFlashAttribute("responseDraft", response);
         }
         return "redirect:/courses/" + courseId;
     }

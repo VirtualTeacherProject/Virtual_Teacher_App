@@ -138,6 +138,11 @@ class PostgresMigrationTest {
         request.setStudent(teacher);
         request.setMessage("Please share more exercises. ".repeat(4));
         request.setCreatedAt(LocalDateTime.now());
+        // SCRUM-36 columns (V4)
+        request.setAssignee(teacher);
+        request.setStatus(ResourceRequest.STATUS_IN_PROGRESS);
+        request.setResponse("See the docs.");
+        request.setRespondedAt(LocalDateTime.now());
         em.persist(request);
 
         em.flush();
@@ -146,8 +151,10 @@ class PostgresMigrationTest {
         assertThat(em.find(LectureComment.class, comment.getCommentId()).getComment())
                 .isEqualTo("A comment");
         assertThat(em.find(LectureNote.class, note.getNoteId()).getContent()).isEqualTo("A note");
-        assertThat(em.find(ResourceRequest.class, request.getRequestId()).getStatus())
-                .isEqualTo(ResourceRequest.STATUS_OPEN);
+        ResourceRequest storedRequest = em.find(ResourceRequest.class, request.getRequestId());
+        assertThat(storedRequest.getStatus()).isEqualTo(ResourceRequest.STATUS_IN_PROGRESS);
+        assertThat(storedRequest.getAssignee().getUserId()).isEqualTo(teacher.getUserId());
+        assertThat(storedRequest.getResponse()).isEqualTo("See the docs.");
         assertThat(em.find(Enrollment.class, enrollment.getEnrollmentId()).getAverageGrade())
                 .isEqualTo(75.5);
     }
