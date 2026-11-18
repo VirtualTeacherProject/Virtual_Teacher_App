@@ -21,7 +21,7 @@ SCRUM-20	Users can write plain-text notes for each lecture	Merged. One private n
 SCRUM-24	Add/edit a user’s lecture notes	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it. One note per lecture is enough for now.
 SCRUM-50	Adopt Flyway and switch ddl-auto to validate	Merged. V1 baseline for H2 and PostgreSQL in src/main/resources/db/migration; both profiles validate. Existing databases are baselined at version 0 and V1 creates only missing tables. Every schema change now needs a new migration. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
 SCRUM-34	Teachers provide additional resources accessible only after enrollment	Merged. Resources are links (title, URL, optional description) on the course page; approved teachers and admins add and remove them, enrolled students see them. Uploaded files are not supported. Migration V2.
-SCRUM-35	Enrolled students request additional resources using at least 100 characters	Done on feature/SCRUM-35-resource-requests (not merged yet). Students enrolled in a published course send a request (100–2000 characters) from the course page and see only their own; approved teachers and admins see all requests of the course, read-only. Status is OPEN for now. Migration V3.
+SCRUM-35	Enrolled students request additional resources using at least 100 characters	Merged. Students enrolled in a published course send a request (100–2000 characters) from the course page and see only their own; approved teachers and admins see all requests of the course, read-only. Status is OPEN for now. Migration V3.
 
 
 ## Partially done — previously listed as completed
@@ -34,9 +34,9 @@ SCRUM-22	Courses can be drafts or published; students cannot see drafts	Lecture 
 
 ### 1. Access to course content (shared enrollment guard)
 # Ticket	Description	Status
-SCRUM-36	Teachers manage resource requests as resolved, irrelevant or in progress and can assign them to another student	Not started. Next in this group. Requests already have a status column (OPEN), so the new states need no migration.
+SCRUM-36	Teachers manage resource requests as resolved, irrelevant or in progress and can assign them to another student	Not started. Next in this group. Requests already have a status column (varchar(20), OPEN), so the new states need no migration. Assigning a request to another student needs a new column, so that part needs a migration (V4).
 SCRUM-38	Course Lessons Availability — full requirements unavailable	Blocked on requirements. If it means scheduled release of lectures, it belongs to this guard.
-Order: SCRUM-36 next (SCRUM-34 and 35 done). New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) and come with a Flyway migration (SCRUM-50).
+Order: SCRUM-36 next (SCRUM-34 and 35 merged). New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) and come with a Flyway migration (SCRUM-50).
 
 ### 2. User search — done (SCRUM-19, SCRUM-6)
 
