@@ -197,7 +197,8 @@
                               th:placeholder="|Describe what you need (at least ${minRequestLength} characters)|"
                               th:text="${requestDraft}"></textarea>
                     <div class="form-text">
-                        Only you and the course teachers can see your requests.
+                        Only you, the course teachers and a student the teacher asks to help
+                        can see your requests.
                     </div>
                     <button type="submit" class="btn btn-outline-primary btn-sm mt-2">Send request</button>
                 </form>
@@ -207,14 +208,61 @@
                     <div class="border rounded p-2 mb-2" th:each="req : ${ownResourceRequests}">
                         <div class="small text-muted">
                             <span th:text="${#temporals.format(req.createdAt, 'yyyy-MM-dd HH:mm')}">date</span>
-                            <span class="badge text-bg-light border ms-1" th:text="${req.status}">OPEN</span>
+                            <span class="badge text-bg-light border ms-1"
+                                  th:text="${#strings.replace(req.status, '_', ' ')}">OPEN</span>
+                            <span th:if="${req.assignee != null}" class="ms-1">
+                                Assigned to
+                                <span th:text="|${req.assignee.firstName} ${req.assignee.lastName}|">Student</span>
+                            </span>
                         </div>
                         <p class="mb-0" style="white-space: pre-line" th:text="${req.message}">Request</p>
+                        <!-- SCRUM-36: the assigned student's answer -->
+                        <div th:if="${req.response != null}" class="own-request-response border-start ps-2 mt-2">
+                            <div class="small text-muted">
+                                Answer from
+                                <span th:text="|${req.assignee.firstName} ${req.assignee.lastName}|">Student</span>
+                            </div>
+                            <p class="mb-0" style="white-space: pre-line" th:text="${req.response}">Answer</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SCRUM-35: teachers and admins see every request (SCRUM-36 adds the actions) -->
+            <!-- SCRUM-36: requests a teacher assigned to this student, answered here -->
+            <div th:if="${!#lists.isEmpty(assignedResourceRequests)}" id="assigned-resource-requests"
+                 class="border-top pt-3 mt-3">
+                <h3 class="h6">Requests assigned to you</h3>
+                <p class="form-text mt-0">
+                    A teacher asked you to find resources for these requests. Answer with links and notes.
+                </p>
+                <div class="border rounded p-2 mb-2" th:each="req : ${assignedResourceRequests}">
+                    <div class="small text-muted">
+                        <span class="fw-semibold"
+                              th:text="|${req.student.firstName} ${req.student.lastName}|">Student</span>
+                        <span th:text="${#temporals.format(req.createdAt, 'yyyy-MM-dd HH:mm')}">date</span>
+                        <span class="badge text-bg-light border ms-1"
+                              th:text="${#strings.replace(req.status, '_', ' ')}">IN PROGRESS</span>
+                    </div>
+                    <p class="mb-2" style="white-space: pre-line" th:text="${req.message}">Request</p>
+
+                    <form th:unless="${req.closed}"
+                          th:action="@{|/courses/${course.courseId}/resource-requests/${req.requestId}/response|}"
+                          method="post">
+                        <textarea name="response" class="form-control" rows="3" required
+                                  th:maxlength="${maxResponseLength}"
+                                  placeholder="Links, tutorials, docs and notes for this request"
+                                  th:text="${responseDraftId == req.requestId ? responseDraft : req.response}"></textarea>
+                        <button type="submit" class="btn btn-outline-primary btn-sm mt-2"
+                                th:text="${req.response == null ? 'Send answer' : 'Update answer'}">Send answer</button>
+                    </form>
+                    <div th:if="${req.closed and req.response != null}" class="border-start ps-2">
+                        <div class="small text-muted">Your answer</div>
+                        <p class="mb-0" style="white-space: pre-line" th:text="${req.response}">Answer</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCRUM-35: teachers and admins see every request; SCRUM-36: and manage them -->
             <div th:if="${currentUserData['canManageCourses']}" id="course-resource-requests"
                  class="border-top pt-3 mt-3">
                 <h3 class="h6">Resource requests from students</h3>
@@ -224,9 +272,45 @@
                         <span class="fw-semibold"
                               th:text="|${req.student.firstName} ${req.student.lastName}|">Student</span>
                         <span th:text="${#temporals.format(req.createdAt, 'yyyy-MM-dd HH:mm')}">date</span>
-                        <span class="badge text-bg-light border ms-1" th:text="${req.status}">OPEN</span>
+                        <span class="badge text-bg-light border ms-1"
+                              th:text="${#strings.replace(req.status, '_', ' ')}">OPEN</span>
+                        <span th:if="${req.assignee != null}" class="ms-1">
+                            Assigned to
+                            <span th:text="|${req.assignee.firstName} ${req.assignee.lastName}|">Student</span>
+                        </span>
                     </div>
                     <p class="mb-0" style="white-space: pre-line" th:text="${req.message}">Request</p>
+
+                    <!-- SCRUM-36: the assigned student's answer -->
+                    <div th:if="${req.response != null}" class="border-start ps-2 mt-2">
+                        <div class="small text-muted">
+                            Answer from
+                            <span th:text="|${req.assignee.firstName} ${req.assignee.lastName}|">Student</span>
+                            <span th:text="${#temporals.format(req.respondedAt, 'yyyy-MM-dd HH:mm')}">date</span>
+                        </div>
+                        <p class="mb-0" style="white-space: pre-line" th:text="${req.response}">Answer</p>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <form th:action="@{|/courses/${course.courseId}/resource-requests/${req.requestId}/status|}"
+                              method="post" class="d-flex gap-1">
+                            <select name="status" class="form-select form-select-sm" aria-label="Status">
+                                <option th:each="st : ${requestStatuses}" th:value="${st}" th:selected="${st == req.status}" th:text="${#strings.replace(st, '_', ' ')}">OPEN</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Set status</button>
+                        </form>
+
+                        <form th:unless="${req.closed}"
+                              th:action="@{|/courses/${course.courseId}/resource-requests/${req.requestId}/assign|}"
+                              method="post" class="d-flex gap-1">
+                            <select name="assigneeId" class="form-select form-select-sm" aria-label="Assign to">
+                                <option value="">Not assigned</option>
+                                <!--/* every enrolled student except the request's author */-->
+                                <option th:each="s : ${assignableStudents}" th:unless="${s.userId == req.student.userId}" th:value="${s.userId}" th:selected="${req.assignee != null and s.userId == req.assignee.userId}" th:text="|${s.firstName} ${s.lastName}|">Student</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Assign</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 

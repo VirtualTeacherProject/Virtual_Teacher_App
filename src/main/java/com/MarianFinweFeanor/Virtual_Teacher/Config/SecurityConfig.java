@@ -127,10 +127,18 @@ public class SecurityConfig {
 
                         ).hasAnyRole("STUDENT","TEACHER","ADMIN")
 
-                        // 6a) Resource requests (SCRUM-35) are written by students only
+                        // 6a) Resource requests (SCRUM-35) are written by students only,
+                        //     and answered by the student they are assigned to (SCRUM-36)
                         .requestMatchers(
-                                new AntPathRequestMatcher("/courses/*/resource-requests", "POST")
+                                new AntPathRequestMatcher("/courses/*/resource-requests", "POST"),
+                                new AntPathRequestMatcher("/courses/*/resource-requests/*/response", "POST")
                         ).hasRole("STUDENT")
+
+                        // 6a') Teachers and admins manage requests (SCRUM-36)
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/courses/*/resource-requests/*/status", "POST"),
+                                new AntPathRequestMatcher("/courses/*/resource-requests/*/assign", "POST")
+                        ).hasAnyRole("TEACHER", "ADMIN")
 
                         // 6b) REST API: lectures carry video URLs (SCRUM-10), so the whole
                         //     lecture API is teacher/admin only; same for course writes.

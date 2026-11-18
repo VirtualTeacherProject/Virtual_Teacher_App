@@ -1,6 +1,7 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
@@ -82,6 +83,11 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                 lectureNoteRepository.findByUser_UserId(userId));
         resourceRequestRepository.deleteAll(
                 resourceRequestRepository.findByStudent_UserId(userId));
+        // SCRUM-36: requests assigned to the user belong to their authors and stay;
+        // only the assignment and the user's answer go.
+        List<ResourceRequest> assigned = resourceRequestRepository.findByAssignee_UserId(userId);
+        assigned.forEach(ResourceRequest::clearAssignment);
+        resourceRequestRepository.saveAll(assigned);
     }
 
     private void deleteSubmissions(List<Assignment> submissions) {

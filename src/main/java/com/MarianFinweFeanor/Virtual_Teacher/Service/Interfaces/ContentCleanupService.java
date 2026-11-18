@@ -10,7 +10,9 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces;
  *   never deletes a user.
  * - A user owns only what they produced as a participant: their enrollments,
  *   their submissions, their comments, their notes and their resource
- *   requests. Deleting a user never deletes a
+ *   requests. Requests assigned to the user (SCRUM-36) stay with their
+ *   authors; only the assignment and the user's answer are removed.
+ *   Deleting a user never deletes a
  *   course or a lecture. A user who still teaches courses cannot be deleted
  *   until those courses are reassigned (UserService.deleteUserById).
  *
@@ -25,6 +27,9 @@ public interface ContentCleanupService {
     /** Submissions, comments and notes of every lecture in the course, and the course's resources and resource requests. */
     void deleteCourseContent(Long courseId);
 
-    /** Submissions, comments, notes and resource requests written by the user. */
+    /**
+     * Submissions, comments, notes and resource requests written by the user,
+     * and the user's assignments and answers on other students' requests.
+     */
     void deleteUserContent(Long userId);
 }

@@ -143,6 +143,34 @@ class ContentCleanupServiceImplTest {
     }
 
     @Test
+    void deleteUserContent_shouldKeepRequestsAssignedToTheUser_butRemoveAssignmentAndAnswer() {
+        // SCRUM-36: the request belongs to its author; only the assignee's part goes
+        ResourceRequest inProgress = new ResourceRequest();
+        inProgress.setStatus(ResourceRequest.STATUS_IN_PROGRESS);
+        inProgress.setAssignee(new com.MarianFinweFeanor.Virtual_Teacher.Model.User());
+        inProgress.setResponse("An answer");
+        inProgress.setRespondedAt(java.time.LocalDateTime.now());
+        ResourceRequest resolved = new ResourceRequest();
+        resolved.setStatus(ResourceRequest.STATUS_RESOLVED);
+        resolved.setAssignee(new com.MarianFinweFeanor.Virtual_Teacher.Model.User());
+        resolved.setResponse("Another answer");
+        List<ResourceRequest> assigned = List.of(inProgress, resolved);
+        when(resourceRequestRepository.findByAssignee_UserId(1L)).thenReturn(assigned);
+
+        cleanupService.deleteUserContent(1L);
+
+        verify(resourceRequestRepository).saveAll(assigned);
+        verify(resourceRequestRepository, never()).deleteAll(assigned);
+        assertNull(inProgress.getAssignee());
+        assertNull(inProgress.getResponse());
+        assertNull(inProgress.getRespondedAt());
+        assertEquals(ResourceRequest.STATUS_OPEN, inProgress.getStatus());
+        assertNull(resolved.getAssignee());
+        assertNull(resolved.getResponse());
+        assertEquals(ResourceRequest.STATUS_RESOLVED, resolved.getStatus());
+    }
+
+    @Test
     void cleanup_shouldNeverDeleteFilesOutsideTheUploadDirectory() throws IOException {
         Path outside = Files.writeString(elsewhere.resolve("keep.txt"), "important");
         List<Assignment> submissions = List.of(submission(outside));

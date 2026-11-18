@@ -209,6 +209,31 @@ class DeletionPolicyIntegrationTest {
     }
 
     @Test
+    void deletingAStudent_shouldKeepRequestsAssignedToThem_withoutAssignmentOrAnswer() {
+        // SCRUM-36: boris was asked to answer anna's request
+        ResourceRequest annas = requestRepository.findByStudent_UserId(anna.getUserId()).stream()
+                .filter(r -> r.getCourse().getCourseId().equals(course.getCourseId()))
+                .findFirst().orElseThrow();
+        annas.setAssignee(boris);
+        annas.setStatus(ResourceRequest.STATUS_IN_PROGRESS);
+        annas.setResponse("See the official docs.");
+        annas.setRespondedAt(LocalDateTime.now());
+        requestRepository.save(annas);
+        flushAndClear();
+
+        userService.deleteUserById(boris.getUserId());
+        flushAndClear();
+
+        ResourceRequest kept = requestRepository.findById(annas.getRequestId()).orElseThrow();
+        assertThat(kept.getAssignee()).isNull();
+        assertThat(kept.getResponse()).isNull();
+        assertThat(kept.getRespondedAt()).isNull();
+        assertThat(kept.getStatus()).isEqualTo(ResourceRequest.STATUS_OPEN);
+        // boris's own request is gone, anna's two stay
+        assertThat(requestRepository.count()).isEqualTo(2);
+    }
+
+    @Test
     void deletingATeacher_shouldBeRefused_whileTheyStillTeachCourses() {
         assertThatThrownBy(() -> userService.deleteUserById(teacher.getUserId()))
                 .isInstanceOf(EntityInUseException.class)
