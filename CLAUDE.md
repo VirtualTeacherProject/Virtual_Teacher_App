@@ -23,6 +23,9 @@ Spring Boot 3.1.4 / Java 17 / Maven. The wrapper is script-only (`./mvnw` downlo
 - Commit messages start with the ticket id: "SCRUM-41: add lecture notes entity".
 - Never rewrite git history or force-push (shared repo).
 - Work on a feature branch per ticket; I merge into main myself. Never force-push.
+- After finishing a ticket, before committing: update its status in
+  docs/backlog.md and docs/backlog-audit.md (DONE/PARTIAL + short evidence),
+  and include those doc changes in the ticket's commit.
 
 There is no linter or formatter configured.
 
