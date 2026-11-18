@@ -1,6 +1,6 @@
->Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
+>Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 finished on its feature branch; details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
 
-## Completed — 23 tickets
+## Completed — 24 tickets
 # Ticket	Description	Status	Evidence	Notes
 SCRUM-5	Proper exception handling and propagation	DONE	9d25b93, bf00898, 1c155bb	Global MVC/REST exception handlers and custom exceptions. A few paths still throw bare RuntimeException (see audit).
 SCRUM-6	Approved teachers receive course administration and student-search functionality	DONE	0a7bd61 [merge eca7feb]	/students search page.
@@ -13,6 +13,7 @@ SCRUM-12	Admins can modify/delete courses and users and approve admins/teachers	
 SCRUM-15	Decide how deletion works for entities connected through foreign keys	DONE	d8bf3d1, e695d8b [merge eca7feb]	Course -> lectures -> submissions/comments. Deleting a user removes only their own enrollments, submissions and comments, and is refused while they still teach courses. Deactivating is the normal way to remove a user.
 SCRUM-19	Search users by first name, last name or email	DONE	cfe08f6 [merge eca7feb]	Admin user list search and GET /api/users filters.
 SCRUM-20	Users can write plain-text notes for each lecture	DONE	a0d77bc [merge 1490a55]	One private note per user per lecture (max 5000 characters) for users with content access.
+SCRUM-22	Courses can be drafts or published; students cannot see drafts	DONE	ff69e34, c300588, branch feature/SCRUM-22-hide-drafts-in-api	Lecture pages fixed with SCRUM-10. GET /api/courses now returns the same visible list as /courses, and GET /api/courses/{id} answers 404 for a draft the caller cannot view (CourseRestController, CourseRestControllerTest).
 SCRUM-23	Students can comment on lectures and ask questions	DONE	10e2b28 [PR #10 76dfd04]	Same implementation as SCRUM-42.
 SCRUM-24	Add/edit a user’s lecture notes	DONE	a0d77bc [merge 1490a55]	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it.
 SCRUM-25	Link to Swagger documentation	DONE	4ce7935 [PR #8 eaa762f]	Link is in README only.
@@ -30,7 +31,6 @@ SCRUM-50	Adopt Flyway and switch ddl-auto to validate	DONE	eac9a74 [7e46e27]	V1 
 ## Partially done
 # Ticket	Description	Status	Evidence	What is missing
 SCRUM-13	Teachers can create courses and upload video lectures	PARTIAL	Controller/EnrollmentMvcController, Controller/LectureMvcController	Video is a URL (Model/Lecture.videoUrl), not an upload — decide which is intended. No course ownership check (see group 9).
-SCRUM-22	Courses can be drafts or published; students cannot see drafts	PARTIAL	ff69e34, c300588	Lecture pages fixed with SCRUM-10. Remaining: GET /api/courses (CourseRestController.getAllCourses) still returns drafts to any logged-in user.
 SCRUM-40	Git history should clearly communicate development order, features and contributors	PARTIAL	git log	24 of 139 non-merge commits start with a ticket key (all recent work does); contributors appear under four author names. Ongoing convention; history must not be rewritten.
 
 

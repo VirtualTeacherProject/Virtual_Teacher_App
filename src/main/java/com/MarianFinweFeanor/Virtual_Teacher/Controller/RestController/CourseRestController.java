@@ -1,6 +1,7 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 import static org.springframework.http.ResponseEntity.ok;
@@ -18,9 +20,13 @@ import static org.springframework.http.ResponseEntity.ok;
 public class CourseRestController {
 
     private final CourseService courseService;
+    private final CourseAccessService courseAccessService;
+
     @Autowired
-    public CourseRestController(CourseService courseService) {
+    public CourseRestController(CourseService courseService,
+                                CourseAccessService courseAccessService) {
         this.courseService = courseService;
+        this.courseAccessService = courseAccessService;
     }
 
     //Create or Update a course
@@ -35,17 +41,21 @@ public class CourseRestController {
         }
     }
 
-    // Get all courses
+    // SCRUM-22: same visibility as the /courses page — published courses,
+    // plus the caller's own drafts if they can manage courses.
     @GetMapping
-    public ResponseEntity<List<Course>> getAllCourses() {
-        List<Course> courses = courseService.getAllCourses();
-        return ok(courses);
+    public ResponseEntity<List<Course>> getAllCourses(Principal principal) {
+        String email = principal == null ? null : principal.getName();
+        boolean canManage = courseAccessService.canManageCourses(email);
+        return ok(courseService.getVisibleCourses(email, canManage));
     }
 
-    // Get a course by ID
+    // SCRUM-22: a draft the caller may not view answers 404, like a missing course.
     @GetMapping("/{id}")
-    public ResponseEntity<Course> getCourseById(@PathVariable Long id) {
+    public ResponseEntity<Course> getCourseById(@PathVariable Long id, Principal principal) {
+        String email = principal == null ? null : principal.getName();
         return courseService.getCourseById(id)
+                .filter(course -> courseAccessService.canViewCourse(course, email))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

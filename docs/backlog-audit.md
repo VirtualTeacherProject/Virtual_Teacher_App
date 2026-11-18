@@ -1,6 +1,6 @@
 # Backlog audit
 
-Audit of every ticket in `docs/backlog.md` against git history and the code on `main` at `85c4c7c` (2026-11-18). Previous audit: `ff442fd` (2026-11-16).
+Audit of every ticket in `docs/backlog.md` against git history and the code on `main` at `85c4c7c` (2026-11-18), updated for SCRUM-22 on `feature/SCRUM-22-hide-drafts-in-api`. Previous audit: `ff442fd` (2026-11-16).
 
 **How this was checked.** `git log` on `main` (all `SCRUM-<n>` commits, merges and PRs) and `git branch --no-merged main` (only the stale `origin/exception-handling` remains unmerged; nothing in it changes a status). Each claimed feature was then checked in the controllers, services, entities, migrations, `SecurityConfig` and templates. NOT STARTED tickets were confirmed by searching `src/main` for their entities and keywords (attendance, prerequisite, exam/quiz, mail/verification, PDF/certificate, group, tutoring, assistant). Tests were not re-run for this update; the coverage figure for SCRUM-8 is from the 2026-11-16 run (`*ServiceImplTest` with JaCoCo, then 125 tests, 0 failures). Ticket wording comes only from `backlog.md`; Jira was not consulted.
 
@@ -12,8 +12,8 @@ Sizes: **S** = up to a day, **M** = 2–4 days, **L** = a week or more, for one 
 
 | Status | Count | Tickets |
 |---|---|---|
-| DONE | 23 | 5, 6, 7, 8, 9, 10, 11, 12, 15, 19, 20, 23, 24, 25, 27, 31, 34, 35, 36, 41 (duplicate of 20), 42, 49, 50 |
-| PARTIAL | 3 | 13, 22, 40 |
+| DONE | 24 | 5, 6, 7, 8, 9, 10, 11, 12, 15, 19, 20, 22, 23, 24, 25, 27, 31, 34, 35, 36, 41 (duplicate of 20), 42, 49, 50 |
+| PARTIAL | 2 | 13, 40 |
 | NOT STARTED | 19 | 16, 17, 18, 26, 28, 29, 30, 32, 33, 37, 39, 43, 44, 45, 46, 47, 48, plus 14 and 38 (requirements unclear) |
 
 ### Status changes since the 2026-11-16 audit
@@ -26,6 +26,7 @@ Sizes: **S** = up to a day, **M** = 2–4 days, **L** = a week or more, for one 
 | SCRUM-15 | NOT STARTED | DONE | `d8bf3d1`, `e695d8b` [`eca7feb`] |
 | SCRUM-19 | PARTIAL | DONE | `cfe08f6` [`eca7feb`] |
 | SCRUM-20 | NOT STARTED | DONE | `a0d77bc` [`1490a55`] |
+| SCRUM-22 | PARTIAL | DONE | `feature/SCRUM-22-hide-drafts-in-api` |
 | SCRUM-24 | NOT STARTED | DONE | `a0d77bc` [`1490a55`] |
 | SCRUM-31 | PARTIAL | DONE | `f540e6f` [`eca7feb`] |
 | SCRUM-34 | NOT STARTED | DONE | `c69e3f8` [`4a50276`] |
@@ -35,7 +36,7 @@ Sizes: **S** = up to a day, **M** = 2–4 days, **L** = a week or more, for one 
 | SCRUM-49 | not audited | DONE | `4ba7128` [PR #13 `5937900`] |
 | SCRUM-50 | not audited | DONE | `eac9a74` [`7e46e27`] |
 
-SCRUM-13, SCRUM-22 and SCRUM-40 stay PARTIAL. All other tickets keep their status.
+SCRUM-13 and SCRUM-40 stay PARTIAL. All other tickets keep their status.
 
 ## Done
 
@@ -52,6 +53,7 @@ SCRUM-13, SCRUM-22 and SCRUM-40 stay PARTIAL. All other tickets keep their statu
 | SCRUM-15 Deletion policy | `d8bf3d1`, `e695d8b` [`eca7feb`]. `Service/ContentCleanupServiceImpl.java` (`deleteLectureContent`, `deleteCourseContent`, `deleteUserContent`); `EntityInUseException` when a user still teaches courses. | — |
 | SCRUM-19 User search | `cfe08f6` [`eca7feb`]. `UserServiceImpl.getAllUsers(firstName, lastName, email)` builds a `UserSpecification`; search on `templates/admin/users.html` and `GET /api/users`. | — |
 | SCRUM-20 Lecture notes | `a0d77bc` [`1490a55`]. `Model/LectureNote.java` (max 5000), `Service/LectureNoteServiceImpl.java`, notes panel in `templates/lecture-detail.html`. | — |
+| SCRUM-22 Drafts hidden from students | `ff69e34`, `c300588`, `feature/SCRUM-22-hide-drafts-in-api`. `CourseServiceImpl.getVisibleCourses` / `searchVisibleCoursesByTitle`, `CourseAccessServiceImpl.ensureCanViewCourse` on the lecture routes, enrolment refused for drafts. `CourseRestController`: `GET /api/courses` returns `getVisibleCourses(email, canManageCourses)`, and `GET /api/courses/{id}` answers 404 when `canViewCourse` is false. `CourseRestControllerTest` (6 tests). | Any user who can manage courses can open any draft by id (same as the course page); the list shows only their own drafts. |
 | SCRUM-23 Students comment on lectures | `10e2b28` [PR #10 `76dfd04`]. `Model/LectureComment.java`, `Service/LectureCommentServiceImpl.java`, form in `templates/lecture-detail.html`. | Comments are readable by anyone who can view the lecture page. No edit or delete. |
 | SCRUM-24 Add/edit lecture notes | Same as SCRUM-20: saving overwrites, an empty save deletes. | — |
 | SCRUM-25 Link to Swagger | `4ce7935` [PR #8 `eaa762f`]. `README.md` lines 7–8. | No template links to Swagger. |
@@ -70,7 +72,6 @@ SCRUM-13, SCRUM-22 and SCRUM-40 stay PARTIAL. All other tickets keep their statu
 | Ticket | Evidence | What is missing | Size |
 |---|---|---|---|
 | SCRUM-13 Teachers create courses and upload video lectures | Course creation and lecture add/edit in `Controller/EnrollmentMvcController.java`, `Controller/LectureMvcController.java`, `templates/add-course.html`, `templates/add-lecture.html`. | Video is a URL string (`Model/Lecture.videoUrl`); no video upload. No course ownership: any approved teacher can edit, publish and grade any course. | S to reword, M–L for upload or ownership |
-| SCRUM-22 Drafts hidden from students | `ff69e34`, `c300588`. `CourseServiceImpl.getVisibleCourses` / `searchVisibleCoursesByTitle`, `CourseAccessServiceImpl.ensureCanViewCourse` on the lecture routes, enrolment refused for drafts. | `GET /api/courses` (`CourseRestController.getAllCourses` → `courseService.getAllCourses()`) returns every course, drafts included, to any logged-in user. | S |
 | SCRUM-40 Git history communicates order, features, contributors | 24 of 139 non-merge commits start with `SCRUM-<n>`; every commit since `c300588` does. | Older messages such as "edit code", "refactor", "bug fixes 15/12/2025". The two contributors appear under four author names (`Marian`, `marianmgm`, `umut yildirim`, `UMUT YILDIRIM`). History must not be rewritten, so this only improves going forward; a `.mailmap` would unify the names without rewriting. | Ongoing |
 
 ## Not started
@@ -134,14 +135,13 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 
 | Step | Tickets | Size | Why here |
 |---|---|---|---|
-| 1 | SCRUM-22 remainder (`GET /api/courses`) | S | Small leak; finishes a partial ticket. |
-| 2 | SCRUM-45 → 28 → 29 | M | Self-contained. |
-| 3 | SCRUM-48 | S–M | Introduces the enrolment eligibility hook. |
-| 4 | SCRUM-43 → 46 → 44 | M + S + M | Needs the email provider; 43 carries the setup. |
-| 5 | SCRUM-47 | M | Completion logic exists; email is available after step 4. |
-| 6 | SCRUM-16 / 17 / 18 / 33 | L | Plugs into the hook from step 3. Model question types as an extensible hierarchy with a pluggable grader. |
-| 7 | SCRUM-30, SCRUM-32 | M + M | Independent; lower priority. |
-| 8 | Course ownership, then SCRUM-37 (and SCRUM-13's ownership gap) | M–L | 37 needs ownership. |
+| 1 | SCRUM-45 → 28 → 29 | M | Self-contained. |
+| 2 | SCRUM-48 | S–M | Introduces the enrolment eligibility hook. |
+| 3 | SCRUM-43 → 46 → 44 | M + S + M | Needs the email provider; 43 carries the setup. |
+| 4 | SCRUM-47 | M | Completion logic exists; email is available after step 3. |
+| 5 | SCRUM-16 / 17 / 18 / 33 | L | Plugs into the hook from step 2. Model question types as an extensible hierarchy with a pluggable grader. |
+| 6 | SCRUM-30, SCRUM-32 | M + M | Independent; lower priority. |
+| 7 | Course ownership, then SCRUM-37 (and SCRUM-13's ownership gap) | M–L | 37 needs ownership. |
 | Any time | SCRUM-26, SCRUM-39 | S + S | No dependencies; the schema is stable after SCRUM-50. |
 | Blocked | SCRUM-14, SCRUM-38 | — | Need requirements. |
 | Ongoing | SCRUM-40 | — | Convention, not a deliverable. |
