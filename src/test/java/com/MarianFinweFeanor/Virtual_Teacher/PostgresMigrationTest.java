@@ -1,9 +1,11 @@
 package com.MarianFinweFeanor.Virtual_Teacher;
 
+import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceStatus;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureAttendance;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
@@ -146,6 +148,13 @@ class PostgresMigrationTest {
         request.setRespondedAt(LocalDateTime.now());
         em.persist(request);
 
+        LectureAttendance attendance = new LectureAttendance();   // SCRUM-28 (V6)
+        attendance.setLecture(lecture);
+        attendance.setStudent(teacher);
+        attendance.setStatus(AttendanceStatus.ABSENT);
+        attendance.setRecordedAt(LocalDateTime.now());
+        em.persist(attendance);
+
         em.flush();
         em.clear();
 
@@ -159,5 +168,7 @@ class PostgresMigrationTest {
         assertThat(em.find(Enrollment.class, enrollment.getEnrollmentId()).getAverageGrade())
                 .isEqualTo(75.5);
         assertThat(em.find(Course.class, course.getCourseId()).isAttendanceRequired()).isTrue();
+        assertThat(em.find(LectureAttendance.class, attendance.getAttendanceId()).getStatus())
+                .isEqualTo(AttendanceStatus.ABSENT);
     }
 }

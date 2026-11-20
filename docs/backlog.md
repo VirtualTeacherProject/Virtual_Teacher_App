@@ -1,6 +1,6 @@
->Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b) and SCRUM-45 (finished on its feature branch); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
+>Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43) and SCRUM-28 (finished on its feature branch); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
 
-## Completed — 25 tickets
+## Completed — 26 tickets
 # Ticket	Description	Status	Evidence	Notes
 SCRUM-5	Proper exception handling and propagation	DONE	9d25b93, bf00898, 1c155bb	Global MVC/REST exception handlers and custom exceptions. A few paths still throw bare RuntimeException (see audit).
 SCRUM-6	Approved teachers receive course administration and student-search functionality	DONE	0a7bd61 [merge eca7feb]	/students search page.
@@ -18,6 +18,7 @@ SCRUM-23	Students can comment on lectures and ask questions	DONE	10e2b28 [PR #10
 SCRUM-24	Add/edit a user’s lecture notes	DONE	a0d77bc [merge 1490a55]	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it.
 SCRUM-25	Link to Swagger documentation	DONE	4ce7935 [PR #8 eaa762f]	Link is in README only.
 SCRUM-27	Course completion/rating eligibility based on final grade, average and course passing grade	DONE	d99c93e, 14b382e [PR #9 aa93b41]	Git history files it under SCRUM-21.
+SCRUM-28	Required attendance with a tracker for each lecture; teachers mark absent students	DONE	branch feature/SCRUM-28-attendance-tracker	Approved teachers and admins open /courses/{id}/lectures/{id}/attendance (Attendance button on the lecture page) for courses with attendanceRequired, tick the absent students and save; everyone else enrolled is recorded present, saving again overwrites. Model/LectureAttendance (one row per lecture and student, PRESENT/ABSENT), AttendanceServiceImpl, AttendanceMvcController. Removed with its lecture, course or student (SCRUM-15). Migration V6. Student view is SCRUM-29.
 SCRUM-31	Students rate courses 1–5 with a mandatory comment of at least 75 characters	DONE	f540e6f [merge eca7feb]	Reviews and average shown on the course page.
 SCRUM-34	Teachers provide additional resources accessible only after enrollment	DONE	c69e3f8 [merge 4a50276]	Links (title, URL, optional description); no file uploads. Migration V2.
 SCRUM-35	Enrolled students request additional resources using at least 100 characters	DONE	750b2e2 [merge 508cff2]	100–2000 characters; students see only their own requests. Migration V3.
@@ -53,9 +54,8 @@ New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) an
 
 ### 6. Attendance
 # Ticket	Description	Status	Evidence / notes
-SCRUM-28	Required attendance with a tracker for each lecture; teachers mark absent students	NOT STARTED	No attendance entity. Builds on the SCRUM-45 flag (Course.attendanceRequired).
-SCRUM-29	Students can see only their own attendance records	NOT STARTED	Needs SCRUM-28.
-Order: SCRUM-45 (done) -> 28 -> 29.
+SCRUM-29	Students can see only their own attendance records	NOT STARTED	No student view yet. The records exist since SCRUM-28 (Model/LectureAttendance, LectureAttendanceRepository); needs a query by student and course and a page or course-page section.
+Order: SCRUM-45 (done) -> 28 (done) -> 29.
 
 ### 7. Enrollment preconditions (shared eligibility check before enrolling)
 # Ticket	Description	Status	Evidence / notes

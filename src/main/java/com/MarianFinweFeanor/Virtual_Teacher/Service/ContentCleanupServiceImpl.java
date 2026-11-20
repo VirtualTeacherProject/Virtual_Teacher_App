@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureAttendanceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.ResourceRequestRepository;
@@ -35,6 +36,7 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
     private final LectureNoteRepository lectureNoteRepository;
     private final CourseResourceRepository courseResourceRepository;
     private final ResourceRequestRepository resourceRequestRepository;
+    private final LectureAttendanceRepository lectureAttendanceRepository;
     private final Path uploadDir;
 
     @Autowired
@@ -43,12 +45,14 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                                      LectureNoteRepository lectureNoteRepository,
                                      CourseResourceRepository courseResourceRepository,
                                      ResourceRequestRepository resourceRequestRepository,
+                                     LectureAttendanceRepository lectureAttendanceRepository,
                                      @Value("${app.upload.dir}") String uploadDir) {
         this.assignmentRepository = assignmentRepository;
         this.lectureCommentRepository = lectureCommentRepository;
         this.lectureNoteRepository = lectureNoteRepository;
         this.courseResourceRepository = courseResourceRepository;
         this.resourceRequestRepository = resourceRequestRepository;
+        this.lectureAttendanceRepository = lectureAttendanceRepository;
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
@@ -59,6 +63,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                 lectureCommentRepository.findByLecture_LectureId(lectureId));
         lectureNoteRepository.deleteAll(
                 lectureNoteRepository.findByLecture_LectureId(lectureId));
+        lectureAttendanceRepository.deleteAll(
+                lectureAttendanceRepository.findByLecture_LectureId(lectureId));
     }
 
     @Override
@@ -68,6 +74,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                 lectureCommentRepository.findByLecture_Course_CourseId(courseId));
         lectureNoteRepository.deleteAll(
                 lectureNoteRepository.findByLecture_Course_CourseId(courseId));
+        lectureAttendanceRepository.deleteAll(
+                lectureAttendanceRepository.findByLecture_Course_CourseId(courseId));
         courseResourceRepository.deleteAll(
                 courseResourceRepository.findByCourse_CourseId(courseId));
         resourceRequestRepository.deleteAll(
@@ -81,6 +89,8 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                 lectureCommentRepository.findByAuthor_UserId(userId));
         lectureNoteRepository.deleteAll(
                 lectureNoteRepository.findByUser_UserId(userId));
+        lectureAttendanceRepository.deleteAll(
+                lectureAttendanceRepository.findByStudent_UserId(userId));
         resourceRequestRepository.deleteAll(
                 resourceRequestRepository.findByStudent_UserId(userId));
         // SCRUM-36: requests assigned to the user belong to their authors and stay;

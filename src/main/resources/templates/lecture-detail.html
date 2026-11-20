@@ -282,6 +282,14 @@
                    th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/edit|}">
                     ✎ Edit Lecture
                 </a>
+
+                <!-- SCRUM-28: attendance tracker, only for courses that require attendance -->
+                <a class="btn btn-outline-primary"
+                   id="lecture-attendance-link"
+                   th:if="${lecture.course.attendanceRequired}"
+                   th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/attendance|}">
+                    Attendance
+                </a>
             </div>
 
             <!-- Teacher/admin assignment management -->

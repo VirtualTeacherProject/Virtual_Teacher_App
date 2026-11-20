@@ -47,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * SCRUM-10: the lecture video is rendered only for users with content access.
  * SCRUM-22: lecture pages of a draft course are hidden from non-managers.
  * SCRUM-20: the private notes card and its save endpoint.
+ * SCRUM-28: the link to the attendance tracker.
  */
 @ActiveProfiles("test")
 @WebMvcTest(LectureMvcController.class)
@@ -251,5 +252,57 @@ class LectureMvcControllerTest {
                         .param("content", "x"))
                 .andExpect(redirectedUrl("/courses/1/lectures/5"))
                 .andExpect(flash().attribute("error", "Notes cannot be longer than 5000 characters"));
+    }
+
+    // --- SCRUM-28: attendance link -------------------------------------------
+
+    private static final String TEACHER = "teacher@test.com";
+    private static final Principal TEACHER_PRINCIPAL =
+            new TestingAuthenticationToken(TEACHER, "n/a", "ROLE_TEACHER");
+
+    private void approvedTeacher() {
+        com.MarianFinweFeanor.Virtual_Teacher.Model.User teacher =
+                new com.MarianFinweFeanor.Virtual_Teacher.Model.User();
+        teacher.setEmail(TEACHER);
+        teacher.setFirstName("Tina");
+        teacher.setLastName("Teacher");
+        teacher.setRole(com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole.TEACHER);
+        teacher.setTeacherApproved(true);
+        given(userRepository.findByEmail(TEACHER)).willReturn(Optional.of(teacher));
+        given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void lectureDetail_shouldLinkToAttendance_forManager_whenCourseRequiresAttendance() throws Exception {
+        approvedTeacher();
+        course.setAttendanceRequired(true);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(TEACHER_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lecture-attendance-link")))
+                .andExpect(content().string(containsString("/courses/1/lectures/5/attendance")));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void lectureDetail_shouldNotLinkToAttendance_whenCourseDoesNotRequireIt() throws Exception {
+        approvedTeacher();
+        course.setAttendanceRequired(false);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(TEACHER_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("lecture-attendance-link"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldNotLinkToAttendance_forStudent() throws Exception {
+        course.setAttendanceRequired(true);
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(true);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("lecture-attendance-link"))));
     }
 }

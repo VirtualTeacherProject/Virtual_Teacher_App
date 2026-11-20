@@ -153,4 +153,25 @@ class SecurityRulesTest {
     void userApiDelete_shouldBeForbidden_forTeacher() throws Exception {
         mockMvc.perform(delete("/api/users/1")).andExpect(status().isForbidden());
     }
+
+    // --- SCRUM-28: attendance tracker ----------------------------------------
+
+    @Test
+    void attendance_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        // GET too: the tracker must not fall under the public GET /courses/** rule
+        mockMvc.perform(get("/courses/1/lectures/1/attendance"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+        mockMvc.perform(post("/courses/1/lectures/1/attendance").param("absent", "2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void attendance_shouldBeForbidden_forStudent() throws Exception {
+        mockMvc.perform(get("/courses/1/lectures/1/attendance")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/courses/1/lectures/1/attendance").param("absent", "2"))
+                .andExpect(status().isForbidden());
+    }
 }

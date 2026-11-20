@@ -80,6 +80,13 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/courses/*/lectures/*/assignments/**")
                         ).authenticated()
 
+                        // 1c) Attendance tracker (SCRUM-28): teachers/admins only, including GET.
+                        //     Must stay above the public GET /courses/** rule below.
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/courses/*/lectures/*/attendance"),
+                                new AntPathRequestMatcher("/courses/*/lectures/*/attendance/**")
+                        ).hasAnyRole("TEACHER", "ADMIN")
+
                         // 2) Public: browse courses & lectures (GET only)
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses", "GET"),

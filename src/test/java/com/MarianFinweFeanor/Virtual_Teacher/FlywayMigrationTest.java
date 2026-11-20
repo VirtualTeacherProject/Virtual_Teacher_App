@@ -28,7 +28,8 @@ class FlywayMigrationTest {
 
     private static final List<String> TABLES = List.of(
             "USERS", "COURSES", "LECTURES", "ENROLLMENTS",
-            "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES", "RESOURCE_REQUESTS");
+            "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES", "RESOURCE_REQUESTS",
+            "LECTURE_ATTENDANCE");
 
     private DataSource dataSource;
     private JdbcTemplate jdbc;
@@ -87,6 +88,14 @@ class FlywayMigrationTest {
         jdbc.update("insert into lecture_notes (lecture_id, user_id, content) "
                 + "values ((select lecture_id from lectures), (select user_id from users), 'note')");
         assertThat(jdbc.queryForObject("select count(*) from lecture_notes", Integer.class)).isEqualTo(1);
+
+        // SCRUM-28 (V6): one attendance record per lecture and student
+        String attendance = "insert into lecture_attendance (lecture_id, student_id, status, recorded_at) "
+                + "values ((select lecture_id from lectures), (select user_id from users), 'ABSENT', current_timestamp)";
+        jdbc.update(attendance);
+        assertThat(jdbc.queryForObject("select status from lecture_attendance", String.class)).isEqualTo("ABSENT");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update(attendance))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test
