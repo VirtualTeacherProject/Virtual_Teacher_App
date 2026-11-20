@@ -14,7 +14,7 @@ Sizes: **S** = up to a day, **M** = 2–4 days, **L** = a week or more, for one 
 |---|---|---|
 | DONE | 26 | 5, 6, 7, 8, 9, 10, 11, 12, 15, 19, 20, 22, 23, 24, 25, 27, 28, 31, 34, 35, 36, 41 (duplicate of 20), 42, 45, 49, 50 |
 | PARTIAL | 2 | 13, 40 |
-| NOT STARTED | 17 | 16, 17, 18, 26, 29, 30, 32, 33, 37, 39, 43, 44, 46, 47, 48, plus 14 and 38 (requirements unclear) |
+| NOT STARTED | 18 | 16, 17, 18, 26, 29, 30, 32, 33, 37, 39, 43, 44, 46, 47, 48, 51, plus 14 and 38 (requirements unclear) |
 
 ### Status changes since the 2026-11-16 audit
 
@@ -101,10 +101,11 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 | SCRUM-46 Enrolment confirmation email | — | S after 43 | **Email provider** |
 | SCRUM-47 PDF certificate | No PDF library in `pom.xml`. Completion status already exists on `Enrollment`. | M | PDF library; "receive" needs the email provider |
 | SCRUM-48 Prerequisite courses | No prerequisite relation on `Course`. | S–M | None |
+| SCRUM-51 Live lecture sessions and self-paced lecture progression | Placeholder number, not yet in Jira. Lectures have no schedule, order or per-student progress, so the SCRUM-28 roll call has no basis. Part A: live lectures with a scheduled start and meeting link, roll call only once started. Part B: lecture N+1 unlocks when N is finished (video watched + assignment submitted if any). Design note and open questions in `backlog.md` group 6. | L | None |
 
 ## Groupings
 
-- **SCRUM-28 / 29 / 45 (attendance).** One feature: 45 is the flag (done), 28 the tracker (done), 29 the student view. Build in that order.
+- **SCRUM-28 / 29 / 45 / 51 (attendance and progression).** 45 is the flag (done), 28 the roll call (done), 51 gives it a basis (live lectures with a schedule) and adds self-paced lecture unlocking, 29 the student view. Build 51 before 29.
 - **SCRUM-16 / 17 / 18 / 33 (entrance exams).** One epic; 33 is a small rule on top of 17.
 - **SCRUM-16 / 48 (enrolment preconditions).** Both add a rule before `EnrollmentServiceImpl.enroll`; design one eligibility hook.
 - **SCRUM-43 / 44 / 46, plus the emailed half of 47 (email).** Same mail configuration; 43 owns the setup and tokens.
@@ -137,7 +138,7 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 
 | Step | Tickets | Size | Why here |
 |---|---|---|---|
-| 1 | SCRUM-29 | S | SCRUM-28 is done; 29 only adds the student view of its records. |
+| 1 | SCRUM-51 → 29 | L + S | 51 makes the SCRUM-28 roll call usable (scheduled live lectures) and adds self-paced progression; 29 then shows students their records. |
 | 2 | SCRUM-48 | S–M | Introduces the enrolment eligibility hook. |
 | 3 | SCRUM-43 → 46 → 44 | M + S + M | Needs the email provider; 43 carries the setup. |
 | 4 | SCRUM-47 | M | Completion logic exists; email is available after step 3. |

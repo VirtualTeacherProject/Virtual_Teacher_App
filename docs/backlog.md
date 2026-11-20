@@ -54,8 +54,33 @@ New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) an
 
 ### 6. Attendance
 # Ticket	Description	Status	Evidence / notes
-SCRUM-29	Students can see only their own attendance records	NOT STARTED	No student view yet. The records exist since SCRUM-28 (Model/LectureAttendance, LectureAttendanceRepository); needs a query by student and course and a page or course-page section.
-Order: SCRUM-45 (done) -> 28 (done) -> 29.
+SCRUM-51	Live lecture sessions with attendance, and self-paced lecture progression (lecture N+1 unlocks when lecture N is finished)	NOT STARTED	Number is a placeholder until the ticket exists in Jira. No schedule, lecture order or per-student lecture progress exists today. See the design note below.
+SCRUM-29	Students can see only their own attendance records	NOT STARTED	No student view yet. The records exist since SCRUM-28 (Model/LectureAttendance, LectureAttendanceRepository); needs a query by student and course and a page or course-page section. Applies to live lectures once SCRUM-51 part A exists.
+Order: SCRUM-45 (done) -> 28 (done) -> 51 -> 29.
+
+Design note (SCRUM-51, from the 2026-11-20 discussion after SCRUM-28):
+The SCRUM-28 roll call has no basis yet: lectures have no date or time (only title,
+description and a YouTube URL), so a teacher cannot know who was absent. Enrolment is
+not attendance. Decision: support both kinds of course.
+- Part A, live sessions. Some lectures (not every course or lecture) are live sessions
+  given by the teacher; only those need attendance. Add a per-lecture "live" flag, a
+  scheduled start and an optional meeting link to the lecture form (Flyway V7). Offer the
+  SCRUM-28 roll call only for live lectures and only once the session has started (the
+  teacher can use the meeting's participant list). Decide whether Course.attendanceRequired
+  (SCRUM-45) stays a manual flag or follows from "has live lectures". Later option: a
+  check-in code students enter during the session.
+- Part B, self-paced progression. Probably more than half of the courses are self-paced.
+  Lecture 2 opens only after lecture 1 is finished; finished = video watched + assignment
+  submitted, if the lecture has one. Needs a lecture order (no position field today;
+  lectures come back in id order) and a per-student lecture progress entity.
+- Open questions: how "watched" is detected (videos are YouTube embeds: the IFrame Player
+  API "ended" event or a "mark as watched" button; neither can be fully verified); a
+  lecture cannot say today whether it has an assignment (Lecture.assignmentFilePath is
+  not null); does "assignment done" mean submitted or graded; teachers and admins bypass
+  the lock; how a live lecture fits inside a self-paced course.
+- Related: EnrollmentServiceImpl.recalculateProgress (course COMPLETED once every lecture
+  has a graded submission) must agree with the new "finished" rule. May overlap with
+  SCRUM-38 (Course Lessons Availability). Could be split into two Jira tickets (A and B).
 
 ### 7. Enrollment preconditions (shared eligibility check before enrolling)
 # Ticket	Description	Status	Evidence / notes
