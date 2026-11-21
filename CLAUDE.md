@@ -26,6 +26,7 @@ Spring Boot 3.1.4 / Java 17 / Maven. The wrapper is script-only (`./mvnw` downlo
 - After finishing a ticket, before committing: update its status in
   docs/backlog.md and docs/backlog-audit.md (DONE/PARTIAL + short evidence),
   and include those doc changes in the ticket's commit.
+- ./mvnw won't work because wrapper is not installed in this device. use "mvn".
 
 There is no linter or formatter configured.
 
