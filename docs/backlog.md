@@ -114,6 +114,7 @@ SCRUM-30	Courses can contain groups of enrolled students	NOT STARTED	No group en
 SCRUM-32	Teachers show tutoring availability and available times on their profiles	NOT STARTED	No public teacher profile; ProfileMvcController edits only names, picture and status.
 
 ### 11. Technical debt — done (SCRUM-50)
+Known gap (SCRUM-51): a lecture saved without LectureServiceImpl.createLectures (e.g. the unused saveLecture) gets lectureOrder 0 and sorts first instead of last; nothing in the app does this today. Fix and reasoning in docs/backlog-audit.md, "Issues found outside the ticket list", issue 9.
 
 ### 12. Documentation and engagement (any time)
 # Ticket	Description	Status	Evidence / notes

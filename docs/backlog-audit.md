@@ -136,6 +136,7 @@ None of these have a commit, entity, repository, migration or dependency on `mai
 | 6 | `./mvnw` not executable | Open (file mode is still `-rw-rw-r--`). |
 | 7 | Bare `RuntimeException` instead of `EntityNotFoundException` | Open (see SCRUM-5). |
 | 8 | No JaCoCo `check` goal | Open (see SCRUM-8). |
+| 9 | New lectures saved outside `LectureServiceImpl.createLectures` get `lectureOrder = 0` (SCRUM-51) | Open, harmless today. `lectures.lecture_order` is NOT NULL with no database default (V8). `Model/Lecture` defaults the field to 0 so such saves do not fail with `NULL not allowed for column "LECTURE_ORDER"`. Only `createLectures` (MVC form, REST API) puts a new lecture last (`maxLectureOrder + 1`). The unused `LectureServiceImpl.saveLecture` does not, so a lecture saved through it would sort first in its course (moving any lecture with ↑/↓ renumbers the course 1..n). Fix if it ever matters: (1) delete `saveLecture` and its test so `createLectures` is the only way to create a lecture, or (2) make `saveLecture` set `maxLectureOrder + 1` for new lectures. A V9 database default would not help: Hibernate always sends the column, so a default applies only to hand-written SQL inserts. |
 
 ## Proposed implementation order
 
