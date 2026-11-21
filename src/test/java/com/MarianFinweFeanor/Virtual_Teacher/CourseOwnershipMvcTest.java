@@ -23,6 +23,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
@@ -61,8 +62,8 @@ class CourseOwnershipMvcTest {
 
     @BeforeEach
     void setUp() {
-        User owner = teacher(OWNER);
-        User other = teacher(OTHER);
+        User owner = teacher(OWNER, "Olivia", "Owner");
+        User other = teacher(OTHER, "Oscar", "Other");
 
         course = new Course();
         course.setCourseId(10L);
@@ -84,11 +85,11 @@ class CourseOwnershipMvcTest {
                 .when(courseAccessService).ensureCanManageCourse(course, OTHER);
     }
 
-    private static User teacher(String email) {
+    private static User teacher(String email, String first, String last) {
         User user = new User();
         user.setEmail(email);
-        user.setFirstName("T");
-        user.setLastName("Teacher");
+        user.setFirstName(first);
+        user.setLastName(last);
         user.setRole(UserRole.TEACHER);
         user.setTeacherApproved(true);
         return user;
@@ -179,5 +180,61 @@ class CourseOwnershipMvcTest {
                 .andExpect(content().string(not(containsString("/courses/10/publish"))))
                 .andExpect(content().string(not(containsString("/courses/10/students"))))
                 .andExpect(content().string(not(containsString("course-progress-link"))));
+    }
+
+    // --- SCRUM-52 follow-up: showing who owns a course ------------------------------
+
+    private void courseList() {
+        given(courseService.getVisibleCourses(any(), org.mockito.ArgumentMatchers.anyBoolean()))
+                .willReturn(List.of(course));
+    }
+
+    @Test
+    void courseList_shouldShowTheTeacher_andMarkAndOfferEditOnOwnCourses() throws Exception {
+        givenApprovedTeacherSession(OWNER);
+        courseList();
+
+        mockMvc.perform(get("/courses").principal(as(OWNER)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Olivia Owner")))
+                .andExpect(content().string(containsString("Your course")))
+                .andExpect(content().string(containsString("/courses/10/edit")));
+    }
+
+    @Test
+    void courseList_shouldShowTheTeacher_butNoEditOrBadge_toAnotherTeacher() throws Exception {
+        givenApprovedTeacherSession(OTHER);
+        courseList();
+
+        mockMvc.perform(get("/courses").principal(as(OTHER)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Olivia Owner")))
+                .andExpect(content().string(not(containsString("Your course"))))
+                .andExpect(content().string(not(containsString("/courses/10/edit"))));
+    }
+
+    @Test
+    void courseList_shouldShowTheTeacher_toAnonymousVisitors() throws Exception {
+        course.setStatus("PUBLISHED");
+        courseList();
+
+        mockMvc.perform(get("/courses"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Olivia Owner")))
+                .andExpect(content().string(not(containsString("Your course"))));
+    }
+
+    @Test
+    void coursePage_shouldShowTheTeacher_withYourCourseOnlyForTheOwner() throws Exception {
+        givenApprovedTeacherSession(OWNER);
+        mockMvc.perform(get("/courses/10").principal(as(OWNER)))
+                .andExpect(content().string(containsString("course-teacher")))
+                .andExpect(content().string(containsString("Olivia Owner")))
+                .andExpect(content().string(containsString("Your course")));
+
+        givenApprovedTeacherSession(OTHER);
+        mockMvc.perform(get("/courses/10").principal(as(OTHER)))
+                .andExpect(content().string(containsString("Olivia Owner")))
+                .andExpect(content().string(not(containsString("Your course"))));
     }
 }

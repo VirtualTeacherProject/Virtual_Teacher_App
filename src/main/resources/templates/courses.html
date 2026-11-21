@@ -164,6 +164,13 @@
                         Topic: <span th:text="${c.topic}">Programming</span>
                     </div>
 
+                    <!-- SCRUM-52: who owns the course -->
+                    <div class="text-muted small mb-2 course-teacher" th:if="${c.teacher != null}">
+                        Teacher: <span th:text="${c.teacher.firstName + ' ' + c.teacher.lastName}">Tina Teacher</span>
+                        <span class="badge text-bg-primary ms-1"
+                              th:if="${#strings.equalsIgnoreCase(c.teacher.email, currentUserData['email'])}">Your course</span>
+                    </div>
+
                     <div class="mb-2" th:if="${c.attendanceRequired}">
                         <span class="badge text-bg-warning">Attendance required</span>
                     </div>
@@ -196,9 +203,9 @@
                             Edit
                         </a>
 
-                        <!-- Approved-teacher edit -->
+                        <!-- Teacher edit: SCRUM-52, only on the teacher's own courses -->
                         <a th:if="${currentUserData['role'] == 'TEACHER'
-           and currentUserData['teacherApproved']}"
+           and managedIds != null and managedIds.contains(c.courseId)}"
                            class="btn btn-sm btn-outline-secondary ms-auto"
                            th:href="@{/courses/{id}/edit(id=${c.courseId})}">
                             Edit

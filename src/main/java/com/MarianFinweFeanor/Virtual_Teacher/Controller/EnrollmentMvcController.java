@@ -89,6 +89,7 @@ public class EnrollmentMvcController {
         }
 
         model.addAttribute("courses", all);
+        model.addAttribute("managedIds", managedCourseIds(all, principal));   // SCRUM-52
         model.addAttribute("enrolledIds", enrolledIds);
         model.addAttribute("isTeacher", isTeacher);
         return "courses";
@@ -117,6 +118,7 @@ public class EnrollmentMvcController {
         }
 
         model.addAttribute("courses", courses);
+        model.addAttribute("managedIds", managedCourseIds(courses, principal));   // SCRUM-52
         model.addAttribute("enrolledIds", enrolledIds);
         model.addAttribute("isTeacher", isTeacher);
         model.addAttribute("query", query);
@@ -404,6 +406,17 @@ public class EnrollmentMvcController {
         }
 
         return false;
+    }
+
+    /** SCRUM-52: ids of the listed courses the user may manage (their own, or all for an admin). */
+    private java.util.Set<Long> managedCourseIds(List<Course> courses, Principal principal) {
+        if (principal == null) {
+            return java.util.Set.of();
+        }
+        return courses.stream()
+                .filter(c -> courseAccessService.canManageCourse(c, principal.getName()))
+                .map(Course::getCourseId)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     private boolean canViewCourse(Course course, Principal principal) {

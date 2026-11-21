@@ -88,6 +88,15 @@
                     <p class="text-muted mb-1">Topic</p>
                     <div class="fw-medium" th:text="${course.topic}">Topic</div>
                 </div>
+                <!-- SCRUM-52: who owns the course -->
+                <div class="col-md-4" id="course-teacher" th:if="${course.teacher != null}">
+                    <p class="text-muted mb-1">Teacher</p>
+                    <div class="fw-medium">
+                        <span th:text="${course.teacher.firstName + ' ' + course.teacher.lastName}">Tina Teacher</span>
+                        <span class="badge text-bg-primary ms-1"
+                              th:if="${#strings.equalsIgnoreCase(course.teacher.email, currentUserData['email'])}">Your course</span>
+                    </div>
+                </div>
                 <div class="col-md-4" th:if="${course.status}">
                     <p class="text-muted mb-1">Status</p>
                     <span class="badge text-bg-light border" th:text="${course.status}">Published</span>
