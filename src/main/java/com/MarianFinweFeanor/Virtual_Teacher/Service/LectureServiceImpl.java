@@ -47,7 +47,12 @@ public class LectureServiceImpl implements LectureService {
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
         lecture.setCourse(course); // Attach managed entity
         normaliseLiveSession(lecture);
-        return lectureRepository.save(lecture);
+        // SCRUM-51 part B: a new lecture goes to the end of the course
+        lecture.setLectureOrder(lectureRepository.maxLectureOrder(courseId) + 1);
+        Lecture saved = lectureRepository.save(lecture);
+        // a course a student had completed now has one more lecture to do
+        enrollmentService.recalculateProgressForCourse(courseId);
+        return saved;
         //TODO FILTERING EXCEPTION HANDLING CHECK IF LECTURE WITH THE SAME NAME EXISTS
     }
 
@@ -56,7 +61,7 @@ public class LectureServiceImpl implements LectureService {
     public List<Lecture> getByCourseId(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
-        return lectureRepository.findAllByCourse(course);
+        return lectureRepository.findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(course.getCourseId());
         // or, if you prefer: lectureRepository.findAllByCourse_CourseId(courseId)
     }
 
@@ -107,9 +112,46 @@ public class LectureServiceImpl implements LectureService {
                     lecture.setLiveStart(updatedLecture.getLiveStart());
                     lecture.setMeetingUrl(updatedLecture.getMeetingUrl());
                     normaliseLiveSession(lecture);
-                    return lectureRepository.save(lecture);
+                    boolean assignmentChanged =
+                            lecture.isAssignmentRequired() != updatedLecture.isAssignmentRequired();
+                    lecture.setAssignmentRequired(updatedLecture.isAssignmentRequired());
+                    Lecture saved = lectureRepository.save(lecture);
+                    // SCRUM-51 part B: completion depends on whether the lecture has an assignment
+                    if (assignmentChanged && lecture.getCourse() != null) {
+                        enrollmentService.recalculateProgressForCourse(lecture.getCourse().getCourseId());
+                    }
+                    return saved;
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Lecture", id));
+    }
+
+    @Override
+    @Transactional
+    public void moveLecture(Long lectureId, boolean up) {
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
+        List<Lecture> lectures = lectureRepository
+                .findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(lecture.getCourse().getCourseId());
+
+        int index = -1;
+        for (int i = 0; i < lectures.size(); i++) {
+            if (lectures.get(i).getLectureId().equals(lectureId)) {
+                index = i;
+            }
+        }
+        int other = up ? index - 1 : index + 1;
+        if (index < 0 || other < 0 || other >= lectures.size()) {
+            return;
+        }
+
+        // Renumber 1..n so duplicate or missing positions are repaired as well.
+        Lecture neighbour = lectures.get(other);
+        lectures.set(other, lectures.get(index));
+        lectures.set(index, neighbour);
+        for (int i = 0; i < lectures.size(); i++) {
+            lectures.get(i).setLectureOrder(i + 1);
+        }
+        lectureRepository.saveAll(lectures);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureProgress;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureAttendance;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureComment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureNote;
@@ -154,6 +155,17 @@ class PostgresMigrationTest {
         lecture.setMeetingUrl("https://meet.example.com/abc");
         em.merge(lecture);
 
+        // SCRUM-51 (V8): order, assignment flag, in-order courses, progress
+        lecture.setLectureOrder(1);
+        lecture.setAssignmentRequired(true);
+        course.setLecturesInOrder(true);
+        em.merge(course);
+        LectureProgress progress = new LectureProgress();
+        progress.setLecture(lecture);
+        progress.setStudent(teacher);
+        progress.setFinishedAt(LocalDateTime.now());
+        em.persist(progress);
+
         LectureAttendance attendance = new LectureAttendance();   // SCRUM-28 (V6)
         attendance.setLecture(lecture);
         attendance.setStudent(teacher);
@@ -180,5 +192,9 @@ class PostgresMigrationTest {
         assertThat(storedLecture.isLive()).isTrue();
         assertThat(storedLecture.getLiveStart()).isEqualTo(LocalDateTime.of(2026, 12, 1, 9, 30));
         assertThat(storedLecture.getMeetingUrl()).isEqualTo("https://meet.example.com/abc");
+        assertThat(storedLecture.isAssignmentRequired()).isTrue();
+        assertThat(em.find(Course.class, course.getCourseId()).isLecturesInOrder()).isTrue();
+        assertThat(em.find(LectureProgress.class, progress.getProgressId()).getStudent().getUserId())
+                .isEqualTo(teacher.getUserId());
     }
 }

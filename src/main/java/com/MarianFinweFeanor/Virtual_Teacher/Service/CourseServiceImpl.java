@@ -170,6 +170,7 @@ public class CourseServiceImpl implements CourseService {
                     course.setStartDate(updatedCourse.getStartDate());
                     course.setPassingGrade(updatedCourse.getPassingGrade());
                     course.setAttendanceRequired(updatedCourse.isAttendanceRequired());
+                    course.setLecturesInOrder(updatedCourse.isLecturesInOrder());   // SCRUM-51 part B
 
                     // Status is intentionally not changed here.
                     // Publishing is handled only through publishCourse().

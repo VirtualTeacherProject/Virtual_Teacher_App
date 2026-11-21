@@ -23,4 +23,11 @@ public interface CourseAccessService {
 
     /** Throws EntityNotFoundException when the course must stay hidden from this user. */
     void ensureCanViewCourse(Course course, String userEmail);
+
+    /**
+     * Throws AccessDeniedException unless the user may manage this course.
+     * For now that is every course manager (see canManageCourses); the course
+     * ownership ticket will restrict it to the course's own teacher and admins.
+     */
+    void ensureCanManageCourse(Course course, String userEmail);
 }

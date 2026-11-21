@@ -3,10 +3,12 @@ package com.MarianFinweFeanor.Virtual_Teacher;
 import com.MarianFinweFeanor.Virtual_Teacher.Controller.LectureMvcController;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureState;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureProgressService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureCommentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureNoteService;
@@ -33,6 +35,7 @@ import java.util.Set;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -71,6 +74,7 @@ class LectureMvcControllerTest {
     @MockBean private EnrollmentService enrollmentService;
     @MockBean private CourseAccessService courseAccessService;
     @MockBean private LectureNoteService lectureNoteService;
+    @MockBean private LectureProgressService lectureProgressService;   // SCRUM-51 part B
     @MockBean private UserRepository userRepository;
 
     private Course course;
@@ -401,5 +405,140 @@ class LectureMvcControllerTest {
                 .andExpect(model().attributeHasFieldErrors("lecture", "meetingUrl"));
 
         verify(lectureService, never()).updateLecture(any(), any());
+    }
+
+    // --- SCRUM-51 part B: progress, locking and order ----------------------------
+
+    private void enrolledStudent() {
+        given(userService.getEnrolledCourses(STUDENT)).willReturn(Set.of(course));
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(true);
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldHideVideoAndSubmission_whenTheLectureIsLocked() throws Exception {
+        enrolledStudent();
+        given(lectureProgressService.isLocked(lecture, STUDENT)).willReturn(true);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("locked", true))
+                .andExpect(content().string(containsString("lecture-locked")))
+                .andExpect(content().string(not(containsString(VIDEO_URL))))
+                .andExpect(content().string(not(containsString("Submit Assignment"))))
+                .andExpect(content().string(not(containsString("lecture-finish-button"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldOfferMarkAsFinished_toEnrolledStudent() throws Exception {
+        enrolledStudent();
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lecture-finish-button")))
+                .andExpect(content().string(not(containsString("lecture-locked"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldDisableMarkAsFinished_untilTheAssignmentIsSubmitted() throws Exception {
+        enrolledStudent();
+        lecture.setAssignmentRequired(true);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(content().string(containsString("Submit the assignment below")))
+                .andExpect(content().string(containsString("disabled")));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldSayAwaitingGrade_forAFinishedUngradedLecture() throws Exception {
+        enrolledStudent();
+        lecture.setAssignmentRequired(true);
+        given(lectureProgressService.getLectureStates(1L, STUDENT))
+                .willReturn(List.of(new LectureState(lecture, true, false, false)));
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(content().string(containsString("Finished, awaiting grade")))
+                .andExpect(content().string(not(containsString("lecture-finish-button"))));
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void listLectures_shouldShowTheStudentsProgress() throws Exception {
+        enrolledStudent();
+        course.setLecturesInOrder(true);
+        Lecture second = new Lecture();
+        second.setLectureId(6L);
+        second.setTitle("Second");
+        second.setCourse(course);
+        given(lectureService.getByCourseId(1L)).willReturn(List.of(lecture, second));
+        given(lectureProgressService.getLectureStates(1L, STUDENT)).willReturn(List.of(
+                new LectureState(lecture, true, true, false),
+                new LectureState(second, false, false, true)));
+
+        mockMvc.perform(get("/courses/1/lectures").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("completedCount", 1L))
+                .andExpect(content().string(containsString("1 of 2 lectures completed")))
+                .andExpect(content().string(containsString("Completed")))
+                .andExpect(content().string(containsString("Locked")));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void listLectures_shouldShowMoveButtons_toManagers() throws Exception {
+        approvedTeacher();
+        Lecture second = new Lecture();
+        second.setLectureId(6L);
+        second.setTitle("Second");
+        second.setCourse(course);
+        given(lectureService.getByCourseId(1L)).willReturn(List.of(lecture, second));
+
+        mockMvc.perform(get("/courses/1/lectures").principal(TEACHER_PRINCIPAL))
+                .andExpect(content().string(containsString("/courses/1/lectures/5/move?direction=down")))
+                .andExpect(content().string(containsString("/courses/1/lectures/6/move?direction=up")))
+                .andExpect(content().string(not(containsString("/courses/1/lectures/5/move?direction=up"))));
+    }
+
+    @Test
+    void markFinished_shouldSaveAndRedirectToTheLecture() throws Exception {
+        mockMvc.perform(post("/courses/1/lectures/5/finish").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/courses/1/lectures/5"))
+                .andExpect(flash().attribute("msg", "Lecture marked as finished."));
+
+        verify(lectureProgressService).markFinished(1L, 5L, STUDENT);
+    }
+
+    @Test
+    void markFinished_shouldShowTheReason_whenRefused() throws Exception {
+        doThrow(new IllegalStateException("Submit the assignment of this lecture before marking it as finished"))
+                .when(lectureProgressService).markFinished(1L, 5L, STUDENT);
+
+        mockMvc.perform(post("/courses/1/lectures/5/finish").principal(STUDENT_PRINCIPAL))
+                .andExpect(redirectedUrl("/courses/1/lectures/5"))
+                .andExpect(flash().attribute("error", containsString("Submit the assignment")));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void moveLecture_shouldMoveAndRedirectToTheList() throws Exception {
+        mockMvc.perform(post("/courses/1/lectures/5/move").param("direction", "up").principal(TEACHER_PRINCIPAL))
+                .andExpect(redirectedUrl("/courses/1/lectures"));
+
+        verify(userService).ensureApprovedTeacher(TEACHER);
+        verify(courseAccessService).ensureCanManageCourse(course, TEACHER);
+        verify(lectureService).moveLecture(5L, true);
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void moveLecture_shouldAnswer404_forLectureOfAnotherCourse() throws Exception {
+        mockMvc.perform(post("/courses/2/lectures/5/move").param("direction", "down").principal(TEACHER_PRINCIPAL))
+                .andExpect(status().isNotFound());
+
+        verify(lectureService, never()).moveLecture(any(), anyBoolean());
     }
 }

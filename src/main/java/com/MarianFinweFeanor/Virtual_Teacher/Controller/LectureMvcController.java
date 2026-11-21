@@ -34,6 +34,7 @@ public class LectureMvcController {
     private final EnrollmentService enrollmentService;
     private final CourseAccessService courseAccessService;  // draft visibility + enrollment-gated content
     private final LectureNoteService lectureNoteService;    // SCRUM-20 private notes
+    private final LectureProgressService lectureProgressService;   // SCRUM-51 part B
 
     @Autowired
     public LectureMvcController(LectureService lectureService,
@@ -43,7 +44,8 @@ public class LectureMvcController {
                                 LectureCommentService lectureCommentService,
                                 EnrollmentService enrollmentService,
                                 CourseAccessService courseAccessService,
-                                LectureNoteService lectureNoteService) {
+                                LectureNoteService lectureNoteService,
+                                LectureProgressService lectureProgressService) {
         this.lectureService = lectureService;
         this.userService = userService;
         this.courseService = courseService;
@@ -52,6 +54,7 @@ public class LectureMvcController {
         this.enrollmentService = enrollmentService;
         this.courseAccessService = courseAccessService;
         this.lectureNoteService = lectureNoteService;
+        this.lectureProgressService = lectureProgressService;
     }
 
     // --- Add Lecture (form) --------------------------------------------------
@@ -192,9 +195,16 @@ public class LectureMvcController {
                         .map(Course::getCourseId)
                         .anyMatch(id -> id.equals(courseId));
 
+        // SCRUM-51 part B: the student's progress and which lectures are locked
+        List<LectureState> states = lectureProgressService.getLectureStates(courseId, emailOf(principal));
+        java.util.Map<Long, LectureState> stateById = new java.util.HashMap<>();
+        states.forEach(st -> stateById.put(st.lecture().getLectureId(), st));
+
         model.addAttribute("course", course);
         model.addAttribute("lectures", lectures);
         model.addAttribute("enrolled", enrolled);
+        model.addAttribute("stateById", stateById);
+        model.addAttribute("completedCount", states.stream().filter(LectureState::completed).count());
         return "lectures";
     }
 
@@ -244,8 +254,17 @@ public class LectureMvcController {
         model.addAttribute("newAssignment", new Assignment());
         model.addAttribute("comments", lectureCommentService.getCommentsForLecture(lectureId));
 
+        // SCRUM-51 part B: in an in-order course, later lectures stay locked.
+        boolean locked = principal != null && lectureProgressService.isLocked(lecture, email);
+        LectureState lectureState = lectureProgressService.getLectureStates(courseId, email).stream()
+                .filter(st -> st.lecture().getLectureId().equals(lectureId))
+                .findFirst()
+                .orElse(new LectureState(lecture, false, false, locked));
+        model.addAttribute("locked", locked);
+        model.addAttribute("lectureState", lectureState);
+
         // SCRUM-20: private notes, for users who can access the course content.
-        boolean canTakeNotes = principal != null && canAccessContent;
+        boolean canTakeNotes = principal != null && canAccessContent && !locked;
         model.addAttribute("canTakeNotes", canTakeNotes);
         model.addAttribute("noteContent",
                 canTakeNotes ? lectureNoteService.getNoteContent(lectureId, email) : "");
@@ -329,6 +348,43 @@ public class LectureMvcController {
         }
 
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
+    }
+
+    // --- SCRUM-51 part B: progress and order -----------------------------------
+
+    /** POST /courses/{courseId}/lectures/{lectureId}/finish (enrolled users) */
+    @PostMapping("/{lectureId}/finish")
+    public String markFinished(@PathVariable Long courseId,
+                               @PathVariable Long lectureId,
+                               Principal principal,
+                               RedirectAttributes ra) {
+        try {
+            lectureProgressService.markFinished(courseId, lectureId, principal.getName());
+            ra.addFlashAttribute("msg", "Lecture marked as finished.");
+        } catch (IllegalStateException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/courses/" + courseId + "/lectures/" + lectureId;
+    }
+
+    /** POST /courses/{courseId}/lectures/{lectureId}/move?direction=up|down (TEACHER/ADMIN) */
+    @PostMapping("/{lectureId}/move")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public String moveLecture(@PathVariable Long courseId,
+                              @PathVariable Long lectureId,
+                              @RequestParam String direction,
+                              Principal principal) {
+        userService.ensureApprovedTeacher(principal.getName());
+
+        Lecture lecture = lectureService.getLecturesById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
+        if (lecture.getCourse() == null || !lecture.getCourse().getCourseId().equals(courseId)) {
+            throw new EntityNotFoundException("Lecture", lectureId);
+        }
+        courseAccessService.ensureCanManageCourse(lecture.getCourse(), principal.getName());
+
+        lectureService.moveLecture(lectureId, "up".equalsIgnoreCase(direction));
+        return "redirect:/courses/" + courseId + "/lectures";
     }
 
     private static String emailOf(Principal principal) {

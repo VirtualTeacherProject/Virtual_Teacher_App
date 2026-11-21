@@ -79,6 +79,15 @@ public class CourseAccessServiceImpl implements CourseAccessService {
         }
     }
 
+    @Override
+    public void ensureCanManageCourse(Course course, String userEmail) {
+        // TODO(course ownership): also require course.getTeacher() to be the user, unless admin.
+        if (course == null || !canManageCourses(userEmail)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Only the course's teachers and admins can do this.");
+        }
+    }
+
     private boolean isPublished(Course course) {
         return PUBLISHED.equals(course.getStatus());
     }

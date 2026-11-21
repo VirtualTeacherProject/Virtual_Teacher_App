@@ -1,6 +1,6 @@
->Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43), SCRUM-28 (60e28f7) and SCRUM-51 part A (on feature/SCRUM-51-live-sessions-and-progression); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
+>Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43), SCRUM-28 (60e28f7) and SCRUM-51 (parts A and B, on feature/SCRUM-51-live-sessions-and-progression); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
 
-## Completed — 26 tickets
+## Completed — 27 tickets
 # Ticket	Description	Status	Evidence	Notes
 SCRUM-5	Proper exception handling and propagation	DONE	9d25b93, bf00898, 1c155bb	Global MVC/REST exception handlers and custom exceptions. A few paths still throw bare RuntimeException (see audit).
 SCRUM-6	Approved teachers receive course administration and student-search functionality	DONE	0a7bd61 [merge eca7feb]	/students search page.
@@ -28,12 +28,12 @@ SCRUM-42	Lecture/course comments	DONE	10e2b28, 0ecc6c3 [PR #10 76dfd04]
 SCRUM-45	Some courses can require attendance	DONE	a9b4c43	Course.attendanceRequired (default false), set on the teacher add/edit forms and the admin course edit; shown as a badge on the course list and an Attendance field on the course page. Migration V5. The tracker itself is SCRUM-28; attendance is taken only for its live lectures (SCRUM-51).
 SCRUM-49	Add a pull request template	DONE	4ba7128 [PR #13 5937900]	.github/pull_request_template.md. Was missing from this backlog.
 SCRUM-50	Adopt Flyway and switch ddl-auto to validate	DONE	eac9a74 [7e46e27]	V1 baseline in src/main/resources/db/migration; both profiles validate. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
+SCRUM-51	Live lecture sessions with attendance, and self-paced lecture progression	DONE	feature/SCRUM-51-live-sessions-and-progression (part A 57d852f, part B)	Number is a placeholder until the ticket exists in Jira. Part A: Lecture.live, liveStart, meetingUrl (V7); the SCRUM-28 roll call opens only for live lectures that have started and lists the students enrolled at the start. Part B: students mark lectures as finished (Model/LectureProgress, V8); a lecture with an assignment (Lecture.assignmentRequired) needs a submission before it can be marked and counts as completed once graded; the course is COMPLETED when every lecture is completed. Course.lecturesInOrder: a lecture opens only after every earlier one is finished (managers bypass). Lecture order (Lecture.lectureOrder) with up/down buttons for managers; /courses/{id}/progress shows each student's progress. Courses without assignments can be rated once completed. CourseAccessService.ensureCanManageCourse is the single place the course-ownership ticket will tighten.
 
 
 ## Partially done
 # Ticket	Description	Status	Evidence	What is missing
 SCRUM-13	Teachers can create courses and upload video lectures	PARTIAL	Controller/EnrollmentMvcController, Controller/LectureMvcController	Video is a URL (Model/Lecture.videoUrl), not an upload — decide which is intended. No course ownership check (see group 9).
-SCRUM-51	Live lecture sessions with attendance, and self-paced lecture progression	PARTIAL	feature/SCRUM-51-live-sessions-and-progression	Part A done: Lecture.live, liveStart, meetingUrl (Flyway V7) on the add/edit lecture forms; live badge and start time on the lecture list and page, meeting link only for users with content access. The SCRUM-28 roll call opens only for live lectures that have started and lists the students enrolled at the start; also fixed the present count (students without a record were counted present) and a 500 on two simultaneous saves. Part B (self-paced progression) not started, see the design note in group 6. Number is a placeholder until the ticket exists in Jira.
 SCRUM-40	Git history should clearly communicate development order, features and contributors	PARTIAL	git log	24 of 139 non-merge commits start with a ticket key (all recent work does); contributors appear under four author names. Ongoing convention; history must not be rewritten.
 
 
@@ -56,9 +56,9 @@ New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) an
 ### 6. Attendance
 # Ticket	Description	Status	Evidence / notes
 SCRUM-29	Students can see only their own attendance records	NOT STARTED	No student view yet. The records exist since SCRUM-28 (Model/LectureAttendance, LectureAttendanceRepository); needs a query by student and course and a page or course-page section. Attendance exists only for live lectures (SCRUM-51 part A).
-Order: SCRUM-45 (done) -> 28 (done) -> 51 part A (done) -> 29 and 51 part B (see Partially done).
+Order: SCRUM-45 (done) -> 28 (done) -> 51 (done) -> 29.
 
-Design note (SCRUM-51, from the 2026-11-20 discussion after SCRUM-28, updated 2026-11-21):
+Design note (SCRUM-51, from the 2026-11-20 discussion after SCRUM-28, updated 2026-11-21; both parts are done):
 The SCRUM-28 roll call had no basis: lectures had no date or time, so a teacher could
 not know who was absent, and saving marked everyone present. Enrolment is not attendance.
 Decision: attendance belongs only to live sessions. Self-paced courses have no
@@ -69,20 +69,18 @@ attendance; what matters there is completing the lectures, optionally in order.
   session has started; it lists the students enrolled at the start time, so later
   enrolments are not recorded as present. Later option: a check-in code students enter
   during the session.
-- Part B, self-paced progression (NOT STARTED). Track per-student lecture completion.
-  A course can make it a prerequisite: lecture N+1 opens only after lecture N is
-  finished (finished = video watched + assignment submitted, if the lecture has one).
-  Needs a lecture order (no position field; lectures come back in id order), a
-  per-student lecture progress entity and a per-course "lectures in order" setting.
-- Open questions (part B): how "watched" is detected (videos are YouTube embeds: the
-  IFrame Player API "ended" event or a "mark as finished" button; neither can be fully
-  verified); a lecture cannot say whether it has an assignment
-  (Lecture.assignmentFilePath is not null); does "assignment done" mean submitted or
-  graded; teachers and admins bypass the lock; how a live lecture fits inside a
-  self-paced course.
-- Related: EnrollmentServiceImpl.recalculateProgress (course COMPLETED once every lecture
-  has a graded submission) must agree with the new "finished" rule. May overlap with
-  SCRUM-38 (Course Lessons Availability). Could be split into two Jira tickets (A and B).
+- Part B, self-paced progression (DONE). Decisions of 2026-11-21: "watched" is a
+  "Mark as finished" button (YouTube videos are placeholders, so the end of a video is
+  not detected); a lecture with an assignment is completed only once it is graded, but in
+  an in-order course the next lecture already opens once the assignment is submitted and
+  the lecture marked, so slow grading does not block students; lecture order is a
+  per-course setting (off by default); teachers and admins are never locked out. A live
+  lecture is finished the same way as any other.
+- Existing data (V8): lectures are numbered in id order, a lecture whose
+  assignment_file_path is not blank has an assignment, and every lecture with a graded
+  submission counts as finished, so students who had completed a course stay completed.
+- Related: may overlap with SCRUM-38 (Course Lessons Availability) if that means lecture
+  unlocking or scheduled release.
 
 ### 7. Enrollment preconditions (shared eligibility check before enrolling)
 # Ticket	Description	Status	Evidence / notes
@@ -108,6 +106,7 @@ Order: SCRUM-43 -> 46 -> 44, then SCRUM-47.
 # Ticket	Description	Status	Evidence / notes
 SCRUM-14	Teacher access should be limited to the administrative part of sessions	NOT STARTED	Blocked on acceptance criteria. Probably the "a teacher manages only their own courses" boundary, which does not exist today.
 SCRUM-37	A student can become an assistant teacher and edit a teacher’s course content	NOT STARTED	Single role per user (Model/UserRole), no per-course permission. Needs course ownership enforced first.
+SCRUM-52	Course ownership: only the course's own teacher (and admins) can manage a course	NOT STARTED	Placeholder number until the ticket exists in Jira. Course.teacher is already set, but every teacher action only checks ensureApprovedTeacher, so any approved teacher can edit, grade, take attendance or reorder lectures in any course. Since SCRUM-51, CourseAccessService.ensureCanManageCourse is the one place to add the Course.teacher check; then switch the other teacher handlers (course edit/publish, lectures, assignments/grading, attendance, resources, resource requests) to it. Prerequisite for SCRUM-37; probably what SCRUM-14 asks for.
 
 ### 10. Teacher and course tools (independent)
 # Ticket	Description	Status	Evidence / notes

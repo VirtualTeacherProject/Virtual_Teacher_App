@@ -70,7 +70,16 @@
             <label class="form-check-label" th:for="${#ids.prev('attendanceRequired')}">
                 Attendance required
             </label>
-            <div class="form-text">Students' attendance will be tracked for every lecture.</div>
+            <div class="form-text">Attendance is taken for the course's live lectures.</div>
+        </div>
+
+        <!-- SCRUM-51 part B -->
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" th:field="*{lecturesInOrder}">
+            <label class="form-check-label" th:for="${#ids.prev('lecturesInOrder')}">
+                Lectures must be completed in order
+            </label>
+            <div class="form-text">A lecture opens only after the student finishes the one before it.</div>
         </div>
 
 

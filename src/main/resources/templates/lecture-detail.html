@@ -231,7 +231,7 @@
             <!-- Video: SCRUM-10 — only for enrolled users and course managers -->
             <div class="mt-3"
                  id="lecture-video"
-                 th:if="${canAccessContent
+                 th:if="${canAccessContent and !locked
                          and lecture.videoUrl != null
                          and !lecture.videoUrl.isBlank()}">
 
@@ -267,6 +267,12 @@
                    rel="noopener noreferrer">
                     Watch video
                 </a>
+            </div>
+
+            <!-- SCRUM-51 part B: in-order course, an earlier lecture is not finished -->
+            <div class="alert alert-secondary mt-3 mb-0" id="lecture-locked" th:if="${locked}">
+                This lecture opens once you finish the earlier lectures of this course.
+                <a th:href="@{/courses/{id}/lectures(id=${courseId})}">See your progress</a>.
             </div>
 
             <!-- Video locked: SCRUM-10 -->
@@ -352,9 +358,37 @@
         </div>
     </div>
 
-    <!-- Assignment submission: enrolled users only -->
+    <!-- SCRUM-51 part B: lecture progress, enrolled users only -->
+    <div class="card shadow-sm mb-3"
+         id="lecture-progress"
+         th:if="${enrolled and !locked}">
+        <div class="card-body d-flex align-items-center justify-content-between gap-3 flex-wrap">
+            <div>
+                <span class="badge text-bg-success" th:if="${lectureState.completed}">Completed</span>
+                <span class="badge text-bg-warning" th:if="${lectureState.isAwaitingGrade()}">
+                    Finished, awaiting grade
+                </span>
+                <span class="text-muted" th:if="${!lectureState.finished and lecture.assignmentRequired and #lists.isEmpty(submissions)}">
+                    Submit the assignment below, then mark this lecture as finished.
+                </span>
+            </div>
+
+            <form th:if="${!lectureState.finished}"
+                  th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/finish|}"
+                  method="post">
+                <button type="submit"
+                        id="lecture-finish-button"
+                        class="btn btn-success"
+                        th:disabled="${lecture.assignmentRequired and #lists.isEmpty(submissions)}">
+                    Mark as finished
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assignment submission: enrolled users only (not while the lecture is locked) -->
     <div sec:authorize="isAuthenticated()"
-         th:if="${enrolled}">
+         th:if="${enrolled and !locked}">
 
         <div class="card shadow-sm">
             <div class="card-body">

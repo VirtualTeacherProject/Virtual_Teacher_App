@@ -37,6 +37,16 @@ public class    Lecture {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    // --- SCRUM-51 part B: order and completion --------------------------------
+
+    /** Position of the lecture in its course, starting at 1. */
+    @Column(name = "lecture_order", nullable = false)
+    private Integer lectureOrder = 0;   // createLectures puts a new lecture at the end
+
+    /** The lecture has an assignment: it is completed only once that is graded. */
+    @Column(name = "assignment_required", nullable = false)
+    private boolean assignmentRequired;
+
     // --- SCRUM-51 part A: live sessions ---------------------------------------
 
     /** A live session given by the teacher at liveStart; otherwise the lecture is self-paced. */

@@ -8,6 +8,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureProgressService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.FileStorageException;
@@ -34,6 +35,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final LectureRepository     lectureRepository;
     private final Path                  uploadDir;  // now a Path instead of String
     private EnrollmentService enrollmentService;
+    private final LectureProgressService lectureProgressService;   // SCRUM-51 part B
 
     // where to drop uploaded files
     //@Value("${app.upload.dir:${java.io.tmpdir}}")
@@ -48,11 +50,13 @@ public class AssignmentServiceImpl implements AssignmentService {
                                  UserService           userService,
                                  EnrollmentService enrollmentService,
                                  LectureRepository     lectureRepository,
+                                 LectureProgressService lectureProgressService,
                                  @Value("${app.upload.dir}") String uploadDirStr) throws IOException {
         this.assignmentRepo     = assignmentRepo;
         this.userService        = userService;
         this.lectureRepository  = lectureRepository;
         this.enrollmentService = enrollmentService;
+        this.lectureProgressService = lectureProgressService;
         //this.uploadDir          = Paths.get(uploadDirPath);
 
         Path base = Paths.get(uploadDirStr);
@@ -108,6 +112,9 @@ public class AssignmentServiceImpl implements AssignmentService {
         if (!enrolled) {
             throw new AccessDeniedException("You’re not enrolled in that course");
         }
+
+        // SCRUM-51 part B: no submissions for a lecture that is still locked
+        lectureProgressService.ensureUnlocked(lecture, userEmail);
 
         // 3) Save file to disk
         String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();

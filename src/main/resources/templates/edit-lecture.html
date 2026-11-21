@@ -37,6 +37,16 @@
             <input class="form-control" th:field="*{assignmentFilePath}">
         </div>
 
+        <!-- SCRUM-51 part B -->
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="assignmentRequired" th:field="*{assignmentRequired}">
+            <label class="form-check-label" for="assignmentRequired">This lecture has an assignment</label>
+            <div class="form-text">
+                Students must submit it before marking the lecture as finished, and the lecture counts as
+                completed once you grade it.
+            </div>
+        </div>
+
         <!-- SCRUM-51 part A: live session (only live lectures can have attendance taken) -->
         <fieldset class="mb-3 border rounded p-3">
             <div class="form-check mb-2">

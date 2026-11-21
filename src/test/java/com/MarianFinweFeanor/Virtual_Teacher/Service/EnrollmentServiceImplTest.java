@@ -6,6 +6,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureProgressRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.UserRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
@@ -41,6 +42,9 @@ class EnrollmentServiceImplTest {
 
     @Mock
     private LectureRepository lectureRepository;
+
+    @Mock
+    private LectureProgressRepository progressRepository;   // SCRUM-51 part B
 
     @InjectMocks
     private EnrollmentServiceImpl enrollmentService;
@@ -394,7 +398,7 @@ class EnrollmentServiceImplTest {
         when(lectureRepository.countLecturesByCourseId(10L))
                 .thenReturn(5L);
 
-        when(assignmentRepo.countGradedLectures(1L, 10L))
+        when(progressRepository.countCompleted(1L, 10L))
                 .thenReturn(5L);
 
         enrollmentService.recalculateProgress(1L, 10L);
@@ -423,7 +427,7 @@ class EnrollmentServiceImplTest {
         when(lectureRepository.countLecturesByCourseId(10L))
                 .thenReturn(5L);
 
-        when(assignmentRepo.countGradedLectures(1L, 10L))
+        when(progressRepository.countCompleted(1L, 10L))
                 .thenReturn(3L);
 
         enrollmentService.recalculateProgress(1L, 10L);
@@ -449,7 +453,7 @@ class EnrollmentServiceImplTest {
         when(lectureRepository.countLecturesByCourseId(10L))
                 .thenReturn(0L);
 
-        when(assignmentRepo.countGradedLectures(1L, 10L))
+        when(progressRepository.countCompleted(1L, 10L))
                 .thenReturn(0L);
 
         enrollmentService.recalculateProgress(1L, 10L);
@@ -490,6 +494,7 @@ class EnrollmentServiceImplTest {
         enrollment.setCompletionStatus(
                 Enrollment.CompletionStatus.COMPLETED
         );
+        when(lectureRepository.countByCourse_CourseIdAndAssignmentRequiredTrue(10L)).thenReturn(2L);
 
         when(enrollmentRepo
                 .findByStudent_UserIdAndCourse_CourseId(1L, 10L))
@@ -504,6 +509,29 @@ class EnrollmentServiceImplTest {
                 "You can rate only after your course grade is calculated.",
                 exception.getMessage()
         );
+    }
+
+    // SCRUM-51 part B: a course without assignments has no grade; completing it is enough
+    @Test
+    void ensureCanRateCourse_shouldAllowRating_whenCourseHasNoAssignments_andIsCompleted() {
+        enrollment.setAverageGrade(null);
+        enrollment.setCompletionStatus(Enrollment.CompletionStatus.COMPLETED);
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L)).thenReturn(Optional.of(enrollment));
+        when(lectureRepository.countByCourse_CourseIdAndAssignmentRequiredTrue(10L)).thenReturn(0L);
+
+        assertDoesNotThrow(() -> enrollmentService.ensureCanRateCourse(1L, 10L));
+    }
+
+    @Test
+    void ensureCanRateCourse_shouldRefuse_whenCourseHasNoAssignments_butIsNotCompleted() {
+        enrollment.setAverageGrade(null);
+        enrollment.setCompletionStatus(Enrollment.CompletionStatus.IN_PROGRESS);
+        when(enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(1L, 10L)).thenReturn(Optional.of(enrollment));
+        when(lectureRepository.countByCourse_CourseIdAndAssignmentRequiredTrue(10L)).thenReturn(0L);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> enrollmentService.ensureCanRateCourse(1L, 10L));
+        assertEquals("You can rate only after completing all lectures.", ex.getMessage());
     }
 
     @Test
@@ -842,9 +870,9 @@ class EnrollmentServiceImplTest {
         // one lecture left, only the first student has a graded submission for it
         when(lectureRepository.countLecturesByCourseId(10L)).thenReturn(1L);
         when(assignmentRepo.avgGradeForCourse(1L, 10L)).thenReturn(90.0);
-        when(assignmentRepo.countGradedLectures(1L, 10L)).thenReturn(1L);
+        when(progressRepository.countCompleted(1L, 10L)).thenReturn(1L);
         when(assignmentRepo.avgGradeForCourse(2L, 10L)).thenReturn(null);
-        when(assignmentRepo.countGradedLectures(2L, 10L)).thenReturn(0L);
+        when(progressRepository.countCompleted(2L, 10L)).thenReturn(0L);
 
         enrollmentService.recalculateProgressForCourse(10L);
 

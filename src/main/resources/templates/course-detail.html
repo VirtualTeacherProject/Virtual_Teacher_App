@@ -97,6 +97,11 @@
                     <span class="badge text-bg-warning" th:if="${course.attendanceRequired}">Required</span>
                     <span class="text-muted" th:unless="${course.attendanceRequired}">Not required</span>
                 </div>
+                <div class="col-md-4">
+                    <p class="text-muted mb-1">Lectures</p>
+                    <span class="badge text-bg-secondary" th:if="${course.lecturesInOrder}">In order</span>
+                    <span class="text-muted" th:unless="${course.lecturesInOrder}">Any order</span>
+                </div>
                 <div class="col-md-4" th:if="${course.startDate}">
                     <p class="text-muted mb-1">Start Date</p>
                     <div th:text="${#temporals.format(course.startDate, 'dd MMM yyyy HH:mm')}">01 Jan 2025</div>
@@ -138,6 +143,14 @@
                    th:href="@{/courses/{id}/students(id=${course.courseId})}"
                    class="btn btn-outline-secondary">
                     View Enrolled Students
+                </a>
+
+                <!-- SCRUM-51 part B -->
+                <a th:if="${currentUserData['canManageCourses']}"
+                   id="course-progress-link"
+                   th:href="@{/courses/{id}/progress(id=${course.courseId})}"
+                   class="btn btn-outline-secondary">
+                    Student Progress
                 </a>
 
 

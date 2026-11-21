@@ -9,6 +9,8 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureAttendanceRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureProgressRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureProgress;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureNoteRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.ResourceRequestRepository;
@@ -49,6 +51,9 @@ class ContentCleanupServiceImplTest {
     @Mock
     private LectureAttendanceRepository lectureAttendanceRepository;
 
+    @Mock
+    private LectureProgressRepository lectureProgressRepository;   // SCRUM-51 part B
+
     @TempDir
     Path uploadDir;
 
@@ -62,7 +67,7 @@ class ContentCleanupServiceImplTest {
         cleanupService = new ContentCleanupServiceImpl(
                 assignmentRepository, lectureCommentRepository, lectureNoteRepository,
                 courseResourceRepository, resourceRequestRepository, lectureAttendanceRepository,
-                uploadDir.toString());
+                lectureProgressRepository, uploadDir.toString());
     }
 
     private Assignment submission(Path file) {
@@ -87,6 +92,8 @@ class ContentCleanupServiceImplTest {
         when(lectureNoteRepository.findByLecture_LectureId(100L)).thenReturn(notes);
         List<LectureAttendance> attendance = List.of(new LectureAttendance());
         when(lectureAttendanceRepository.findByLecture_LectureId(100L)).thenReturn(attendance);
+        List<LectureProgress> progress = List.of(new LectureProgress());
+        when(lectureProgressRepository.findByLecture_LectureId(100L)).thenReturn(progress);
 
         cleanupService.deleteLectureContent(100L);
 
@@ -94,6 +101,7 @@ class ContentCleanupServiceImplTest {
         verify(lectureCommentRepository).deleteAll(comments);
         verify(lectureNoteRepository).deleteAll(notes);
         verify(lectureAttendanceRepository).deleteAll(attendance);   // SCRUM-28
+        verify(lectureProgressRepository).deleteAll(progress);      // SCRUM-51
         verifyNoInteractions(courseResourceRepository);   // resources belong to the course
         verifyNoInteractions(resourceRequestRepository);  // so do the requests
         assertFalse(Files.exists(file));
@@ -116,6 +124,8 @@ class ContentCleanupServiceImplTest {
         when(resourceRequestRepository.findByCourse_CourseId(10L)).thenReturn(requests);
         List<LectureAttendance> attendance = List.of(new LectureAttendance(), new LectureAttendance());
         when(lectureAttendanceRepository.findByLecture_Course_CourseId(10L)).thenReturn(attendance);
+        List<LectureProgress> progress = List.of(new LectureProgress());
+        when(lectureProgressRepository.findByLecture_Course_CourseId(10L)).thenReturn(progress);
 
         cleanupService.deleteCourseContent(10L);
 
@@ -125,6 +135,7 @@ class ContentCleanupServiceImplTest {
         verify(courseResourceRepository).deleteAll(resources);
         verify(resourceRequestRepository).deleteAll(requests);
         verify(lectureAttendanceRepository).deleteAll(attendance);   // SCRUM-28
+        verify(lectureProgressRepository).deleteAll(progress);      // SCRUM-51
         assertFalse(Files.exists(first));
         assertFalse(Files.exists(second));
     }
@@ -144,6 +155,8 @@ class ContentCleanupServiceImplTest {
         when(resourceRequestRepository.findByStudent_UserId(1L)).thenReturn(requests);
         List<LectureAttendance> attendance = List.of(new LectureAttendance());
         when(lectureAttendanceRepository.findByStudent_UserId(1L)).thenReturn(attendance);
+        List<LectureProgress> progress = List.of(new LectureProgress());
+        when(lectureProgressRepository.findByStudent_UserId(1L)).thenReturn(progress);
 
         cleanupService.deleteUserContent(1L);
 
@@ -152,6 +165,7 @@ class ContentCleanupServiceImplTest {
         verify(lectureNoteRepository).deleteAll(notes);
         verify(resourceRequestRepository).deleteAll(requests);
         verify(lectureAttendanceRepository).deleteAll(attendance);   // SCRUM-28
+        verify(lectureProgressRepository).deleteAll(progress);      // SCRUM-51
         assertFalse(Files.exists(mine));
         assertTrue(Files.exists(someoneElses));
     }

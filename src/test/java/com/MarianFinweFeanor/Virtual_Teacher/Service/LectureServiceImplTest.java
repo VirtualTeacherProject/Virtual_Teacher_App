@@ -115,7 +115,7 @@ class LectureServiceImplTest {
         when(courseRepository.findById(10L))
                 .thenReturn(Optional.of(course));
 
-        when(lectureRepository.findAllByCourse(course))
+        when(lectureRepository.findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(10L))
                 .thenReturn(expected);
 
         List<Lecture> result =
@@ -124,7 +124,7 @@ class LectureServiceImplTest {
         assertEquals(expected, result);
 
         verify(courseRepository).findById(10L);
-        verify(lectureRepository).findAllByCourse(course);
+        verify(lectureRepository).findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(10L);
     }
 
     @Test
@@ -143,7 +143,7 @@ class LectureServiceImplTest {
         );
 
         verify(lectureRepository, never())
-                .findAllByCourse(any(Course.class));
+                .findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(any());
     }
 
     @Test
@@ -389,4 +389,100 @@ class LectureServiceImplTest {
 
 
 
+
+    // --- SCRUM-51 part B: order and completion ----------------------------------
+
+    @Test
+    void createLectures_shouldPutTheLectureLast_andRecalculateTheCourse() {
+        Course managed = new Course();
+        managed.setCourseId(10L);
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(managed));
+        when(lectureRepository.maxLectureOrder(10L)).thenReturn(3);
+        when(lectureRepository.save(lecture)).thenReturn(lecture);
+
+        lectureService.createLectures(lecture);
+
+        assertEquals(4, lecture.getLectureOrder());
+        verify(enrollmentService).recalculateProgressForCourse(10L);
+    }
+
+    @Test
+    void updateLecture_shouldRecalculateTheCourse_whenTheAssignmentFlagChanges() {
+        Lecture updated = new Lecture();
+        updated.setAssignmentRequired(true);
+        when(lectureRepository.findById(100L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.save(lecture)).thenReturn(lecture);
+
+        lectureService.updateLecture(100L, updated);
+
+        assertTrue(lecture.isAssignmentRequired());
+        verify(enrollmentService).recalculateProgressForCourse(10L);
+    }
+
+    @Test
+    void updateLecture_shouldNotRecalculate_whenTheAssignmentFlagIsUnchanged() {
+        when(lectureRepository.findById(100L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.save(lecture)).thenReturn(lecture);
+
+        lectureService.updateLecture(100L, new Lecture());
+
+        verify(enrollmentService, never()).recalculateProgressForCourse(any());
+    }
+
+    private Lecture ordered(long id, int order) {
+        Lecture l = new Lecture();
+        l.setLectureId(id);
+        l.setLectureOrder(order);
+        l.setCourse(lecture.getCourse());
+        return l;
+    }
+
+    @Test
+    void moveLecture_shouldSwapWithTheNeighbour_andRenumber() {
+        Lecture a = ordered(1L, 1), b = ordered(2L, 2), c = ordered(3L, 5);
+        when(lectureRepository.findById(3L)).thenReturn(Optional.of(c));
+        when(lectureRepository.findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(10L))
+                .thenReturn(new java.util.ArrayList<>(List.of(a, b, c)));
+
+        lectureService.moveLecture(3L, true);
+
+        assertEquals(List.of(1, 3, 2), List.of(a.getLectureOrder(), b.getLectureOrder(), c.getLectureOrder()));
+        verify(lectureRepository).saveAll(any());
+    }
+
+    @Test
+    void moveLecture_down_shouldSwapWithTheNextLecture() {
+        Lecture a = ordered(1L, 1), b = ordered(2L, 2);
+        when(lectureRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(lectureRepository.findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(10L))
+                .thenReturn(new java.util.ArrayList<>(List.of(a, b)));
+
+        lectureService.moveLecture(1L, false);
+
+        assertEquals(2, a.getLectureOrder());
+        assertEquals(1, b.getLectureOrder());
+    }
+
+    @Test
+    void moveLecture_shouldDoNothing_atEitherEnd() {
+        Lecture a = ordered(1L, 1), b = ordered(2L, 2);
+        when(lectureRepository.findById(1L)).thenReturn(Optional.of(a));
+        when(lectureRepository.findById(2L)).thenReturn(Optional.of(b));
+        when(lectureRepository.findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(10L))
+                .thenReturn(new java.util.ArrayList<>(List.of(a, b)));
+
+        lectureService.moveLecture(1L, true);
+        lectureService.moveLecture(2L, false);
+
+        assertEquals(1, a.getLectureOrder());
+        assertEquals(2, b.getLectureOrder());
+        verify(lectureRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void moveLecture_shouldThrowNotFound_forMissingLecture() {
+        when(lectureRepository.findById(9L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> lectureService.moveLecture(9L, true));
+    }
 }

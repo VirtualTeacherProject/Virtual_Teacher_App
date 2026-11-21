@@ -32,15 +32,7 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     Double avgGradeForCourse(@Param("studentUserId") Long studentUserId,
                              @Param("courseId") Long courseId);
 
-    @Query("""
-  select count(distinct a.lecture.lectureId)
-  from Assignment a
-  where a.student.userId = :studentUserId
-    and a.lecture.course.courseId = :courseId
-    and a.grade is not null
-""")
-    long countGradedLectures(@Param("studentUserId") Long studentUserId,
-                             @Param("courseId") Long courseId);
+    // countGradedLectures was replaced by LectureProgressRepository.countCompleted (SCRUM-51 part B).
 
 
 

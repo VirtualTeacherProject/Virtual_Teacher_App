@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.*;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureProgressService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.FileStorageException;
@@ -41,6 +42,9 @@ class AssignmentServiceImplTest {
     @Mock
     private LectureRepository lectureRepository;
 
+    @Mock
+    private LectureProgressService lectureProgressService;   // SCRUM-51 part B
+
     @TempDir
     Path tempDir;
 
@@ -58,6 +62,7 @@ class AssignmentServiceImplTest {
                 userService,
                 enrollmentService,
                 lectureRepository,
+                lectureProgressService,
                 tempDir.toString()
         );
 
@@ -255,6 +260,23 @@ class AssignmentServiceImplTest {
                         && saved.getSubmissionFilePath() != null
                         && saved.getSubmissionFilePath().contains("homework.txt")
         ));
+    }
+
+    @Test
+    void submit_shouldBeRefused_whenTheLectureIsLocked() {
+        student.getEnrollments().add(createEnrollment(student, course));
+        when(userService.findByEmail("student@test.com")).thenReturn(student);
+        when(lectureRepository.findById(100L)).thenReturn(Optional.of(lecture));
+        doThrow(new IllegalStateException("Finish the earlier lectures of this course first"))
+                .when(lectureProgressService).ensureUnlocked(lecture, "student@test.com");
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "homework.txt", "text/plain", "My assignment".getBytes());
+
+        assertThrows(IllegalStateException.class,
+                () -> assignmentService.submit("student@test.com", 100L, file, "My comment"));
+        verify(assignmentRepo, never()).save(any(Assignment.class));
+        assertEquals(0, tempDir.toFile().list().length);
     }
 
     private Enrollment createEnrollment(User student, Course course) {

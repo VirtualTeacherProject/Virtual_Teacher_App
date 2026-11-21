@@ -24,18 +24,21 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final CourseRepository courseRepo;
     private final AssignmentRepository assignmentRepo;
     private final LectureRepository lectureRepository;
+    private final LectureProgressRepository progressRepository;   // SCRUM-51 part B
 
     @Autowired
     public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepo,
                                  UserRepository userRepo,
                                  AssignmentRepository assignmentRepo,
                                  LectureRepository lectureRepository,
-                                 CourseRepository courseRepo) {
+                                 CourseRepository courseRepo,
+                                 LectureProgressRepository progressRepository) {
         this.enrollmentRepo = enrollmentRepo;
         this.userRepo       = userRepo;
         this.courseRepo     = courseRepo;
         this.assignmentRepo = assignmentRepo;
         this.lectureRepository = lectureRepository;
+        this.progressRepository = progressRepository;
     }
 
     @Override
@@ -87,9 +90,10 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         Double avg = assignmentRepo.avgGradeForCourse(studentUserId, courseId);
         enrollment.setAverageGrade(avg);
 
-        // 2) Completion status
+        // 2) Completion status (SCRUM-51 part B): every lecture is marked as finished
+        //    and, when it has an assignment, graded.
         long totalLectures = lectureRepository.countLecturesByCourseId(courseId);
-        long gradedLectures = assignmentRepo.countGradedLectures(studentUserId, courseId);
+        long completedLectures = progressRepository.countCompleted(studentUserId, courseId);
 
         Enrollment.CompletionStatus status;
 
@@ -97,7 +101,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         {
             status = Enrollment.CompletionStatus.IN_PROGRESS;
         }
-        else if (gradedLectures >= totalLectures)
+        else if (completedLectures >= totalLectures)
         {
             status = Enrollment.CompletionStatus.COMPLETED;
         }
@@ -124,7 +128,11 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         Enrollment e = enrollmentRepo.findByStudent_UserIdAndCourse_CourseId(studentUserId, courseId)
                 .orElseThrow(() -> new RuntimeException("Enrollment not found"));
 
-        if (e.getAverageGrade() == null) {
+        // SCRUM-51 part B: a course without assignments has no grade; completing it is enough.
+        boolean hasAssignments =
+                lectureRepository.countByCourse_CourseIdAndAssignmentRequiredTrue(courseId) > 0;
+
+        if (e.getAverageGrade() == null && hasAssignments) {
             throw new IllegalStateException("You can rate only after your course grade is calculated.");
         }
 
@@ -136,7 +144,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 ? e.getCourse().getPassingGrade()
                 : 50.0;
 
-            if (e.getAverageGrade() < passingGrade) {
+            if (e.getAverageGrade() != null && e.getAverageGrade() < passingGrade) {
                 throw new IllegalStateException("Your grade is: " + e.getAverageGrade() +  " you can rate only after passing the course.");
             }
     }

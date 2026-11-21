@@ -196,6 +196,7 @@ public class EnrollmentMvcController {
         existing.setTopic(updated.getTopic());
         existing.setDescription(updated.getDescription());
         existing.setAttendanceRequired(updated.isAttendanceRequired()); // SCRUM-45
+        existing.setLecturesInOrder(updated.isLecturesInOrder());       // SCRUM-51 part B
 
         if (updated.getPassingGrade() != null) {
             existing.setPassingGrade(updated.getPassingGrade());

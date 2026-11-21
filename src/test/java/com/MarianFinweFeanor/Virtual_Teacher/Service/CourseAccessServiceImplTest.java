@@ -220,4 +220,29 @@ class CourseAccessServiceImplTest {
                 EntityNotFoundException.class,
                 () -> courseAccessService.ensureCanViewCourse(null, EMAIL));
     }
+
+    // --- SCRUM-51 part B: ensureCanManageCourse ----------------------------------
+
+    @Test
+    void ensureCanManageCourse_shouldPass_forApprovedTeacherAndAdmin() {
+        givenUser(UserRole.TEACHER, true);
+        assertDoesNotThrow(() -> courseAccessService.ensureCanManageCourse(published, EMAIL));
+
+        givenUser(UserRole.ADMIN, false);
+        assertDoesNotThrow(() -> courseAccessService.ensureCanManageCourse(draft, EMAIL));
+    }
+
+    @Test
+    void ensureCanManageCourse_shouldRefuse_studentsUnapprovedTeachersAndMissingCourses() {
+        givenUser(UserRole.STUDENT, false);
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> courseAccessService.ensureCanManageCourse(published, EMAIL));
+
+        givenUser(UserRole.TEACHER, false);
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> courseAccessService.ensureCanManageCourse(published, EMAIL));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> courseAccessService.ensureCanManageCourse(null, EMAIL));
+    }
 }

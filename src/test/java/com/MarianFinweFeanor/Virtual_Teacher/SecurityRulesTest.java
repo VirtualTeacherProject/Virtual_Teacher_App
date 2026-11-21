@@ -174,4 +174,29 @@ class SecurityRulesTest {
         mockMvc.perform(post("/courses/1/lectures/1/attendance").param("absent", "2"))
                 .andExpect(status().isForbidden());
     }
+
+    // --- SCRUM-51 part B -------------------------------------------------------
+
+    @Test
+    void courseProgress_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        // GET: must not fall under the public GET /courses/** rule
+        mockMvc.perform(get("/courses/1/progress"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void courseProgressAndLectureOrder_shouldBeForbidden_forStudent() throws Exception {
+        mockMvc.perform(get("/courses/1/progress")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/courses/1/lectures/1/move").param("direction", "up"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void markingALectureFinished_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        mockMvc.perform(post("/courses/1/lectures/1/finish"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
 }

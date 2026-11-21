@@ -23,6 +23,14 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
     @Query("select count(l) from Lecture l where l.course.courseId = :courseId")
     long countLecturesByCourseId(@Param("courseId") Long courseId);
 
+    // SCRUM-51 part B: lectures in course order
+    List<Lecture> findAllByCourse_CourseIdOrderByLectureOrderAscLectureIdAsc(Long courseId);
+
+    @Query("select coalesce(max(l.lectureOrder), 0) from Lecture l where l.course.courseId = :courseId")
+    int maxLectureOrder(@Param("courseId") Long courseId);
+
+    long countByCourse_CourseIdAndAssignmentRequiredTrue(Long courseId);
+
 
 
 }

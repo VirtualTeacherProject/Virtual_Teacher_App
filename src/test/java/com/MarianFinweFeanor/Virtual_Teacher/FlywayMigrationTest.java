@@ -29,7 +29,7 @@ class FlywayMigrationTest {
     private static final List<String> TABLES = List.of(
             "USERS", "COURSES", "LECTURES", "ENROLLMENTS",
             "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES", "RESOURCE_REQUESTS",
-            "LECTURE_ATTENDANCE");
+            "LECTURE_ATTENDANCE", "LECTURE_PROGRESS");
 
     private DataSource dataSource;
     private JdbcTemplate jdbc;
@@ -83,8 +83,8 @@ class FlywayMigrationTest {
         assertThat(jdbc.queryForObject("select attendance_required from courses", Boolean.class)).isFalse();
 
         // the table that was missing is usable
-        jdbc.update("insert into lectures (title, description, video_url, assignment_file_path, course_id) "
-                + "values ('Intro', 'd', 'v', 'a', (select course_id from courses))");
+        jdbc.update("insert into lectures (title, description, video_url, assignment_file_path, course_id, lecture_order) "
+                + "values ('Intro', 'd', 'v', 'a', (select course_id from courses), 1)");
         jdbc.update("insert into lecture_notes (lecture_id, user_id, content) "
                 + "values ((select lecture_id from lectures), (select user_id from users), 'note')");
         assertThat(jdbc.queryForObject("select count(*) from lecture_notes", Integer.class)).isEqualTo(1);
@@ -104,6 +104,16 @@ class FlywayMigrationTest {
                 + "meeting_url = 'https://meet.example.com/abc'");
         assertThat(jdbc.queryForObject("select meeting_url from lectures", String.class))
                 .isEqualTo("https://meet.example.com/abc");
+
+        // SCRUM-51 (V8): order, assignment flag, in-order courses, progress rows
+        assertThat(jdbc.queryForObject("select lectures_in_order from courses", Boolean.class)).isFalse();
+        assertThat(jdbc.queryForObject("select assignment_required from lectures", Boolean.class)).isFalse();
+        String progress = "insert into lecture_progress (lecture_id, student_id, finished_at) "
+                + "values ((select lecture_id from lectures), (select user_id from users), current_timestamp)";
+        jdbc.update(progress);
+        assertThat(jdbc.queryForObject("select count(*) from lecture_progress", Integer.class)).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update(progress))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test
@@ -115,12 +125,52 @@ class FlywayMigrationTest {
         assertThat(jdbc.queryForObject("select count(*) from users", Integer.class)).isEqualTo(1);
     }
 
+    @Test
+    void v8_shouldNumberLectures_flagAssignments_andKeepGradedLecturesFinished() {
+        flyway("7").migrate();
+        jdbc.update("insert into users (email, password, first_name, last_name, role, status, teacher_approved) "
+                + "values ('anna@test.com', 'x', 'Anna', 'A', 'STUDENT', 'ACTIVE', false)");
+        jdbc.update("insert into courses (title, topic, status, teacher_id) "
+                + "values ('Java', 'Programming', 'PUBLISHED', (select user_id from users))");
+        jdbc.update("insert into courses (title, topic, status, teacher_id) "
+                + "values ('SQL', 'Databases', 'PUBLISHED', (select user_id from users))");
+        String lecture = "insert into lectures (title, description, video_url, assignment_file_path, course_id) "
+                + "values (?, 'd', 'v', ?, (select course_id from courses where title = ?))";
+        jdbc.update(lecture, "Java 1", "task.txt", "Java");
+        jdbc.update(lecture, "SQL 1", "", "SQL");
+        jdbc.update(lecture, "Java 2", "  ", "Java");
+        String submission = "insert into assignments (student_id, lecture_id, submission_file_path, grade, submitted_at) "
+                + "values ((select user_id from users), (select lecture_id from lectures where title = ?), 'f', ?, current_timestamp)";
+        jdbc.update(submission, "Java 1", 80.0);
+        jdbc.update(submission, "Java 1", 90.0);   // graded twice: still one progress row
+        jdbc.update(submission, "Java 2", null);   // not graded: not finished
+
+        flyway().migrate();
+
+        assertThat(jdbc.queryForList("select lecture_order from lectures order by lecture_id", Integer.class))
+                .containsExactly(1, 1, 2);
+        assertThat(jdbc.queryForList("select assignment_required from lectures order by lecture_id", Boolean.class))
+                .containsExactly(true, false, false);
+        assertThat(jdbc.queryForList(
+                "select l.title from lecture_progress p join lectures l on l.lecture_id = p.lecture_id", String.class))
+                .containsExactly("Java 1");
+    }
+
     // --- helpers -------------------------------------------------------------
 
     /** Flyway set up the way Spring Boot sets it up from application.properties. */
     private Flyway flyway() {
+        return flyway(null);
+    }
+
+    /** The same, stopping at the given version (null: all migrations). */
+    private Flyway flyway(String target) {
         Properties app = applicationProperties();
-        return Flyway.configure()
+        var config = Flyway.configure();
+        if (target != null) {
+            config = config.target(target);
+        }
+        return config
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(Boolean.parseBoolean(

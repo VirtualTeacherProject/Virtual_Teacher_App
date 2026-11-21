@@ -107,6 +107,15 @@
                     </label>
                 </div>
 
+                <!-- SCRUM-51 part B -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" th:field="*{lecturesInOrder}">
+                    <label class="form-check-label" th:for="${#ids.prev('lecturesInOrder')}">
+                        Lectures must be completed in order
+                    </label>
+                    <div class="form-text">A lecture opens only after the student finishes the one before it.</div>
+                </div>
+
                 <!-- Status -->
                 <div class="mb-3">
                     <label for="status" class="form-label">Status</label>

@@ -87,6 +87,11 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/courses/*/lectures/*/attendance/**")
                         ).hasAnyRole("TEACHER", "ADMIN")
 
+                        // 1d) Course progress page (SCRUM-51 part B): teachers/admins only.
+                        //     Must stay above the public GET /courses/** rule below.
+                        .requestMatchers(new AntPathRequestMatcher("/courses/*/progress"))
+                        .hasAnyRole("TEACHER", "ADMIN")
+
                         // 2) Public: browse courses & lectures (GET only)
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses", "GET"),
@@ -112,6 +117,8 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/courses/*/lectures/add-lecture", "POST"),
                                 new AntPathRequestMatcher("/courses/*/lectures/*/edit", "GET"),
                                 new AntPathRequestMatcher("/courses/*/lectures/*/edit", "POST"),
+                                // SCRUM-51 part B: lecture order
+                                new AntPathRequestMatcher("/courses/*/lectures/*/move", "POST"),
                                 // SCRUM-34: managing additional course resources
                                 new AntPathRequestMatcher("/courses/*/resources", "POST"),
                                 new AntPathRequestMatcher("/courses/*/resources/**", "POST")
@@ -130,7 +137,9 @@ public class SecurityConfig {
                         // 6) Authenticated (STUDENT/TEACHER/ADMIN): enroll & submit
                         .requestMatchers(
                                 new AntPathRequestMatcher("/courses/*/enroll", "POST"),
-                                new AntPathRequestMatcher("/courses/*/lectures/*/assignments", "POST")
+                                new AntPathRequestMatcher("/courses/*/lectures/*/assignments", "POST"),
+                                // SCRUM-51 part B: mark a lecture as finished
+                                new AntPathRequestMatcher("/courses/*/lectures/*/finish", "POST")
 
                         ).hasAnyRole("STUDENT","TEACHER","ADMIN")
 

@@ -21,5 +21,11 @@ public interface LectureService {
 
     Lecture updateLecture(Long id, Lecture updatedLecture);
 
+    /**
+     * SCRUM-51 part B: swaps the lecture with the one before it (up) or after it
+     * (down) in its course. Does nothing at either end of the list.
+     */
+    void moveLecture(Long lectureId, boolean up);
+
     //List<Lecture> getByCourseId(Long courseId);
 }

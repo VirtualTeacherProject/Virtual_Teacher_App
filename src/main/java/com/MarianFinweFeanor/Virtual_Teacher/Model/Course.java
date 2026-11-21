@@ -51,6 +51,10 @@ public class Course {
     @Column(name = "attendance_required", nullable = false)
     private boolean attendanceRequired = false;
 
+    // SCRUM-51 part B: lecture N+1 opens only after lecture N is finished.
+    @Column(name = "lectures_in_order", nullable = false)
+    private boolean lecturesInOrder = false;
+
     @ManyToOne
     @JoinColumn(name = "teacher_id", nullable = false)
     private User teacher;
