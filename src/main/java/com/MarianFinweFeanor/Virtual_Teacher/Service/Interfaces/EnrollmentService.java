@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -21,6 +22,9 @@ public interface EnrollmentService {
 
 
     List<User> getStudentsInCourse(Long courseId);
+
+    /** SCRUM-51: the students of the course who were enrolled at the given time. */
+    List<User> getStudentsInCourseEnrolledBy(Long courseId, LocalDateTime time);
 
     void recalculateProgress(Long studentUserId, Long courseId);
 

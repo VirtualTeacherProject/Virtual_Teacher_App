@@ -148,6 +148,12 @@ class PostgresMigrationTest {
         request.setRespondedAt(LocalDateTime.now());
         em.persist(request);
 
+        // SCRUM-51 (V7): live session columns on lectures
+        lecture.setLive(true);
+        lecture.setLiveStart(LocalDateTime.of(2026, 12, 1, 9, 30));
+        lecture.setMeetingUrl("https://meet.example.com/abc");
+        em.merge(lecture);
+
         LectureAttendance attendance = new LectureAttendance();   // SCRUM-28 (V6)
         attendance.setLecture(lecture);
         attendance.setStudent(teacher);
@@ -170,5 +176,9 @@ class PostgresMigrationTest {
         assertThat(em.find(Course.class, course.getCourseId()).isAttendanceRequired()).isTrue();
         assertThat(em.find(LectureAttendance.class, attendance.getAttendanceId()).getStatus())
                 .isEqualTo(AttendanceStatus.ABSENT);
+        Lecture storedLecture = em.find(Lecture.class, lecture.getLectureId());
+        assertThat(storedLecture.isLive()).isTrue();
+        assertThat(storedLecture.getLiveStart()).isEqualTo(LocalDateTime.of(2026, 12, 1, 9, 30));
+        assertThat(storedLecture.getMeetingUrl()).isEqualTo("https://meet.example.com/abc");
     }
 }

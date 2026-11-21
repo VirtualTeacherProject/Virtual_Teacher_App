@@ -372,6 +372,14 @@ class EnrollmentServiceImplTest {
     }
 
     @Test
+    void getStudentsInCourseEnrolledBy_shouldReturnStudentsEnrolledAtThatTime() {
+        java.time.LocalDateTime start = java.time.LocalDateTime.of(2026, 12, 1, 9, 30);
+        when(enrollmentRepo.findStudentsByCourseIdEnrolledBy(10L, start)).thenReturn(List.of(student));
+
+        assertEquals(List.of(student), enrollmentService.getStudentsInCourseEnrolledBy(10L, start));
+    }
+
+    @Test
     void recalculateProgress_shouldSetCompleted_whenAllLecturesAreGraded() {
         when(enrollmentRepo
                 .findByStudent_UserIdAndCourse_CourseId(

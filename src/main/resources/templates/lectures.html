@@ -126,6 +126,13 @@
            th:href="@{/courses/{c}/lectures/{l}(c=${course.courseId}, l=${lec.lectureId})}">
             <div>
                 <div class="fw-semibold" th:text="${lec.title}">Lecture title</div>
+                <!-- SCRUM-51 part A: live session -->
+                <div class="small" th:if="${lec.live}">
+                    <span class="badge text-bg-info">Live</span>
+                    <span class="text-muted"
+                          th:if="${lec.liveStart}"
+                          th:text="${#temporals.format(lec.liveStart, 'dd MMM yyyy, HH:mm')}">01 Jan 2027, 10:00</span>
+                </div>
                 <div class="text-muted small"
                      th:if="${lec.description}"
                      th:text="${lec.description}">

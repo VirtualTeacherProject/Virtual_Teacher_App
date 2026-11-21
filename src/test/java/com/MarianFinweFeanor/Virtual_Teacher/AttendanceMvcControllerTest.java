@@ -17,12 +17,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -72,6 +74,8 @@ class AttendanceMvcControllerTest {
         lecture.setLectureId(5L);
         lecture.setTitle("Intro");
         lecture.setCourse(course);
+        lecture.setLive(true);
+        lecture.setLiveStart(LocalDateTime.of(2026, 11, 20, 10, 0));
 
         anna = student(10L, "Anna");
         boris = student(11L, "Boris");
@@ -98,9 +102,11 @@ class AttendanceMvcControllerTest {
         mockMvc.perform(get(URL).principal(TEACHER_PRINCIPAL))
                 .andExpect(status().isOk())
                 .andExpect(view().name("lecture-attendance"))
-                .andExpect(model().attribute("attendanceRequired", true))
+                .andExpect(model().attribute("attendanceOpen", true))
                 .andExpect(model().attribute("recorded", true))
                 .andExpect(model().attribute("absentCount", 1L))
+                .andExpect(model().attribute("presentCount", 1L))
+                .andExpect(content().string(containsString("20 Nov 2026, 10:00")))
                 .andExpect(content().string(containsString("anna@test.com")))
                 .andExpect(content().string(containsString("boris@test.com")))
                 .andExpect(content().string(containsString("Save attendance")))
@@ -132,17 +138,33 @@ class AttendanceMvcControllerTest {
     }
 
     @Test
-    void showAttendance_shouldBeReadOnly_whenTheCourseNoLongerRequiresAttendance() throws Exception {
-        course.setAttendanceRequired(false);
+    void showAttendance_shouldBeReadOnly_andSayWhy_whenAttendanceIsClosed() throws Exception {
+        given(attendanceService.attendanceClosedReason(lecture))
+                .willReturn("Attendance can be taken once the live session has started");
         given(attendanceService.getLectureAttendance(1L, 5L, TEACHER))
                 .willReturn(List.of(new AttendanceEntry(anna, AttendanceStatus.ABSENT)));
 
         mockMvc.perform(get(URL).principal(TEACHER_PRINCIPAL))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("attendanceRequired", false))
-                .andExpect(content().string(containsString("attendance-not-required")))
+                .andExpect(model().attribute("attendanceOpen", false))
+                .andExpect(content().string(containsString("attendance-closed")))
+                .andExpect(content().string(containsString("once the live session has started")))
                 .andExpect(content().string(containsString("disabled")))
                 .andExpect(content().string(not(containsString("Save attendance"))));
+    }
+
+    @Test
+    void showAttendance_shouldNotCountStudentsWithoutARecordAsPresent() throws Exception {
+        User carl = student(12L, "Carl");
+        given(attendanceService.getLectureAttendance(1L, 5L, TEACHER)).willReturn(List.of(
+                new AttendanceEntry(anna, AttendanceStatus.PRESENT),
+                new AttendanceEntry(boris, AttendanceStatus.ABSENT),
+                new AttendanceEntry(carl, null)));
+
+        mockMvc.perform(get(URL).principal(TEACHER_PRINCIPAL))
+                .andExpect(model().attribute("presentCount", 1L))
+                .andExpect(model().attribute("absentCount", 1L))
+                .andExpect(content().string(containsString("Not recorded")));
     }
 
     @Test
@@ -213,6 +235,16 @@ class AttendanceMvcControllerTest {
                 .andExpect(redirectedUrl(URL))
                 .andExpect(flash().attribute("error",
                         "Only students enrolled in this course can be marked absent"));
+    }
+
+    @Test
+    void recordAttendance_shouldShowError_whenTwoSavesCollide() throws Exception {
+        given(attendanceService.recordAttendance(eq(1L), eq(5L), eq(TEACHER), any()))
+                .willThrow(new DataIntegrityViolationException("uk_lecture_attendance_lecture_student"));
+
+        mockMvc.perform(post(URL).principal(TEACHER_PRINCIPAL))
+                .andExpect(redirectedUrl(URL))
+                .andExpect(flash().attribute("error", containsString("saved by someone else")));
     }
 
     @Test

@@ -274,9 +274,11 @@ class LectureMvcControllerTest {
 
     @Test
     @WithMockUser(username = TEACHER, roles = "TEACHER")
-    void lectureDetail_shouldLinkToAttendance_forManager_whenCourseRequiresAttendance() throws Exception {
+    void lectureDetail_shouldLinkToAttendance_forManager_whenLiveLectureOfAttendanceCourse() throws Exception {
         approvedTeacher();
         course.setAttendanceRequired(true);
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 11, 20, 10, 0));
 
         mockMvc.perform(get("/courses/1/lectures/5").principal(TEACHER_PRINCIPAL))
                 .andExpect(status().isOk())
@@ -289,6 +291,8 @@ class LectureMvcControllerTest {
     void lectureDetail_shouldNotLinkToAttendance_whenCourseDoesNotRequireIt() throws Exception {
         approvedTeacher();
         course.setAttendanceRequired(false);
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 11, 20, 10, 0));
 
         mockMvc.perform(get("/courses/1/lectures/5").principal(TEACHER_PRINCIPAL))
                 .andExpect(status().isOk())
@@ -299,10 +303,103 @@ class LectureMvcControllerTest {
     @WithMockUser(username = STUDENT, roles = "STUDENT")
     void lectureDetail_shouldNotLinkToAttendance_forStudent() throws Exception {
         course.setAttendanceRequired(true);
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 11, 20, 10, 0));
         given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(true);
 
         mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("lecture-attendance-link"))));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void lectureDetail_shouldNotLinkToAttendance_forSelfPacedLecture() throws Exception {
+        approvedTeacher();
+        course.setAttendanceRequired(true);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(TEACHER_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("lecture-attendance-link"))))
+                .andExpect(content().string(not(containsString("lecture-live-session"))));
+    }
+
+    // --- SCRUM-51 part A: live sessions ----------------------------------------
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void lectureDetail_shouldShowLiveSessionAndMeetingLink_forEnrolledStudent() throws Exception {
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 12, 1, 9, 30));
+        lecture.setMeetingUrl("https://meet.example.com/abc");
+        given(courseAccessService.canAccessCourseContent(course, STUDENT)).willReturn(true);
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(STUDENT_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lecture-live-session")))
+                .andExpect(content().string(containsString("01 Dec 2026, 09:30")))
+                .andExpect(content().string(containsString("https://meet.example.com/abc")));
+    }
+
+    @Test
+    void lectureDetail_shouldHideMeetingLink_fromVisitorWithoutAccess() throws Exception {
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 12, 1, 9, 30));
+        lecture.setMeetingUrl("https://meet.example.com/abc");
+
+        mockMvc.perform(get("/courses/1/lectures/5"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("lecture-live-session")))
+                .andExpect(content().string(not(containsString("meet.example.com"))));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void submitAdd_shouldRejectLiveLectureWithoutStart() throws Exception {
+        approvedTeacher();
+
+        mockMvc.perform(post("/courses/1/lectures/add-lecture").principal(TEACHER_PRINCIPAL)
+                        .param("title", "Live Q&A").param("description", "d")
+                        .param("videoUrl", "https://youtu.be/x").param("live", "true"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("add-lecture"))
+                .andExpect(model().attributeHasFieldErrors("lecture", "liveStart"));
+
+        verify(lectureService, never()).createLectures(any());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void submitAdd_shouldSaveLiveLecture_withStartAndMeetingLink() throws Exception {
+        approvedTeacher();
+
+        mockMvc.perform(post("/courses/1/lectures/add-lecture").principal(TEACHER_PRINCIPAL)
+                        .param("title", "Live Q&A").param("description", "d")
+                        .param("videoUrl", "https://youtu.be/x").param("live", "true")
+                        .param("liveStart", "2026-12-01T09:30")
+                        .param("meetingUrl", "https://meet.example.com/abc"))
+                .andExpect(status().is3xxRedirection());
+
+        verify(lectureService).createLectures(org.mockito.ArgumentMatchers.argThat(l ->
+                l.isLive()
+                        && java.time.LocalDateTime.of(2026, 12, 1, 9, 30).equals(l.getLiveStart())
+                        && "https://meet.example.com/abc".equals(l.getMeetingUrl())));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void submitEdit_shouldRejectMeetingLinkThatIsNotHttp_andKeepTheFormRenderable() throws Exception {
+        approvedTeacher();
+
+        mockMvc.perform(post("/courses/1/lectures/5/edit").principal(TEACHER_PRINCIPAL)
+                        .param("title", "Intro").param("description", "d")
+                        .param("videoUrl", "https://youtu.be/x").param("live", "true")
+                        .param("liveStart", "2026-12-01T09:30")
+                        .param("meetingUrl", "javascript:alert(1)"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("edit-lecture"))
+                .andExpect(model().attributeHasFieldErrors("lecture", "meetingUrl"));
+
+        verify(lectureService, never()).updateLecture(any(), any());
     }
 }

@@ -30,6 +30,12 @@ import java.util.stream.Collectors;
 @Transactional
 public class AttendanceServiceImpl implements AttendanceService {
 
+    static final String NOT_REQUIRED = "This course does not require attendance";
+    static final String NOT_LIVE = "Attendance is taken only for live sessions; this lecture is self-paced";
+    static final String NOT_STARTED = "Attendance can be taken once the live session has started";
+    static final String NOT_ON_ROLL_CALL =
+            "Only students enrolled when the session started can be marked absent";
+
     private static final Comparator<User> BY_NAME = Comparator
             .comparing((User u) -> Objects.toString(u.getLastName(), ""), String.CASE_INSENSITIVE_ORDER)
             .thenComparing(u -> Objects.toString(u.getFirstName(), ""), String.CASE_INSENSITIVE_ORDER)
@@ -62,8 +68,31 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Transactional(readOnly = true)
     public List<AttendanceEntry> getLectureAttendance(Long courseId, Long lectureId, String managerEmail) {
         userService.ensureApprovedTeacher(managerEmail);
-        lectureInCourse(courseId, lectureId);
-        return rollCall(courseId, lectureId);
+        Lecture lecture = lectureInCourse(courseId, lectureId);
+        Map<Long, LectureAttendance> records = recordsByStudent(lectureId);
+
+        return roster(lecture).stream()
+                .sorted(BY_NAME)
+                .map(student -> {
+                    LectureAttendance record = records.get(student.getUserId());
+                    return new AttendanceEntry(student, record == null ? null : record.getStatus());
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String attendanceClosedReason(Lecture lecture) {
+        if (!lecture.getCourse().isAttendanceRequired()) {
+            return NOT_REQUIRED;
+        }
+        if (!lecture.isLive()) {
+            return NOT_LIVE;
+        }
+        if (!lecture.liveSessionStartedBy(LocalDateTime.now())) {
+            return NOT_STARTED;
+        }
+        return null;
     }
 
     @Override
@@ -72,18 +101,19 @@ public class AttendanceServiceImpl implements AttendanceService {
         userService.ensureApprovedTeacher(managerEmail);
         Lecture lecture = lectureInCourse(courseId, lectureId);
 
-        if (!lecture.getCourse().isAttendanceRequired()) {
-            throw new IllegalStateException("This course does not require attendance");
+        String closed = attendanceClosedReason(lecture);
+        if (closed != null) {
+            throw new IllegalStateException(closed);
         }
 
-        List<User> students = enrollmentService.getStudentsInCourse(courseId);
+        List<User> students = roster(lecture);
         Set<Long> enrolledIds = students.stream().map(User::getUserId).collect(Collectors.toSet());
         Set<Long> absent = absentStudentIds == null
                 ? Set.of()
                 : new HashSet<>(absentStudentIds);
 
         if (!enrolledIds.containsAll(absent)) {
-            throw new IllegalArgumentException("Only students enrolled in this course can be marked absent");
+            throw new IllegalArgumentException(NOT_ON_ROLL_CALL);
         }
 
         Map<Long, LectureAttendance> existing = recordsByStudent(lectureId);
@@ -116,16 +146,17 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .toList();
     }
 
-    private List<AttendanceEntry> rollCall(Long courseId, Long lectureId) {
-        Map<Long, LectureAttendance> records = recordsByStudent(lectureId);
-
-        return enrollmentService.getStudentsInCourse(courseId).stream()
-                .sorted(BY_NAME)
-                .map(student -> {
-                    LectureAttendance record = records.get(student.getUserId());
-                    return new AttendanceEntry(student, record == null ? null : record.getStatus());
-                })
-                .toList();
+    /**
+     * Who is on the roll call: for a live lecture with a start time, the students
+     * enrolled when the session started (later enrolments were not expected at it);
+     * otherwise everyone enrolled now.
+     */
+    private List<User> roster(Lecture lecture) {
+        Long courseId = lecture.getCourse().getCourseId();
+        if (lecture.isLive() && lecture.getLiveStart() != null) {
+            return enrollmentService.getStudentsInCourseEnrolledBy(courseId, lecture.getLiveStart());
+        }
+        return enrollmentService.getStudentsInCourse(courseId);
     }
 
     private Map<Long, LectureAttendance> recordsByStudent(Long lectureId) {

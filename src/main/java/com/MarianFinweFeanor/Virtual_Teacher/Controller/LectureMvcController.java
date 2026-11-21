@@ -87,6 +87,7 @@ public class LectureMvcController {
                             RedirectAttributes ra) {
         //ensureApprovedTeacher(principal);
         userService.ensureApprovedTeacher(principal.getName());
+        rejectLiveWithoutStart(lecture, br);
 
         if (br.hasErrors()) {
             // view uses 'course' for form action/url
@@ -153,9 +154,13 @@ public class LectureMvcController {
         }
 
 
+        rejectLiveWithoutStart(updated, br);
+
         if (br.hasErrors()) {
-            model.addAttribute("course", courseService.getCourseById(courseId)
-                    .orElseThrow(() -> new EntityNotFoundException("Course", courseId)));
+            // the form posts back without the course, so put it back for the view
+            updated.setLectureId(lectureId);
+            updated.setCourse(existing.getCourse());
+            model.addAttribute("course", existing.getCourse());
             return "edit-lecture";
         }
 
@@ -328,5 +333,12 @@ public class LectureMvcController {
 
     private static String emailOf(Principal principal) {
         return principal == null ? null : principal.getName();
+    }
+
+    /** SCRUM-51 part A: a live lecture needs its start time. */
+    private static void rejectLiveWithoutStart(Lecture lecture, BindingResult br) {
+        if (lecture.isLive() && lecture.getLiveStart() == null && !br.hasFieldErrors("liveStart")) {
+            br.rejectValue("liveStart", "required", LectureServiceImpl.LIVE_START_REQUIRED);
+        }
     }
 }

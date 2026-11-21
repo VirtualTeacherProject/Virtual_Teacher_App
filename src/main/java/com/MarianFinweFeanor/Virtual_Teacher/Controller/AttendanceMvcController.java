@@ -5,6 +5,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,7 +21,9 @@ import java.util.List;
 
 /**
  * SCRUM-28: the attendance tracker of a lecture. Approved teachers and admins
- * mark the absent students; everyone else enrolled is recorded as present.
+ * mark the absent students; everyone else on the roll call is recorded as present.
+ * SCRUM-51: open only for live lectures of attendance-required courses, once the
+ * session has started; otherwise the page is read-only and says why.
  */
 @Controller
 @RequestMapping("/courses/{courseId}/lectures/{lectureId}/attendance")
@@ -52,9 +55,14 @@ public class AttendanceMvcController {
         model.addAttribute("course", lecture.getCourse());
         model.addAttribute("lecture", lecture);
         model.addAttribute("entries", entries);
-        model.addAttribute("attendanceRequired", lecture.getCourse().isAttendanceRequired());
+        String closedReason = attendanceService.attendanceClosedReason(lecture);
+        model.addAttribute("attendanceOpen", closedReason == null);
+        model.addAttribute("closedReason", closedReason);
         model.addAttribute("recorded", entries.stream().anyMatch(AttendanceEntry::isRecorded));
         model.addAttribute("absentCount", entries.stream().filter(AttendanceEntry::isAbsent).count());
+        // Students without a record are neither present nor absent.
+        model.addAttribute("presentCount", entries.stream()
+                .filter(e -> e.isRecorded() && !e.isAbsent()).count());
         return "lecture-attendance";
     }
 
@@ -79,6 +87,10 @@ public class AttendanceMvcController {
                     + " present, " + absentCount + " absent.");
         } catch (IllegalArgumentException | IllegalStateException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
+        } catch (DataIntegrityViolationException ex) {
+            // Two saves of the same roll call at once: one insert hits the unique key.
+            ra.addFlashAttribute("error",
+                    "Attendance for this lecture was saved by someone else at the same time. Check the list and save again.");
         }
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId + "/attendance";
     }

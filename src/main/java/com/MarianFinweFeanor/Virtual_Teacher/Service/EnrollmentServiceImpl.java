@@ -72,6 +72,11 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     }
 
     @Override
+    public List<User> getStudentsInCourseEnrolledBy(Long courseId, LocalDateTime time) {
+        return enrollmentRepo.findStudentsByCourseIdEnrolledBy(courseId, time);
+    }
+
+    @Override
     public void recalculateProgress(Long studentUserId, Long courseId) {
 
         Enrollment enrollment = enrollmentRepo.findByStudent_UserIdAndCourse_CourseId

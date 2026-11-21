@@ -49,31 +49,37 @@
                    th:text="${lecture.title}">Lecture</a>
             </p>
 
-            <!-- The course no longer requires attendance: records stay readable -->
+            <!-- SCRUM-51: attendance is taken only for live sessions that have started -->
             <div class="alert alert-secondary"
-                 id="attendance-not-required"
-                 th:unless="${attendanceRequired}">
-                This course does not require attendance, so attendance cannot be taken.
+                 id="attendance-closed"
+                 th:unless="${attendanceOpen}">
+                <span th:text="${closedReason}">Attendance cannot be taken.</span>
                 <span th:if="${recorded}">Earlier records are shown below.</span>
             </div>
+
+            <p class="small text-muted" th:if="${lecture.live and lecture.liveStart != null}">
+                Live session started
+                <span th:text="${#temporals.format(lecture.liveStart, 'dd MMM yyyy, HH:mm')}">01 Jan 2027, 10:00</span>.
+                The roll call lists the students who were enrolled at that time.
+            </p>
 
             <div th:if="${#lists.isEmpty(entries)}"
                  class="text-muted"
                  id="attendance-no-students">
-                No students are enrolled in this course.
+                No students are on the roll call for this lecture.
             </div>
 
             <form th:if="${!#lists.isEmpty(entries)}"
                   th:action="@{|/courses/${courseId}/lectures/${lecture.lectureId}/attendance|}"
                   method="post">
 
-                <p class="small text-muted" th:if="${attendanceRequired}">
+                <p class="small text-muted" th:if="${attendanceOpen}">
                     Tick the students who were absent. Everyone else is recorded as present.
                     Saving again replaces the earlier record.
                 </p>
 
                 <p class="small" th:if="${recorded}">
-                    <span th:text="${entries.size() - absentCount}">0</span> present,
+                    <span th:text="${presentCount}">0</span> present,
                     <span th:text="${absentCount}">0</span> absent.
                 </p>
 
@@ -106,7 +112,7 @@
                                        name="absent"
                                        th:value="${entry.student().userId}"
                                        th:checked="${entry.isAbsent()}"
-                                       th:disabled="${!attendanceRequired}"
+                                       th:disabled="${!attendanceOpen}"
                                        th:attr="aria-label=${'Absent: ' + entry.student().email}">
                             </td>
                         </tr>
@@ -116,7 +122,7 @@
 
                 <button type="submit"
                         class="btn btn-primary"
-                        th:if="${attendanceRequired}">
+                        th:if="${attendanceOpen}">
                     Save attendance
                 </button>
             </form>

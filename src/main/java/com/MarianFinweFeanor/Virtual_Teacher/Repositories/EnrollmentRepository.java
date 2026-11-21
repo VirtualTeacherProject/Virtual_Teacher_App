@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -46,6 +47,11 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     @Query("select e.student from Enrollment e where e.course.courseId = :courseId")
     List<User> findStudentsByCourseId(@Param("courseId") Long courseId);
+
+    // SCRUM-51: the students expected at a live session are those enrolled when it started
+    @Query("select e.student from Enrollment e where e.course.courseId = :courseId and e.enrolledAt <= :time")
+    List<User> findStudentsByCourseIdEnrolledBy(@Param("courseId") Long courseId,
+                                                @Param("time") LocalDateTime time);
 
 
 

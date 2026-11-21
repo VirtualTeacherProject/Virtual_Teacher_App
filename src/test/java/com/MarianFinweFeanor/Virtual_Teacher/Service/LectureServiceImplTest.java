@@ -302,6 +302,67 @@ class LectureServiceImplTest {
         verify(lectureRepository).save(lecture);
     }
 
+    // --- SCRUM-51 part A: live sessions ----------------------------------------
+
+    @Test
+    void updateLecture_shouldCopyLiveSession_andTreatBlankMeetingLinkAsNone() {
+        Lecture updated = new Lecture();
+        updated.setTitle("Live Q&A");
+        updated.setLive(true);
+        updated.setLiveStart(java.time.LocalDateTime.of(2026, 12, 1, 9, 30));
+        updated.setMeetingUrl("  ");
+        when(lectureRepository.findById(100L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.save(lecture)).thenReturn(lecture);
+
+        Lecture result = lectureService.updateLecture(100L, updated);
+
+        assertTrue(result.isLive());
+        assertEquals(java.time.LocalDateTime.of(2026, 12, 1, 9, 30), result.getLiveStart());
+        assertNull(result.getMeetingUrl());
+    }
+
+    @Test
+    void updateLecture_toSelfPaced_shouldClearStartAndMeetingLink() {
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 12, 1, 9, 30));
+        lecture.setMeetingUrl("https://meet.example.com/abc");
+        Lecture updated = new Lecture();
+        updated.setLiveStart(java.time.LocalDateTime.of(2026, 12, 2, 9, 30));
+        updated.setMeetingUrl("https://meet.example.com/xyz");
+        when(lectureRepository.findById(100L)).thenReturn(Optional.of(lecture));
+        when(lectureRepository.save(lecture)).thenReturn(lecture);
+
+        Lecture result = lectureService.updateLecture(100L, updated);
+
+        assertFalse(result.isLive());
+        assertNull(result.getLiveStart());
+        assertNull(result.getMeetingUrl());
+    }
+
+    @Test
+    void createLectures_shouldRefuseLiveLectureWithoutStart() {
+        lecture.setLive(true);
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(new Course()));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> lectureService.createLectures(lecture));
+
+        assertEquals(LectureServiceImpl.LIVE_START_REQUIRED, ex.getMessage());
+        verify(lectureRepository, never()).save(any(Lecture.class));
+    }
+
+    @Test
+    void liveSessionStartedBy_shouldBeTrueOnlyForLiveLectureOnceItStarts() {
+        java.time.LocalDateTime start = java.time.LocalDateTime.of(2026, 12, 1, 9, 30);
+        assertFalse(lecture.liveSessionStartedBy(start));   // not live
+        lecture.setLive(true);
+        assertFalse(lecture.liveSessionStartedBy(start));   // no start time
+        lecture.setLiveStart(start);
+        assertFalse(lecture.liveSessionStartedBy(start.minusMinutes(1)));
+        assertTrue(lecture.liveSessionStartedBy(start));
+        assertTrue(lecture.liveSessionStartedBy(start.plusHours(2)));
+    }
+
     @Test
     void updateLecture_shouldThrowEntityNotFoundException_whenLectureDoesNotExist() {
         Lecture updatedLecture = new Lecture();

@@ -30,11 +30,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/** SCRUM-28: the attendance tracker. */
+/** SCRUM-28: the attendance tracker; SCRUM-51: only for live sessions that have started. */
 @ExtendWith(MockitoExtension.class)
 class AttendanceServiceImplTest {
 
     private static final String TEACHER = "teacher@test.com";
+    private static final LocalDateTime START = LocalDateTime.now().minusHours(1);
 
     @Mock private LectureAttendanceRepository attendanceRepository;
     @Mock private LectureService lectureService;
@@ -59,6 +60,8 @@ class AttendanceServiceImplTest {
         lecture = new Lecture();
         lecture.setLectureId(5L);
         lecture.setCourse(course);
+        lecture.setLive(true);
+        lecture.setLiveStart(START);
 
         // deliberately not in name order
         carl = student(12L, "Carl", "Young");
@@ -87,7 +90,7 @@ class AttendanceServiceImplTest {
 
     private void lectureAndRoster() {
         when(lectureService.getLecturesById(5L)).thenReturn(Optional.of(lecture));
-        when(enrollmentService.getStudentsInCourse(1L)).thenReturn(List.of(carl, anna, boris));
+        when(enrollmentService.getStudentsInCourseEnrolledBy(1L, START)).thenReturn(List.of(carl, anna, boris));
     }
 
     @SuppressWarnings("unchecked")
@@ -134,7 +137,7 @@ class AttendanceServiceImplTest {
     @Test
     void getLectureAttendance_shouldBeEmpty_whenNobodyIsEnrolled() {
         when(lectureService.getLecturesById(5L)).thenReturn(Optional.of(lecture));
-        when(enrollmentService.getStudentsInCourse(1L)).thenReturn(List.of());
+        when(enrollmentService.getStudentsInCourseEnrolledBy(1L, START)).thenReturn(List.of());
         when(attendanceRepository.findByLecture_LectureId(5L)).thenReturn(List.of());
 
         assertTrue(attendanceService.getLectureAttendance(1L, 5L, TEACHER).isEmpty());
@@ -248,6 +251,93 @@ class AttendanceServiceImplTest {
 
         assertTrue(ex.getMessage().contains("does not require attendance"));
         verify(attendanceRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void recordAttendance_shouldBeRefused_forSelfPacedLecture() {
+        lecture.setLive(false);
+        lecture.setLiveStart(null);
+        when(lectureService.getLecturesById(5L)).thenReturn(Optional.of(lecture));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> attendanceService.recordAttendance(1L, 5L, TEACHER, List.of()));
+
+        assertEquals(AttendanceServiceImpl.NOT_LIVE, ex.getMessage());
+        verifyNoInteractions(enrollmentService);
+        verify(attendanceRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void recordAttendance_shouldBeRefused_beforeTheLiveSessionStarts() {
+        lecture.setLiveStart(LocalDateTime.now().plusDays(1));
+        when(lectureService.getLecturesById(5L)).thenReturn(Optional.of(lecture));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> attendanceService.recordAttendance(1L, 5L, TEACHER, List.of()));
+
+        assertEquals(AttendanceServiceImpl.NOT_STARTED, ex.getMessage());
+        verify(attendanceRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void recordAttendance_shouldOnlyRecordStudentsEnrolledWhenTheSessionStarted() {
+        // dave enrolled after the start, so the roster query leaves him out
+        lectureAndRoster();
+        when(attendanceRepository.findByLecture_LectureId(5L)).thenReturn(List.of());
+
+        attendanceService.recordAttendance(1L, 5L, TEACHER, List.of());
+
+        assertEquals(3, savedRecords().size());
+        verify(enrollmentService, never()).getStudentsInCourse(any());
+    }
+
+    @Test
+    void recordAttendance_shouldRefuseToMarkAStudentWhoEnrolledAfterTheStart() {
+        lectureAndRoster();   // dave (13) is enrolled now but not on the roll call
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> attendanceService.recordAttendance(1L, 5L, TEACHER, List.of(13L)));
+
+        assertEquals(AttendanceServiceImpl.NOT_ON_ROLL_CALL, ex.getMessage());
+        verify(attendanceRepository, never()).saveAll(any());
+    }
+
+    // --- SCRUM-51: when attendance is open --------------------------------------
+
+    @Test
+    void attendanceClosedReason_shouldBeNull_forStartedLiveLectureOfAttendanceCourse() {
+        assertNull(attendanceService.attendanceClosedReason(lecture));
+    }
+
+    @Test
+    void attendanceClosedReason_shouldExplainWhyAttendanceIsClosed() {
+        lecture.setLiveStart(LocalDateTime.now().plusMinutes(5));
+        assertEquals(AttendanceServiceImpl.NOT_STARTED, attendanceService.attendanceClosedReason(lecture));
+
+        lecture.setLiveStart(null);
+        assertEquals(AttendanceServiceImpl.NOT_STARTED, attendanceService.attendanceClosedReason(lecture));
+
+        lecture.setLive(false);
+        assertEquals(AttendanceServiceImpl.NOT_LIVE, attendanceService.attendanceClosedReason(lecture));
+
+        course.setAttendanceRequired(false);
+        assertEquals(AttendanceServiceImpl.NOT_REQUIRED, attendanceService.attendanceClosedReason(lecture));
+    }
+
+    @Test
+    void getLectureAttendance_ofSelfPacedLecture_shouldListEveryoneEnrolled_soOldRecordsStayReadable() {
+        lecture.setLive(false);
+        lecture.setLiveStart(null);
+        when(lectureService.getLecturesById(5L)).thenReturn(Optional.of(lecture));
+        when(enrollmentService.getStudentsInCourse(1L)).thenReturn(List.of(boris, anna));
+        when(attendanceRepository.findByLecture_LectureId(5L))
+                .thenReturn(List.of(record(lecture, boris, AttendanceStatus.ABSENT)));
+
+        List<AttendanceEntry> entries = attendanceService.getLectureAttendance(1L, 5L, TEACHER);
+
+        assertEquals(List.of(anna, boris), entries.stream().map(AttendanceEntry::student).toList());
+        assertTrue(entries.get(1).isAbsent());
+        verify(enrollmentService, never()).getStudentsInCourseEnrolledBy(any(), any());
     }
 
     @Test

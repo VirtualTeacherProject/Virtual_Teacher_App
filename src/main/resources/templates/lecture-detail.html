@@ -215,6 +215,19 @@
                 Description
             </p>
 
+            <!-- SCRUM-51 part A: live session; the meeting link only for users with content access -->
+            <div class="alert alert-info mt-3 mb-0" id="lecture-live-session" th:if="${lecture.live}">
+                <strong>Live session</strong>
+                <span th:if="${lecture.liveStart}"
+                      th:text="${'starts ' + #temporals.format(lecture.liveStart, 'dd MMM yyyy, HH:mm')}">
+                    starts 01 Jan 2027, 10:00
+                </span>
+                <div class="mt-1" th:if="${canAccessContent and lecture.meetingUrl != null}">
+                    <a id="lecture-meeting-link"
+                       th:href="${lecture.meetingUrl}" target="_blank" rel="noopener">Join the meeting</a>
+                </div>
+            </div>
+
             <!-- Video: SCRUM-10 — only for enrolled users and course managers -->
             <div class="mt-3"
                  id="lecture-video"
@@ -283,10 +296,10 @@
                     ✎ Edit Lecture
                 </a>
 
-                <!-- SCRUM-28: attendance tracker, only for courses that require attendance -->
+                <!-- SCRUM-28 / 51: attendance, only for live lectures of courses that require it -->
                 <a class="btn btn-outline-primary"
                    id="lecture-attendance-link"
-                   th:if="${lecture.course.attendanceRequired}"
+                   th:if="${lecture.course.attendanceRequired and lecture.live}"
                    th:href="@{|/courses/${courseId}/lectures/${lecture.lectureId}/attendance|}">
                     Attendance
                 </a>

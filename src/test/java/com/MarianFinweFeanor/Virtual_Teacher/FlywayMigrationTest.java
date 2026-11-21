@@ -96,6 +96,14 @@ class FlywayMigrationTest {
         assertThat(jdbc.queryForObject("select status from lecture_attendance", String.class)).isEqualTo("ABSENT");
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update(attendance))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+
+        // SCRUM-51 (V7): existing lectures are self-paced; live lectures have a start and a link
+        assertThat(jdbc.queryForObject("select live from lectures", Boolean.class)).isFalse();
+        assertThat(jdbc.queryForObject("select live_start from lectures", java.sql.Timestamp.class)).isNull();
+        jdbc.update("update lectures set live = true, live_start = timestamp '2026-12-01 09:30:00', "
+                + "meeting_url = 'https://meet.example.com/abc'");
+        assertThat(jdbc.queryForObject("select meeting_url from lectures", String.class))
+                .isEqualTo("https://meet.example.com/abc");
     }
 
     @Test

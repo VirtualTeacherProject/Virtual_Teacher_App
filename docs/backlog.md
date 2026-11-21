@@ -1,4 +1,4 @@
->Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43) and SCRUM-28 (finished on its feature branch); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
+>Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43), SCRUM-28 (60e28f7) and SCRUM-51 part A (on feature/SCRUM-51-live-sessions-and-progression); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
 
 ## Completed — 26 tickets
 # Ticket	Description	Status	Evidence	Notes
@@ -18,14 +18,14 @@ SCRUM-23	Students can comment on lectures and ask questions	DONE	10e2b28 [PR #10
 SCRUM-24	Add/edit a user’s lecture notes	DONE	a0d77bc [merge 1490a55]	Covered by SCRUM-20: saving again overwrites the note, saving an empty box deletes it.
 SCRUM-25	Link to Swagger documentation	DONE	4ce7935 [PR #8 eaa762f]	Link is in README only.
 SCRUM-27	Course completion/rating eligibility based on final grade, average and course passing grade	DONE	d99c93e, 14b382e [PR #9 aa93b41]	Git history files it under SCRUM-21.
-SCRUM-28	Required attendance with a tracker for each lecture; teachers mark absent students	DONE	branch feature/SCRUM-28-attendance-tracker	Approved teachers and admins open /courses/{id}/lectures/{id}/attendance (Attendance button on the lecture page) for courses with attendanceRequired, tick the absent students and save; everyone else enrolled is recorded present, saving again overwrites. Model/LectureAttendance (one row per lecture and student, PRESENT/ABSENT), AttendanceServiceImpl, AttendanceMvcController. Removed with its lecture, course or student (SCRUM-15). Migration V6. Student view is SCRUM-29.
+SCRUM-28	Required attendance with a tracker for each lecture; teachers mark absent students	DONE	60e28f7, fixed in SCRUM-51 part A	Approved teachers and admins open /courses/{id}/lectures/{id}/attendance (Attendance button on the lecture page). Since SCRUM-51 the roll call is open only for live lectures of courses with attendanceRequired, once the session has started, and lists the students enrolled at the start time; the teacher ticks the absent ones, the rest are recorded present, saving again overwrites. Self-paced lectures have no attendance. Model/LectureAttendance (one row per lecture and student, PRESENT/ABSENT), AttendanceServiceImpl, AttendanceMvcController. Removed with its lecture, course or student (SCRUM-15). Migration V6. Student view is SCRUM-29.
 SCRUM-31	Students rate courses 1–5 with a mandatory comment of at least 75 characters	DONE	f540e6f [merge eca7feb]	Reviews and average shown on the course page.
 SCRUM-34	Teachers provide additional resources accessible only after enrollment	DONE	c69e3f8 [merge 4a50276]	Links (title, URL, optional description); no file uploads. Migration V2.
 SCRUM-35	Enrolled students request additional resources using at least 100 characters	DONE	750b2e2 [merge 508cff2]	100–2000 characters; students see only their own requests. Migration V3.
 SCRUM-36	Teachers manage resource requests as resolved, irrelevant or in progress and can assign them to another student	DONE	caae73e [merge a3da031]	Statuses OPEN, IN_PROGRESS, RESOLVED, IRRELEVANT; assign to another enrolled student who answers it. Migration V4.
 SCRUM-41	Plain-text notes per lecture (duplicate)	DONE	a0d77bc	Closed as a duplicate of SCRUM-20; no separate work.
 SCRUM-42	Lecture/course comments	DONE	10e2b28, 0ecc6c3 [PR #10 76dfd04]	
-SCRUM-45	Some courses can require attendance	DONE	branch feature/SCRUM-45-attendance-required	Course.attendanceRequired (default false), set on the teacher add/edit forms and the admin course edit; shown as a badge on the course list and an Attendance field on the course page. Migration V5. The tracker itself is SCRUM-28.
+SCRUM-45	Some courses can require attendance	DONE	a9b4c43	Course.attendanceRequired (default false), set on the teacher add/edit forms and the admin course edit; shown as a badge on the course list and an Attendance field on the course page. Migration V5. The tracker itself is SCRUM-28; attendance is taken only for its live lectures (SCRUM-51).
 SCRUM-49	Add a pull request template	DONE	4ba7128 [PR #13 5937900]	.github/pull_request_template.md. Was missing from this backlog.
 SCRUM-50	Adopt Flyway and switch ddl-auto to validate	DONE	eac9a74 [7e46e27]	V1 baseline in src/main/resources/db/migration; both profiles validate. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
 
@@ -33,6 +33,7 @@ SCRUM-50	Adopt Flyway and switch ddl-auto to validate	DONE	eac9a74 [7e46e27]	V1 
 ## Partially done
 # Ticket	Description	Status	Evidence	What is missing
 SCRUM-13	Teachers can create courses and upload video lectures	PARTIAL	Controller/EnrollmentMvcController, Controller/LectureMvcController	Video is a URL (Model/Lecture.videoUrl), not an upload — decide which is intended. No course ownership check (see group 9).
+SCRUM-51	Live lecture sessions with attendance, and self-paced lecture progression	PARTIAL	feature/SCRUM-51-live-sessions-and-progression	Part A done: Lecture.live, liveStart, meetingUrl (Flyway V7) on the add/edit lecture forms; live badge and start time on the lecture list and page, meeting link only for users with content access. The SCRUM-28 roll call opens only for live lectures that have started and lists the students enrolled at the start; also fixed the present count (students without a record were counted present) and a 500 on two simultaneous saves. Part B (self-paced progression) not started, see the design note in group 6. Number is a placeholder until the ticket exists in Jira.
 SCRUM-40	Git history should clearly communicate development order, features and contributors	PARTIAL	git log	24 of 139 non-merge commits start with a ticket key (all recent work does); contributors appear under four author names. Ongoing convention; history must not be rewritten.
 
 
@@ -54,30 +55,31 @@ New entities must follow the SCRUM-15 deletion policy (ContentCleanupService) an
 
 ### 6. Attendance
 # Ticket	Description	Status	Evidence / notes
-SCRUM-51	Live lecture sessions with attendance, and self-paced lecture progression (lecture N+1 unlocks when lecture N is finished)	NOT STARTED	Number is a placeholder until the ticket exists in Jira. No schedule, lecture order or per-student lecture progress exists today. See the design note below.
-SCRUM-29	Students can see only their own attendance records	NOT STARTED	No student view yet. The records exist since SCRUM-28 (Model/LectureAttendance, LectureAttendanceRepository); needs a query by student and course and a page or course-page section. Applies to live lectures once SCRUM-51 part A exists.
-Order: SCRUM-45 (done) -> 28 (done) -> 51 -> 29.
+SCRUM-29	Students can see only their own attendance records	NOT STARTED	No student view yet. The records exist since SCRUM-28 (Model/LectureAttendance, LectureAttendanceRepository); needs a query by student and course and a page or course-page section. Attendance exists only for live lectures (SCRUM-51 part A).
+Order: SCRUM-45 (done) -> 28 (done) -> 51 part A (done) -> 29 and 51 part B (see Partially done).
 
-Design note (SCRUM-51, from the 2026-11-20 discussion after SCRUM-28):
-The SCRUM-28 roll call has no basis yet: lectures have no date or time (only title,
-description and a YouTube URL), so a teacher cannot know who was absent. Enrolment is
-not attendance. Decision: support both kinds of course.
-- Part A, live sessions. Some lectures (not every course or lecture) are live sessions
-  given by the teacher; only those need attendance. Add a per-lecture "live" flag, a
-  scheduled start and an optional meeting link to the lecture form (Flyway V7). Offer the
-  SCRUM-28 roll call only for live lectures and only once the session has started (the
-  teacher can use the meeting's participant list). Decide whether Course.attendanceRequired
-  (SCRUM-45) stays a manual flag or follows from "has live lectures". Later option: a
-  check-in code students enter during the session.
-- Part B, self-paced progression. Probably more than half of the courses are self-paced.
-  Lecture 2 opens only after lecture 1 is finished; finished = video watched + assignment
-  submitted, if the lecture has one. Needs a lecture order (no position field today;
-  lectures come back in id order) and a per-student lecture progress entity.
-- Open questions: how "watched" is detected (videos are YouTube embeds: the IFrame Player
-  API "ended" event or a "mark as watched" button; neither can be fully verified); a
-  lecture cannot say today whether it has an assignment (Lecture.assignmentFilePath is
-  not null); does "assignment done" mean submitted or graded; teachers and admins bypass
-  the lock; how a live lecture fits inside a self-paced course.
+Design note (SCRUM-51, from the 2026-11-20 discussion after SCRUM-28, updated 2026-11-21):
+The SCRUM-28 roll call had no basis: lectures had no date or time, so a teacher could
+not know who was absent, and saving marked everyone present. Enrolment is not attendance.
+Decision: attendance belongs only to live sessions. Self-paced courses have no
+attendance; what matters there is completing the lectures, optionally in order.
+- Part A, live sessions (DONE). A lecture can be marked live with a start time and an
+  optional meeting link (V7). The roll call opens only when the course requires
+  attendance (SCRUM-45 flag, kept as a manual setting), the lecture is live and the
+  session has started; it lists the students enrolled at the start time, so later
+  enrolments are not recorded as present. Later option: a check-in code students enter
+  during the session.
+- Part B, self-paced progression (NOT STARTED). Track per-student lecture completion.
+  A course can make it a prerequisite: lecture N+1 opens only after lecture N is
+  finished (finished = video watched + assignment submitted, if the lecture has one).
+  Needs a lecture order (no position field; lectures come back in id order), a
+  per-student lecture progress entity and a per-course "lectures in order" setting.
+- Open questions (part B): how "watched" is detected (videos are YouTube embeds: the
+  IFrame Player API "ended" event or a "mark as finished" button; neither can be fully
+  verified); a lecture cannot say whether it has an assignment
+  (Lecture.assignmentFilePath is not null); does "assignment done" mean submitted or
+  graded; teachers and admins bypass the lock; how a live lecture fits inside a
+  self-paced course.
 - Related: EnrollmentServiceImpl.recalculateProgress (course COMPLETED once every lecture
   has a graded submission) must agree with the new "finished" rule. May overlap with
   SCRUM-38 (Course Lessons Availability). Could be split into two Jira tickets (A and B).

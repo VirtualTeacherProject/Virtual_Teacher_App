@@ -1,11 +1,13 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import java.util.Objects;
+import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @Entity
@@ -35,4 +37,25 @@ public class    Lecture {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    // --- SCRUM-51 part A: live sessions ---------------------------------------
+
+    /** A live session given by the teacher at liveStart; otherwise the lecture is self-paced. */
+    @Column(name = "live", nullable = false)
+    private boolean live;
+
+    /** When the live session starts; required for live lectures, null otherwise. */
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    @Column(name = "live_start")
+    private LocalDateTime liveStart;
+
+    /** Optional link to the online meeting of a live session. */
+    @Size(max = 500)
+    @Pattern(regexp = "^(https?://\\S+)?$", message = "The meeting link must start with http:// or https://")
+    @Column(name = "meeting_url", length = 500)
+    private String meetingUrl;
+
+    /** True for a live lecture whose session has started by the given time. */
+    public boolean liveSessionStartedBy(LocalDateTime time) {
+        return live && liveStart != null && !liveStart.isAfter(time);
+    }
 }

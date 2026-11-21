@@ -18,6 +18,8 @@ import java.util.Optional;
 @Service
 public class LectureServiceImpl implements LectureService {
 
+    public static final String LIVE_START_REQUIRED = "A live session needs a start date and time";
+
     private final LectureRepository lectureRepository;
     private final CourseRepository courseRepository;
     private final ContentCleanupService contentCleanupService;
@@ -44,6 +46,7 @@ public class LectureServiceImpl implements LectureService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
         lecture.setCourse(course); // Attach managed entity
+        normaliseLiveSession(lecture);
         return lectureRepository.save(lecture);
         //TODO FILTERING EXCEPTION HANDLING CHECK IF LECTURE WITH THE SAME NAME EXISTS
     }
@@ -100,8 +103,28 @@ public class LectureServiceImpl implements LectureService {
                     lecture.setDescription(updatedLecture.getDescription());
                     lecture.setVideoUrl(updatedLecture.getVideoUrl());
                     lecture.setAssignmentFilePath(updatedLecture.getAssignmentFilePath());
+                    lecture.setLive(updatedLecture.isLive());
+                    lecture.setLiveStart(updatedLecture.getLiveStart());
+                    lecture.setMeetingUrl(updatedLecture.getMeetingUrl());
+                    normaliseLiveSession(lecture);
                     return lectureRepository.save(lecture);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Lecture", id));
+    }
+
+    /**
+     * SCRUM-51 part A: a live lecture needs a start time; a self-paced lecture
+     * has neither a start time nor a meeting link.
+     */
+    private static void normaliseLiveSession(Lecture lecture) {
+        if (lecture.getMeetingUrl() != null && lecture.getMeetingUrl().isBlank()) {
+            lecture.setMeetingUrl(null);
+        }
+        if (!lecture.isLive()) {
+            lecture.setLiveStart(null);
+            lecture.setMeetingUrl(null);
+        } else if (lecture.getLiveStart() == null) {
+            throw new IllegalArgumentException(LIVE_START_REQUIRED);
+        }
     }
 }
