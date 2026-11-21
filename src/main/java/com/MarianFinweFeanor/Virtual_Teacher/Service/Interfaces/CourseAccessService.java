@@ -9,8 +9,17 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
  */
 public interface CourseAccessService {
 
-    /** Admins and approved teachers. */
+    /**
+     * Admins and approved teachers: may create courses and search students.
+     * Also used for viewing other teachers' drafts and content (kept open in SCRUM-52).
+     */
     boolean canManageCourses(String userEmail);
+
+    /**
+     * SCRUM-52: may manage this course (edit, publish, lectures, grading, attendance,
+     * resources, progress): admins, or the approved teacher the course belongs to.
+     */
+    boolean canManageCourse(Course course, String userEmail);
 
     /** Published courses are visible to everyone; drafts only to course managers. */
     boolean canViewCourse(Course course, String userEmail);
@@ -24,10 +33,6 @@ public interface CourseAccessService {
     /** Throws EntityNotFoundException when the course must stay hidden from this user. */
     void ensureCanViewCourse(Course course, String userEmail);
 
-    /**
-     * Throws AccessDeniedException unless the user may manage this course.
-     * For now that is every course manager (see canManageCourses); the course
-     * ownership ticket will restrict it to the course's own teacher and admins.
-     */
+    /** SCRUM-52: throws AccessDeniedException unless canManageCourse. */
     void ensureCanManageCourse(Course course, String userEmail);
 }

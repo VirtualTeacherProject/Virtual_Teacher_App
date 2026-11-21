@@ -20,7 +20,13 @@ import java.util.Optional;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,6 +132,56 @@ class CourseRestControllerTest {
         given(courseService.getCourseById(99L)).willReturn(Optional.empty());
 
         mockMvc.perform(get("/api/courses/{id}", 99).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    // --- SCRUM-52: only the course's own teacher or an admin changes a course -----
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void updateCourse_shouldAnswer403_forATeacherOfAnotherCourse() throws Exception {
+        Course course = course(1L, "Java", "PUBLISHED");
+        given(courseService.getCourseById(1L)).willReturn(Optional.of(course));
+        doThrow(new org.springframework.security.access.AccessDeniedException("not yours"))
+                .when(courseAccessService).ensureCanManageCourse(course, TEACHER);
+
+        mockMvc.perform(put("/api/courses/{id}", 1).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Taken over\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("not yours"));
+
+        verify(courseService, never()).updateCourse(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void deleteCourse_shouldAnswer403_forATeacherOfAnotherCourse() throws Exception {
+        Course course = course(1L, "Java", "PUBLISHED");
+        given(courseService.getCourseById(1L)).willReturn(Optional.of(course));
+        doThrow(new org.springframework.security.access.AccessDeniedException("not yours"))
+                .when(courseAccessService).ensureCanManageCourse(course, TEACHER);
+
+        mockMvc.perform(delete("/api/courses/{id}", 1).with(csrf())).andExpect(status().isForbidden());
+
+        verify(courseService, never()).deleteCourse(anyLong());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void deleteCourse_shouldWork_forTheCoursesTeacher() throws Exception {
+        given(courseService.getCourseById(1L)).willReturn(Optional.of(course(1L, "Java", "PUBLISHED")));
+
+        mockMvc.perform(delete("/api/courses/{id}", 1).with(csrf())).andExpect(status().isNoContent());
+
+        verify(courseService).deleteCourse(1L);
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void updateCourse_shouldAnswer404_forMissingCourse() throws Exception {
+        given(courseService.getCourseById(9L)).willReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/courses/{id}", 9).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNotFound());
     }
 }

@@ -120,16 +120,15 @@
                     Edit Course
                 </a>
 
-                <!-- Approved-teacher edit -->
-                <a th:if="${currentUserData['role'] == 'TEACHER'
-           and currentUserData['teacherApproved']}"
+                <!-- Teacher edit: SCRUM-52, only the course's own teacher -->
+                <a th:if="${currentUserData['role'] == 'TEACHER' and canManageCourse}"
                    th:href="@{/courses/{id}/edit(id=${course.courseId})}"
                    class="btn btn-outline-primary">
                     Edit Course
                 </a>
 
                 <form th:if="${course.status == 'DRAFT'
-              and currentUserData['canManageCourses']}"
+              and canManageCourse}"
                       th:action="@{/courses/{id}/publish(id=${course.courseId})}"
                       method="post">
 
@@ -139,14 +138,14 @@
                 </form>
 
 
-                <a th:if="${currentUserData['canManageCourses']}"
+                <a th:if="${canManageCourse}"
                    th:href="@{/courses/{id}/students(id=${course.courseId})}"
                    class="btn btn-outline-secondary">
                     View Enrolled Students
                 </a>
 
                 <!-- SCRUM-51 part B -->
-                <a th:if="${currentUserData['canManageCourses']}"
+                <a th:if="${canManageCourse}"
                    id="course-progress-link"
                    th:href="@{/courses/{id}/progress(id=${course.courseId})}"
                    class="btn btn-outline-secondary">
@@ -154,7 +153,7 @@
                 </a>
 
 
-                <a th:if="${currentUserData['canManageCourses']}"
+                <a th:if="${canManageCourse}"
                    th:href="@{/courses/{id}/lectures/add-lecture(id=${course.courseId})}"
                    class="btn btn-primary">
                     + Add Lecture
@@ -198,7 +197,7 @@
                        th:text="${res.description}">Description</p>
                 </div>
 
-                <form th:if="${currentUserData['canManageCourses']}"
+                <form th:if="${canManageCourse}"
                       th:action="@{|/courses/${course.courseId}/resources/${res.resourceId}/delete|}"
                       method="post">
                     <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
@@ -281,7 +280,7 @@
             </div>
 
             <!-- SCRUM-35: teachers and admins see every request; SCRUM-36: and manage them -->
-            <div th:if="${currentUserData['canManageCourses']}" id="course-resource-requests"
+            <div th:if="${canManageCourse}" id="course-resource-requests"
                  class="border-top pt-3 mt-3">
                 <h3 class="h6">Resource requests from students</h3>
                 <p class="text-muted mb-0" th:if="${#lists.isEmpty(resourceRequests)}">No requests yet.</p>
@@ -332,7 +331,7 @@
                 </div>
             </div>
 
-            <form th:if="${currentUserData['canManageCourses']}"
+            <form th:if="${canManageCourse}"
                   id="add-resource-form"
                   th:action="@{|/courses/${course.courseId}/resources|}"
                   method="post" class="row gy-2 mt-3 border-top pt-3">

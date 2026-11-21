@@ -80,11 +80,32 @@ public class CourseAccessServiceImpl implements CourseAccessService {
     }
 
     @Override
+    public boolean canManageCourse(Course course, String userEmail) {
+        if (course == null || userEmail == null) {
+            return false;
+        }
+
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) {
+            return false;
+        }
+
+        if (user.getRole() == UserRole.ADMIN) {
+            return true;
+        }
+
+        // SCRUM-52: an approved teacher manages only their own courses
+        return user.getRole() == UserRole.TEACHER
+                && user.isTeacherApproved()
+                && course.getTeacher() != null
+                && userEmail.equalsIgnoreCase(course.getTeacher().getEmail());
+    }
+
+    @Override
     public void ensureCanManageCourse(Course course, String userEmail) {
-        // TODO(course ownership): also require course.getTeacher() to be the user, unless admin.
-        if (course == null || !canManageCourses(userEmail)) {
+        if (!canManageCourse(course, userEmail)) {
             throw new org.springframework.security.access.AccessDeniedException(
-                    "Only the course's teachers and admins can do this.");
+                    "Only the course's teacher or an admin can do this.");
         }
     }
 

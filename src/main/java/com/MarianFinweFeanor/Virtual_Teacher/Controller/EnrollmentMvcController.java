@@ -169,6 +169,7 @@ public class EnrollmentMvcController {
         userService.ensureApprovedTeacher(principal.getName());
         var c = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
+        courseAccessService.ensureCanManageCourse(c, principal.getName());   // SCRUM-52
 
         model.addAttribute("course", c);
         return "edit-course";
@@ -185,12 +186,13 @@ public class EnrollmentMvcController {
                                    Principal principal) {
         userService.ensureApprovedTeacher(principal.getName());
 
+        Course existing = courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id));
+        courseAccessService.ensureCanManageCourse(existing, principal.getName());   // SCRUM-52
+
         if (br.hasErrors()) {
             return "edit-course";
         }
-
-        Course existing = courseService.getCourseById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Course", id));
 
         existing.setTitle(updated.getTitle());
         existing.setTopic(updated.getTopic());
@@ -263,7 +265,9 @@ public class EnrollmentMvcController {
         model.addAttribute("hasResources", courseResourceService.hasResources(id));
 
         // SCRUM-35: managers see every request; an enrolled student sees only their own
-        boolean canManage = courseAccessService.canManageCourses(email);
+        // SCRUM-52: "manager" means the course's own teacher or an admin
+        boolean canManage = courseAccessService.canManageCourse(course, email);
+        model.addAttribute("canManageCourse", canManage);
         boolean canRequestResources = canAccessContent && !canManage && enrollment != null;
         model.addAttribute("canRequestResources", canRequestResources);
         model.addAttribute("resourceRequests",
@@ -302,6 +306,7 @@ public class EnrollmentMvcController {
         userService.ensureApprovedTeacher(principal.getName());
         var course = courseService.getCourseById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Course", id));
+        courseAccessService.ensureCanManageCourse(course, principal.getName());   // SCRUM-52
         var students = enrollmentService.getStudentsInCourse(id);
 
         model.addAttribute("course", course);
@@ -363,6 +368,8 @@ public class EnrollmentMvcController {
                                 RedirectAttributes ra) {
 
         userService.ensureApprovedTeacher(principal.getName());
+        courseAccessService.ensureCanManageCourse(courseService.getCourseById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Course", id)), principal.getName());   // SCRUM-52
 
         try {
             courseService.publishCourse(id);

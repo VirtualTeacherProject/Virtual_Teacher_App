@@ -72,7 +72,7 @@ public class LectureMvcController {
 
         var course = courseService.getCourseById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
-
+        courseAccessService.ensureCanManageCourse(course, principal.getName());   // SCRUM-52
 
         model.addAttribute("course", course);
         model.addAttribute("lecture", new Lecture());   // course is attached on submit (server-side)
@@ -90,17 +90,16 @@ public class LectureMvcController {
                             RedirectAttributes ra) {
         //ensureApprovedTeacher(principal);
         userService.ensureApprovedTeacher(principal.getName());
+        var course = courseService.getCourseById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+        courseAccessService.ensureCanManageCourse(course, principal.getName());   // SCRUM-52
         rejectLiveWithoutStart(lecture, br);
 
         if (br.hasErrors()) {
             // view uses 'course' for form action/url
-            model.addAttribute("course", courseService.getCourseById(courseId)
-                    .orElseThrow(() -> new EntityNotFoundException("Course", courseId)));
+            model.addAttribute("course", course);
             return "add-lecture";
         }
-
-        var course = courseService.getCourseById(courseId)
-                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
 
         lecture.setCourse(course);                 // URL is source of truth
         lectureService.createLectures(lecture);
@@ -127,6 +126,7 @@ public class LectureMvcController {
         if (lecture.getCourse() == null || !lecture.getCourse().getCourseId().equals(courseId)) {
             throw new IllegalArgumentException("Lecture does not belong to this course");
         }
+        courseAccessService.ensureCanManageCourse(lecture.getCourse(), principal.getName());   // SCRUM-52
 
 
         model.addAttribute("lecture", lecture);
@@ -155,6 +155,7 @@ public class LectureMvcController {
                     "Lecture does not belong to this course"
             );
         }
+        courseAccessService.ensureCanManageCourse(existing.getCourse(), principal.getName());   // SCRUM-52
 
 
         rejectLiveWithoutStart(updated, br);
@@ -204,6 +205,7 @@ public class LectureMvcController {
         model.addAttribute("lectures", lectures);
         model.addAttribute("enrolled", enrolled);
         model.addAttribute("stateById", stateById);
+        model.addAttribute("canManageCourse", courseAccessService.canManageCourse(course, emailOf(principal)));   // SCRUM-52
         model.addAttribute("completedCount", states.stream().filter(LectureState::completed).count());
         return "lectures";
     }
@@ -261,6 +263,8 @@ public class LectureMvcController {
                 .findFirst()
                 .orElse(new LectureState(lecture, false, false, locked));
         model.addAttribute("locked", locked);
+        model.addAttribute("canManageCourse",
+                courseAccessService.canManageCourse(lecture.getCourse(), email));   // SCRUM-52
         model.addAttribute("lectureState", lectureState);
 
         // SCRUM-20: private notes, for users who can access the course content.

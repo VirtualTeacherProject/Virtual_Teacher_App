@@ -221,6 +221,7 @@ class CourseDetailPageTest {
     void courseDetail_shouldShowResourcesAndManagementControls_toApprovedTeacher() throws Exception {
         Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
         given(courseResourceService.getResources(10L, TEACHER)).willReturn(List.of(resource()));
 
         mockMvc.perform(get("/courses/10").principal(principal))
@@ -235,6 +236,7 @@ class CourseDetailPageTest {
     void courseDetail_shouldSayNoResourcesYet_andOfferTheForm_toTeacherOfEmptyCourse() throws Exception {
         Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
         given(courseResourceService.getResources(10L, TEACHER)).willReturn(List.of());
 
         mockMvc.perform(get("/courses/10").principal(principal))
@@ -330,7 +332,7 @@ class CourseDetailPageTest {
     void courseDetail_shouldShowAllRequests_toTeacher_withoutTheRequestForm() throws Exception {
         Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
-        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
         given(resourceRequestService.getRequestsForCourse(10L, TEACHER)).willReturn(List.of(
                 request("Anna", "Slides for week two, please."),
                 request("Boris", "A reading list on recursion.")));
@@ -350,7 +352,7 @@ class CourseDetailPageTest {
     void courseDetail_shouldSayNoRequestsYet_toTeacher() throws Exception {
         Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
-        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
         given(resourceRequestService.getRequestsForCourse(10L, TEACHER)).willReturn(List.of());
 
         mockMvc.perform(get("/courses/10").principal(principal))
@@ -474,7 +476,7 @@ class CourseDetailPageTest {
     void courseDetail_shouldShowStatusAndAssignControlsAndAnswer_toTeacher() throws Exception {
         Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
-        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
         given(resourceRequestService.getRequestsForCourse(10L, TEACHER))
                 .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IN_PROGRESS, "See cppreference.com")));
         User enrolledTeacher = user("other-teacher@test.com", UserRole.TEACHER);
@@ -504,7 +506,7 @@ class CourseDetailPageTest {
     void courseDetail_shouldNotOfferAssigning_forClosedRequest() throws Exception {
         Principal principal = loggedIn(TEACHER, UserRole.TEACHER);
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
-        given(courseAccessService.canManageCourses(TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
         given(resourceRequestService.getRequestsForCourse(10L, TEACHER))
                 .willReturn(List.of(assignedRequest(ResourceRequest.STATUS_IRRELEVANT, null)));
 

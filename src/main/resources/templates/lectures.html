@@ -94,7 +94,7 @@
 
         <a class="btn btn-primary"
            sec:authorize="hasAnyRole('TEACHER','ADMIN')"
-           th:if="${currentUserData['canManageCourses']}"
+           th:if="${canManageCourse}"
            th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
             + Add Lecture
 <!--            th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"-->
@@ -111,7 +111,7 @@
 
         <a class="btn btn-primary"
            sec:authorize="hasAnyRole('TEACHER','ADMIN')"
-           th:if="${currentUserData['canManageCourses']}"
+           th:if="${canManageCourse}"
            th:href="@{/courses/{c}/lectures/add-lecture(c=${course.courseId})}">
             Create the first lecture
 <!--            th:if="${currentUserData['role'] == 'ADMIN' or (currentUserData['role'] == 'TEACHER' and currentUserData['teacherApproved'])}"-->
@@ -161,7 +161,7 @@
                 </th:block>
 
                 <th:block sec:authorize="hasAnyRole('TEACHER','ADMIN')"
-                          th:if="${currentUserData['canManageCourses']}">
+                          th:if="${canManageCourse}">
                     <form method="post" class="d-inline" th:if="${!it.first}"
                           th:action="@{/courses/{c}/lectures/{l}/move(c=${course.courseId}, l=${lec.lectureId}, direction='up')}">
                         <button class="btn btn-sm btn-outline-secondary" type="submit"

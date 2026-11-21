@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import jakarta.validation.Valid;
+import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,15 +63,25 @@ public class CourseRestController {
 
     // Delete a course by ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long id, Principal principal) {
+        ensureCanManage(id, principal);   // SCRUM-52
         courseService.deleteCourse(id);
         return ResponseEntity.noContent().build();
 
 
     }
     @PutMapping("/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course updatedCourse) {
+    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course updatedCourse,
+                                               Principal principal) {
+        ensureCanManage(id, principal);   // SCRUM-52
         Course course = courseService.updateCourse(id, updatedCourse);
         return ResponseEntity.ok(course);
+    }
+
+    /** SCRUM-52: only the course's own teacher or an admin changes or deletes it. */
+    private void ensureCanManage(Long courseId, Principal principal) {
+        Course course = courseService.getCourseById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+        courseAccessService.ensureCanManageCourse(course, principal == null ? null : principal.getName());
     }
 }

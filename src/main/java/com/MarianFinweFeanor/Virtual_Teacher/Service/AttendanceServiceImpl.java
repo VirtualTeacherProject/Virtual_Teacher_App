@@ -7,6 +7,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureAttendance;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureAttendanceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
@@ -45,30 +46,33 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final LectureService lectureService;
     private final EnrollmentService enrollmentService;
     private final UserService userService;
+    private final CourseAccessService courseAccessService;   // SCRUM-52
 
     @Autowired
     public AttendanceServiceImpl(LectureAttendanceRepository attendanceRepository,
                                  LectureService lectureService,
                                  EnrollmentService enrollmentService,
-                                 UserService userService) {
+                                 UserService userService,
+                                 CourseAccessService courseAccessService) {
         this.attendanceRepository = attendanceRepository;
         this.lectureService = lectureService;
         this.enrollmentService = enrollmentService;
         this.userService = userService;
+        this.courseAccessService = courseAccessService;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Lecture getLectureForAttendance(Long courseId, Long lectureId, String managerEmail) {
         userService.ensureApprovedTeacher(managerEmail);
-        return lectureInCourse(courseId, lectureId);
+        return managedLecture(courseId, lectureId, managerEmail);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<AttendanceEntry> getLectureAttendance(Long courseId, Long lectureId, String managerEmail) {
         userService.ensureApprovedTeacher(managerEmail);
-        Lecture lecture = lectureInCourse(courseId, lectureId);
+        Lecture lecture = managedLecture(courseId, lectureId, managerEmail);
         Map<Long, LectureAttendance> records = recordsByStudent(lectureId);
 
         return roster(lecture).stream()
@@ -99,7 +103,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     public List<AttendanceEntry> recordAttendance(Long courseId, Long lectureId, String managerEmail,
                                                   Collection<Long> absentStudentIds) {
         userService.ensureApprovedTeacher(managerEmail);
-        Lecture lecture = lectureInCourse(courseId, lectureId);
+        Lecture lecture = managedLecture(courseId, lectureId, managerEmail);
 
         String closed = attendanceClosedReason(lecture);
         if (closed != null) {
@@ -172,6 +176,13 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (lecture.getCourse() == null || !lecture.getCourse().getCourseId().equals(courseId)) {
             throw new EntityNotFoundException("Lecture", lectureId);
         }
+        return lecture;
+    }
+
+    /** SCRUM-52: the lecture of the course, for its own teacher or an admin. */
+    private Lecture managedLecture(Long courseId, Long lectureId, String managerEmail) {
+        Lecture lecture = lectureInCourse(courseId, lectureId);
+        courseAccessService.ensureCanManageCourse(lecture.getCourse(), managerEmail);
         return lecture;
     }
 }

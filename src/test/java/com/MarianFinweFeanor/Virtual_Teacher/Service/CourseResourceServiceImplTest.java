@@ -282,4 +282,27 @@ class CourseResourceServiceImplTest {
 
         verifyNoInteractions(courseResourceRepository);
     }
+
+    // --- SCRUM-52: only the course's own teacher or an admin ---------------------
+
+    @Test
+    void addResource_shouldBeRefused_forATeacherOfAnotherCourse() {
+        courseExists();
+        doThrow(new org.springframework.security.access.AccessDeniedException("not your course")).when(courseAccessService).ensureCanManageCourse(course, TEACHER);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> courseResourceService.addResource(10L, TEACHER, "Slides", URL, null));
+        verify(courseResourceRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteResource_shouldBeRefused_forATeacherOfAnotherCourse() {
+        CourseResource resource = resourceOf(10L);
+        when(courseResourceRepository.findById(5L)).thenReturn(Optional.of(resource));
+        doThrow(new org.springframework.security.access.AccessDeniedException("not your course")).when(courseAccessService).ensureCanManageCourse(resource.getCourse(), TEACHER);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> courseResourceService.deleteResource(10L, 5L, TEACHER));
+        verify(courseResourceRepository, never()).delete(any());
+    }
 }

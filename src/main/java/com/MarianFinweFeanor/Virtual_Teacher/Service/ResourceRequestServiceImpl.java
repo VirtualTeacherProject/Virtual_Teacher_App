@@ -79,8 +79,9 @@ public class ResourceRequestServiceImpl implements ResourceRequestService {
     @Override
     @Transactional(readOnly = true)
     public List<ResourceRequest> getRequestsForCourse(Long courseId, String userEmail) {
-        if (!courseAccessService.canManageCourses(userEmail)) {
-            throw new AccessDeniedException("Only teachers and admins can see all resource requests");
+        // SCRUM-52: only the course's teacher or an admin
+        if (!courseAccessService.canManageCourse(course(courseId), userEmail)) {
+            throw new AccessDeniedException("Only the course's teacher or an admin can see all resource requests");
         }
         return resourceRequestRepository.findByCourse_CourseIdOrderByCreatedAtDesc(courseId);
     }
@@ -113,6 +114,7 @@ public class ResourceRequestServiceImpl implements ResourceRequestService {
         }
 
         ResourceRequest request = request(courseId, requestId);
+        courseAccessService.ensureCanManageCourse(request.getCourse(), userEmail);   // SCRUM-52
         request.setStatus(status);
         return resourceRequestRepository.save(request);
     }
@@ -121,6 +123,7 @@ public class ResourceRequestServiceImpl implements ResourceRequestService {
     public ResourceRequest assign(Long courseId, Long requestId, Long assigneeId, String userEmail) {
         userService.ensureApprovedTeacher(userEmail);
         ResourceRequest request = request(courseId, requestId);
+        courseAccessService.ensureCanManageCourse(request.getCourse(), userEmail);   // SCRUM-52
 
         if (request.isClosed()) {
             throw new IllegalStateException("Reopen the request before assigning it");

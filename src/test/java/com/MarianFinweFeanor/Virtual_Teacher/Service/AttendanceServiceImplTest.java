@@ -41,6 +41,7 @@ class AttendanceServiceImplTest {
     @Mock private LectureService lectureService;
     @Mock private EnrollmentService enrollmentService;
     @Mock private UserService userService;
+    @Mock private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService courseAccessService;   // SCRUM-52
 
     @InjectMocks
     private AttendanceServiceImpl attendanceService;
@@ -366,5 +367,20 @@ class AttendanceServiceImplTest {
         assertThrows(AccessDeniedException.class,
                 () -> attendanceService.recordAttendance(1L, 5L, TEACHER, List.of()));
         verifyNoInteractions(attendanceRepository, lectureService, enrollmentService);
+    }
+
+    // --- SCRUM-52: only the course's own teacher or an admin ---------------------
+
+    @Test
+    void attendance_shouldBeRefused_forATeacherOfAnotherCourse() {
+        when(lectureService.getLecturesById(5L)).thenReturn(Optional.of(lecture));
+        doThrow(new org.springframework.security.access.AccessDeniedException("not your course")).when(courseAccessService).ensureCanManageCourse(course, TEACHER);
+
+        assertThrows(AccessDeniedException.class, () -> attendanceService.getLectureForAttendance(1L, 5L, TEACHER));
+        assertThrows(AccessDeniedException.class, () -> attendanceService.getLectureAttendance(1L, 5L, TEACHER));
+        assertThrows(AccessDeniedException.class,
+                () -> attendanceService.recordAttendance(1L, 5L, TEACHER, List.of()));
+        verifyNoInteractions(enrollmentService);
+        verify(attendanceRepository, never()).saveAll(any());
     }
 }

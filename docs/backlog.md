@@ -1,6 +1,6 @@
->Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43), SCRUM-28 (60e28f7) and SCRUM-51 (parts A and B, on feature/SCRUM-51-live-sessions-and-progression); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
+>Note: statuses were re-verified against git history and the code on `main` at `85c4c7c` (2026-11-18), plus SCRUM-22 (merged as 773407b), SCRUM-45 (a9b4c43), SCRUM-28 (60e28f7) SCRUM-51 (merged as 57d852f, ff5b798) and SCRUM-52 (on feature/SCRUM-52-course-ownership); details are in docs/backlog-audit.md. Status is one of DONE / PARTIAL / NOT STARTED. Evidence is the commit that did the work (merge or PR in brackets) or, for NOT STARTED, what is missing.
 
-## Completed — 27 tickets
+## Completed — 28 tickets
 # Ticket	Description	Status	Evidence	Notes
 SCRUM-5	Proper exception handling and propagation	DONE	9d25b93, bf00898, 1c155bb	Global MVC/REST exception handlers and custom exceptions. A few paths still throw bare RuntimeException (see audit).
 SCRUM-6	Approved teachers receive course administration and student-search functionality	DONE	0a7bd61 [merge eca7feb]	/students search page.
@@ -29,11 +29,12 @@ SCRUM-45	Some courses can require attendance	DONE	a9b4c43	Course.attendanceRequi
 SCRUM-49	Add a pull request template	DONE	4ba7128 [PR #13 5937900]	.github/pull_request_template.md. Was missing from this backlog.
 SCRUM-50	Adopt Flyway and switch ddl-auto to validate	DONE	eac9a74 [7e46e27]	V1 baseline in src/main/resources/db/migration; both profiles validate. Not fixed: courses.teacher_id is still nullable in databases created before Flyway.
 SCRUM-51	Live lecture sessions with attendance, and self-paced lecture progression	DONE	feature/SCRUM-51-live-sessions-and-progression (part A 57d852f, part B)	Number is a placeholder until the ticket exists in Jira. Part A: Lecture.live, liveStart, meetingUrl (V7); the SCRUM-28 roll call opens only for live lectures that have started and lists the students enrolled at the start. Part B: students mark lectures as finished (Model/LectureProgress, V8); a lecture with an assignment (Lecture.assignmentRequired) needs a submission before it can be marked and counts as completed once graded; the course is COMPLETED when every lecture is completed. Course.lecturesInOrder: a lecture opens only after every earlier one is finished (managers bypass). Lecture order (Lecture.lectureOrder) with up/down buttons for managers; /courses/{id}/progress shows each student's progress. Courses without assignments can be rated once completed. CourseAccessService.ensureCanManageCourse is the single place the course-ownership ticket will tighten.
+SCRUM-52	Course ownership: only the course's own teacher (and admins) can manage a course	DONE	feature/SCRUM-52-course-ownership	Placeholder number until the ticket exists in Jira. CourseAccessService.canManageCourse / ensureCanManageCourse: an admin, or the approved teacher in Course.teacher. Enforced on course edit/publish and the enrolled-students list, lecture add/edit/move, submission list (all submissions), download and grading, attendance, the progress page, course resources, resource-request list/status/assign, and the REST course PUT/DELETE and lecture POST/PUT/DELETE (403 JSON). Per-course buttons use a canManageCourse model attribute, so other teachers no longer see them. Creating courses and student search stay open to every approved teacher. Related: closes the ownership gap of SCRUM-13; is probably what SCRUM-14 asks for (confirm in Jira); is the prerequisite for SCRUM-37 (assistant teachers would extend canManageCourse). Follow-ups: (1) decision 2026-11-21: viewing stays open, so any approved teacher can still open other teachers' drafts and protected content and bypasses in-order locks; to make it owner-only, switch canViewCourse, canAccessCourseContent and the lock bypass in LectureProgressServiceImpl to canManageCourse. (2) POST /api/courses takes the teacher id from the request body, so a teacher can create a course owned by another teacher; it should use the caller unless an admin.
 
 
 ## Partially done
 # Ticket	Description	Status	Evidence	What is missing
-SCRUM-13	Teachers can create courses and upload video lectures	PARTIAL	Controller/EnrollmentMvcController, Controller/LectureMvcController	Video is a URL (Model/Lecture.videoUrl), not an upload — decide which is intended. No course ownership check (see group 9).
+SCRUM-13	Teachers can create courses and upload video lectures	PARTIAL	Controller/EnrollmentMvcController, Controller/LectureMvcController	Video is a URL (Model/Lecture.videoUrl), not an upload — decide which is intended. Course ownership is enforced since SCRUM-52.
 SCRUM-40	Git history should clearly communicate development order, features and contributors	PARTIAL	git log	24 of 139 non-merge commits start with a ticket key (all recent work does); contributors appear under four author names. Ongoing convention; history must not be rewritten.
 
 
@@ -102,11 +103,10 @@ SCRUM-44	Refer a Friend through an emailed registration link	NOT STARTED	Reuses 
 SCRUM-47	Students can download and/or receive a PDF certificate after completing a course	NOT STARTED	No PDF library in pom.xml. Download needs only a PDF library; "receive" needs the mail setup.
 Order: SCRUM-43 -> 46 -> 44, then SCRUM-47.
 
-### 9. Course ownership and permissions
+### 9. Course permissions (ownership done in SCRUM-52)
 # Ticket	Description	Status	Evidence / notes
-SCRUM-14	Teacher access should be limited to the administrative part of sessions	NOT STARTED	Blocked on acceptance criteria. Probably the "a teacher manages only their own courses" boundary, which does not exist today.
-SCRUM-37	A student can become an assistant teacher and edit a teacher’s course content	NOT STARTED	Single role per user (Model/UserRole), no per-course permission. Needs course ownership enforced first.
-SCRUM-52	Course ownership: only the course's own teacher (and admins) can manage a course	NOT STARTED	Placeholder number until the ticket exists in Jira. Course.teacher is already set, but every teacher action only checks ensureApprovedTeacher, so any approved teacher can edit, grade, take attendance or reorder lectures in any course. Since SCRUM-51, CourseAccessService.ensureCanManageCourse is the one place to add the Course.teacher check; then switch the other teacher handlers (course edit/publish, lectures, assignments/grading, attendance, resources, resource requests) to it. Prerequisite for SCRUM-37; probably what SCRUM-14 asks for.
+SCRUM-14	Teacher access should be limited to the administrative part of sessions	NOT STARTED	Blocked on acceptance criteria. If it means "a teacher manages only their own courses", SCRUM-52 has done it and this can be closed; confirm in Jira.
+SCRUM-37	A student can become an assistant teacher and edit a teacher’s course content	NOT STARTED	Single role per user (Model/UserRole), no per-course permission. Course ownership exists since SCRUM-52: an assistant would be an extra per-course permission checked in CourseAccessService.canManageCourse.
 
 ### 10. Teacher and course tools (independent)
 # Ticket	Description	Status	Evidence / notes

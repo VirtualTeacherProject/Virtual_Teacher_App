@@ -88,8 +88,12 @@ public class CourseResourceServiceImpl implements CourseResourceService {
                     + CourseResource.MAX_DESCRIPTION_LENGTH + " characters");
         }
 
+        // SCRUM-52: only the course's own teacher or an admin
+        Course course = course(courseId);
+        courseAccessService.ensureCanManageCourse(course, userEmail);
+
         CourseResource resource = new CourseResource();
-        resource.setCourse(course(courseId));
+        resource.setCourse(course);
         resource.setTitle(cleanTitle);
         resource.setUrl(cleanUrl);
         resource.setDescription(cleanDescription);
@@ -106,6 +110,7 @@ public class CourseResourceServiceImpl implements CourseResourceService {
                 .filter(found -> found.getCourse() != null
                         && courseId.equals(found.getCourse().getCourseId()))
                 .orElseThrow(() -> new EntityNotFoundException("Resource", resourceId));
+        courseAccessService.ensureCanManageCourse(resource.getCourse(), userEmail);   // SCRUM-52
 
         courseResourceRepository.delete(resource);
     }

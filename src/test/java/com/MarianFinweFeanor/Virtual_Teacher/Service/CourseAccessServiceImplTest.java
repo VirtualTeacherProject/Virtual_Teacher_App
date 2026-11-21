@@ -221,27 +221,75 @@ class CourseAccessServiceImplTest {
                 () -> courseAccessService.ensureCanViewCourse(null, EMAIL));
     }
 
-    // --- SCRUM-51 part B: ensureCanManageCourse ----------------------------------
+    // --- SCRUM-52: canManageCourse / ensureCanManageCourse ----------------------
 
-    @Test
-    void ensureCanManageCourse_shouldPass_forApprovedTeacherAndAdmin() {
-        givenUser(UserRole.TEACHER, true);
-        assertDoesNotThrow(() -> courseAccessService.ensureCanManageCourse(published, EMAIL));
-
-        givenUser(UserRole.ADMIN, false);
-        assertDoesNotThrow(() -> courseAccessService.ensureCanManageCourse(draft, EMAIL));
+    private void ownedBy(Course course, String email) {
+        User teacher = new User();
+        teacher.setEmail(email);
+        course.setTeacher(teacher);
     }
 
     @Test
-    void ensureCanManageCourse_shouldRefuse_studentsUnapprovedTeachersAndMissingCourses() {
-        givenUser(UserRole.STUDENT, false);
-        assertThrows(org.springframework.security.access.AccessDeniedException.class,
-                () -> courseAccessService.ensureCanManageCourse(published, EMAIL));
+    void canManageCourse_shouldBeTrue_forTheCoursesOwnApprovedTeacher() {
+        givenUser(UserRole.TEACHER, true);
+        ownedBy(published, "USER@test.com");   // email compared ignoring case
 
+        assertTrue(courseAccessService.canManageCourse(published, EMAIL));
+    }
+
+    @Test
+    void canManageCourse_shouldBeFalse_forAnotherApprovedTeacher() {
+        givenUser(UserRole.TEACHER, true);
+        ownedBy(published, "other@test.com");
+
+        assertFalse(courseAccessService.canManageCourse(published, EMAIL));
+        // ...who can still view and create courses (viewing kept open in SCRUM-52)
+        assertTrue(courseAccessService.canManageCourses(EMAIL));
+        assertTrue(courseAccessService.canViewCourse(draft, EMAIL));
+    }
+
+    @Test
+    void canManageCourse_shouldBeFalse_forTheOwner_whileNotApproved() {
         givenUser(UserRole.TEACHER, false);
-        assertThrows(org.springframework.security.access.AccessDeniedException.class,
-                () -> courseAccessService.ensureCanManageCourse(published, EMAIL));
+        ownedBy(published, EMAIL);
 
+        assertFalse(courseAccessService.canManageCourse(published, EMAIL));
+    }
+
+    @Test
+    void canManageCourse_shouldBeTrue_forAdmin_ofAnyCourse() {
+        givenUser(UserRole.ADMIN, false);
+        ownedBy(published, "other@test.com");
+
+        assertTrue(courseAccessService.canManageCourse(published, EMAIL));
+        assertTrue(courseAccessService.canManageCourse(draft, EMAIL));   // no teacher at all
+    }
+
+    @Test
+    void canManageCourse_shouldBeFalse_forStudentAnonymousUnknownUserCourseWithoutTeacherOrNoCourse() {
+        assertFalse(courseAccessService.canManageCourse(published, null));
+        assertFalse(courseAccessService.canManageCourse(null, EMAIL));
+
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+        assertFalse(courseAccessService.canManageCourse(published, EMAIL));
+
+        givenUser(UserRole.STUDENT, false);
+        ownedBy(published, EMAIL);
+        assertFalse(courseAccessService.canManageCourse(published, EMAIL));
+
+        givenUser(UserRole.TEACHER, true);
+        assertFalse(courseAccessService.canManageCourse(draft, EMAIL));   // draft has no teacher
+    }
+
+    @Test
+    void ensureCanManageCourse_shouldPassForTheOwner_andRefuseEveryoneElse() {
+        givenUser(UserRole.TEACHER, true);
+        ownedBy(published, EMAIL);
+        ownedBy(draft, "other@test.com");
+
+        assertDoesNotThrow(() -> courseAccessService.ensureCanManageCourse(published, EMAIL));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> courseAccessService.ensureCanManageCourse(draft, EMAIL));
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
                 () -> courseAccessService.ensureCanManageCourse(null, EMAIL));
     }

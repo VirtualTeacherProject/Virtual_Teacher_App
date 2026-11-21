@@ -11,6 +11,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.io.File;
 import java.time.LocalDateTime;
 
+// SCRUM-52: ahead of the unscoped GlobalMvcExceptionHandler, so errors from REST
+// controllers (e.g. AccessDeniedException) answer JSON instead of an MVC redirect
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(annotations = RestController.class)
 public class GlobalRestExceptionHandler {
 
@@ -63,6 +66,17 @@ public class GlobalRestExceptionHandler {
                                                              HttpServletRequest request) {
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
+    // SCRUM-52: e.g. changing a course or lecture the caller does not manage
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {
+        return buildErrorResponse(
+                HttpStatus.FORBIDDEN,
                 ex.getMessage(),
                 request.getRequestURI()
         );

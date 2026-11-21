@@ -84,7 +84,7 @@
 
                     <thead class="table-dark">
                     <tr>
-                        <th sec:authorize="hasAnyRole('TEACHER', 'ADMIN')">
+                        <th th:if="${canManageCourse}">
                             Student
                         </th>
 
@@ -93,7 +93,7 @@
                         <th>Status</th>
                         <th>Student Comment</th>
 
-                        <th sec:authorize="hasAnyRole('TEACHER', 'ADMIN')">
+                        <th th:if="${canManageCourse}">
                             Grade / Teacher Note
                         </th>
                     </tr>
@@ -102,7 +102,7 @@
                     <tbody>
                     <tr th:each="sub : ${submissions}">
 
-                        <td sec:authorize="hasAnyRole('TEACHER', 'ADMIN')"
+                        <td th:if="${canManageCourse}"
                             th:text="${sub.student.email}">
                             student@example.com
                         </td>
@@ -140,7 +140,7 @@
                             —
                         </td>
 
-                        <td sec:authorize="hasAnyRole('TEACHER', 'ADMIN')">
+                        <td th:if="${canManageCourse}">
 
                             <form th:action="@{|/courses/${courseId}/lectures/${lectureId}/assignments/${sub.assignmentId}/grade|}"
                                   method="post"

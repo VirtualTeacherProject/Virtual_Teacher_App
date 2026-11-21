@@ -2,9 +2,11 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller;
 
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AssignmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.LectureService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +35,14 @@ public class AssignmentMvcController {
     private final AssignmentService assignmentService;
     private final UserService userService;
     private final CourseAccessService courseAccessService;
+    private final LectureService lectureService;   // SCRUM-52: the course a lecture belongs to
 
     @Autowired
     public AssignmentMvcController (AssignmentService assignmentService, UserService userService,
-                                    CourseAccessService courseAccessService)
+                                    CourseAccessService courseAccessService,
+                                    LectureService lectureService)
     {
+        this.lectureService = lectureService;
         this.assignmentService = assignmentService;
         this.userService = userService;
         this.courseAccessService = courseAccessService;
@@ -56,15 +61,10 @@ public class AssignmentMvcController {
 
         String email = principal.getName();
 
-        boolean canManageAssignments =
-                SecurityContextHolder.getContext()
-                        .getAuthentication()
-                        .getAuthorities()
-                        .stream()
-                        .anyMatch(authority ->
-                                authority.getAuthority().equals("ROLE_TEACHER")
-                                        || authority.getAuthority().equals("ROLE_ADMIN")
-                        );
+        // SCRUM-52: all submissions only for the course's own teacher or an admin;
+        // everyone else sees their own
+        Lecture lecture = lectureInCourse(courseId, lectureId);
+        boolean canManageAssignments = courseAccessService.canManageCourse(lecture.getCourse(), email);
 
         List<Assignment> submissions;
 
@@ -79,6 +79,7 @@ public class AssignmentMvcController {
         }
 
         model.addAttribute("submissions", submissions);
+        model.addAttribute("canManageCourse", canManageAssignments);   // SCRUM-52: grading column
         model.addAttribute("courseId", courseId);
         model.addAttribute("lectureId", lectureId);
 
@@ -106,7 +107,9 @@ public class AssignmentMvcController {
         boolean isOwner = assignment.getStudent() != null
                 && principal.getName().equalsIgnoreCase(assignment.getStudent().getEmail());
 
-        if (!isOwner && !courseAccessService.canManageCourses(principal.getName())) {
+        // SCRUM-52: a manager is the course's own teacher or an admin
+        if (!isOwner && !courseAccessService.canManageCourse(
+                assignment.getLecture().getCourse(), principal.getName())) {
             throw new AccessDeniedException("You do not have access to this submission");
         }
 
@@ -129,7 +132,17 @@ public class AssignmentMvcController {
                         @PathVariable Long assignmentId,
                         @RequestParam Double grade,
                         @RequestParam(required = false) String teacherComment,
+                        Principal principal,
                         RedirectAttributes ra) {
+        // SCRUM-52: only the course's own teacher or an admin grades, and only a
+        // submission of the lecture and course in the URL
+        userService.ensureApprovedTeacher(principal.getName());
+        Lecture lecture = lectureInCourse(courseId, lectureId);
+        Assignment assignment = assignmentService.findById(assignmentId);
+        if (assignment.getLecture() == null || !lectureId.equals(assignment.getLecture().getLectureId())) {
+            throw new EntityNotFoundException("Assignment", assignmentId);
+        }
+        courseAccessService.ensureCanManageCourse(lecture.getCourse(), principal.getName());
 
         assignmentService.gradeAssignment(assignmentId, grade, teacherComment);
         ra.addFlashAttribute("msg", "Assignment graded.");
@@ -141,4 +154,13 @@ public class AssignmentMvcController {
         return "redirect:/courses/" + courseId + "/lectures/" + lectureId + "/assignments";
     }
 
+    /** The lecture, checked to belong to the course in the URL. */
+    private Lecture lectureInCourse(Long courseId, Long lectureId) {
+        Lecture lecture = lectureService.getLecturesById(lectureId)
+                .orElseThrow(() -> new EntityNotFoundException("Lecture", lectureId));
+        if (lecture.getCourse() == null || !courseId.equals(lecture.getCourse().getCourseId())) {
+            throw new EntityNotFoundException("Lecture", lectureId);
+        }
+        return lecture;
+    }
 }

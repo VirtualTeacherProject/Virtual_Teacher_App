@@ -185,7 +185,8 @@ class ResourceRequestServiceImplTest {
     @Test
     void getRequestsForCourse_shouldReturnAllRequests_toCourseManager() {
         List<ResourceRequest> expected = List.of(new ResourceRequest(), new ResourceRequest());
-        when(courseAccessService.canManageCourses(TEACHER)).thenReturn(true);
+        when(courseService.getCourseById(10L)).thenReturn(Optional.of(course));
+        when(courseAccessService.canManageCourse(course, TEACHER)).thenReturn(true);   // SCRUM-52
         when(resourceRequestRepository.findByCourse_CourseIdOrderByCreatedAtDesc(10L)).thenReturn(expected);
 
         assertEquals(expected, resourceRequestService.getRequestsForCourse(10L, TEACHER));
@@ -193,7 +194,8 @@ class ResourceRequestServiceImplTest {
 
     @Test
     void getRequestsForCourse_shouldBeRefused_forStudent() {
-        when(courseAccessService.canManageCourses(STUDENT)).thenReturn(false);
+        when(courseService.getCourseById(10L)).thenReturn(Optional.of(course));
+        when(courseAccessService.canManageCourse(course, STUDENT)).thenReturn(false);
 
         assertThrows(AccessDeniedException.class,
                 () -> resourceRequestService.getRequestsForCourse(10L, STUDENT));
@@ -552,6 +554,28 @@ class ResourceRequestServiceImplTest {
                 () -> resourceRequestService.respond(10L, 3L, HELPER, "An answer"));
 
         assertEquals("This request is closed", exception.getMessage());
+        verify(resourceRequestRepository, never()).save(any());
+    }
+
+    // --- SCRUM-52: only the course's own teacher or an admin ---------------------
+
+    @Test
+    void updateStatus_shouldBeRefused_forATeacherOfAnotherCourse() {
+        ResourceRequest request = storedRequest(ResourceRequest.STATUS_OPEN);
+        doThrow(new org.springframework.security.access.AccessDeniedException("not your course")).when(courseAccessService).ensureCanManageCourse(request.getCourse(), TEACHER);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> resourceRequestService.updateStatus(10L, 3L, ResourceRequest.STATUS_RESOLVED, TEACHER));
+        verify(resourceRequestRepository, never()).save(any());
+    }
+
+    @Test
+    void assign_shouldBeRefused_forATeacherOfAnotherCourse() {
+        ResourceRequest request = storedRequest(ResourceRequest.STATUS_OPEN);
+        doThrow(new org.springframework.security.access.AccessDeniedException("not your course")).when(courseAccessService).ensureCanManageCourse(request.getCourse(), TEACHER);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> resourceRequestService.assign(10L, 3L, 2L, TEACHER));
         verify(resourceRequestRepository, never()).save(any());
     }
 }

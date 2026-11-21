@@ -274,6 +274,7 @@ class LectureMvcControllerTest {
         teacher.setTeacherApproved(true);
         given(userRepository.findByEmail(TEACHER)).willReturn(Optional.of(teacher));
         given(courseAccessService.canAccessCourseContent(course, TEACHER)).willReturn(true);
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(true);   // SCRUM-52: owner
     }
 
     @Test
@@ -538,6 +539,74 @@ class LectureMvcControllerTest {
     void moveLecture_shouldAnswer404_forLectureOfAnotherCourse() throws Exception {
         mockMvc.perform(post("/courses/2/lectures/5/move").param("direction", "down").principal(TEACHER_PRINCIPAL))
                 .andExpect(status().isNotFound());
+
+        verify(lectureService, never()).moveLecture(any(), anyBoolean());
+    }
+
+    // --- SCRUM-52: only the course's own teacher or an admin -----------------------
+
+    private void teacherOfAnotherCourse() {
+        approvedTeacher();
+        given(courseAccessService.canManageCourse(course, TEACHER)).willReturn(false);
+        doThrow(new org.springframework.security.access.AccessDeniedException("not yours"))
+                .when(courseAccessService).ensureCanManageCourse(course, TEACHER);
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void addLecture_shouldBeRefused_forATeacherOfAnotherCourse() throws Exception {
+        teacherOfAnotherCourse();
+
+        mockMvc.perform(get("/courses/1/lectures/add-lecture").principal(TEACHER_PRINCIPAL))
+                .andExpect(redirectedUrl("/courses"));
+        mockMvc.perform(post("/courses/1/lectures/add-lecture").principal(TEACHER_PRINCIPAL)
+                        .param("title", "Mine now").param("description", "d").param("videoUrl", "https://youtu.be/x"))
+                .andExpect(redirectedUrl("/courses"));
+
+        verify(lectureService, never()).createLectures(any());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void editLecture_shouldBeRefused_forATeacherOfAnotherCourse() throws Exception {
+        teacherOfAnotherCourse();
+
+        mockMvc.perform(get("/courses/1/lectures/5/edit").principal(TEACHER_PRINCIPAL))
+                .andExpect(redirectedUrl("/courses"));
+        mockMvc.perform(post("/courses/1/lectures/5/edit").principal(TEACHER_PRINCIPAL)
+                        .param("title", "Mine now").param("description", "d").param("videoUrl", "https://youtu.be/x"))
+                .andExpect(redirectedUrl("/courses"));
+
+        verify(lectureService, never()).updateLecture(any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void lecturePages_shouldHideManagementButtons_fromATeacherOfAnotherCourse() throws Exception {
+        teacherOfAnotherCourse();
+        course.setAttendanceRequired(true);
+        lecture.setLive(true);
+        lecture.setLiveStart(java.time.LocalDateTime.of(2026, 11, 20, 10, 0));
+
+        mockMvc.perform(get("/courses/1/lectures/5").principal(TEACHER_PRINCIPAL))
+                .andExpect(status().isOk())   // viewing stays open
+                .andExpect(model().attribute("canManageCourse", false))
+                .andExpect(content().string(not(containsString("/courses/1/lectures/5/edit"))))
+                .andExpect(content().string(not(containsString("lecture-attendance-link"))));
+
+        mockMvc.perform(get("/courses/1/lectures").principal(TEACHER_PRINCIPAL))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("/courses/1/lectures/add-lecture"))))
+                .andExpect(content().string(not(containsString("/courses/1/lectures/5/edit"))));
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void moveLecture_shouldBeRefused_forATeacherOfAnotherCourse() throws Exception {
+        teacherOfAnotherCourse();
+
+        mockMvc.perform(post("/courses/1/lectures/5/move").param("direction", "up").principal(TEACHER_PRINCIPAL))
+                .andExpect(redirectedUrl("/courses"));
 
         verify(lectureService, never()).moveLecture(any(), anyBoolean());
     }
