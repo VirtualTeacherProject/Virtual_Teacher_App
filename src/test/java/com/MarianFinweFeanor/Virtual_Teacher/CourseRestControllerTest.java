@@ -22,6 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -48,6 +49,9 @@ class CourseRestControllerTest {
 
     @MockBean
     private CourseAccessService courseAccessService;
+
+    @MockBean
+    private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService userService;   // issue 11
 
     @MockBean
     private UserRepository userRepository;   // needed by GlobalModelAttributes / CustomUserDetailsService
@@ -183,5 +187,36 @@ class CourseRestControllerTest {
 
         mockMvc.perform(put("/api/courses/{id}", 9).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- issue 11 (found in SCRUM-52): POST creates a course owned by the caller ---
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void createCourse_shouldCreateTheCourseAsTheCaller() throws Exception {
+        Course saved = course(5L, "Mine", "DRAFT");
+        given(courseService.createCourseAs(any(Course.class), org.mockito.ArgumentMatchers.eq(TEACHER)))
+                .willReturn(saved);
+
+        mockMvc.perform(post("/api/courses").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Mine\",\"teacher\":{\"userId\":99}}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.courseId").value(5));
+
+        verify(userService).ensureApprovedTeacher(TEACHER);
+        verify(courseService, never()).createCourse(any());
+    }
+
+    @Test
+    @WithMockUser(username = TEACHER, roles = "TEACHER")
+    void createCourse_shouldAnswer403_forTeacherAwaitingApproval() throws Exception {
+        doThrow(new org.springframework.security.access.AccessDeniedException("pending approval"))
+                .when(userService).ensureApprovedTeacher(TEACHER);
+
+        mockMvc.perform(post("/api/courses").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Mine\"}"))
+                .andExpect(status().isForbidden());
+
+        verify(courseService, never()).createCourseAs(any(), any());
     }
 }

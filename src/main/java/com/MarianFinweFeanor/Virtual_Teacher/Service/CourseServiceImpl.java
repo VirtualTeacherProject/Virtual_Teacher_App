@@ -51,6 +51,25 @@ public class CourseServiceImpl implements CourseService {
 
 
 
+    @Override
+    public Course createCourseAs(Course course, String creatorEmail) {
+        User creator = userRepository.findByEmail(creatorEmail)
+                .orElseThrow(() -> new EntityNotFoundException("User", "email", creatorEmail));
+
+        User owner = creator;
+        boolean namesTeacher = course.getTeacher() != null && course.getTeacher().getUserId() != null;
+        if (creator.getRole() == UserRole.ADMIN && namesTeacher) {
+            Long teacherId = course.getTeacher().getUserId();
+            owner = userRepository.findById(teacherId)
+                    .orElseThrow(() -> new EntityNotFoundException("User", teacherId));
+            ensureMayTeach(owner);
+        }
+
+        course.setTeacher(owner);
+        course.setStatus("DRAFT");
+        return courseRepository.save(course);
+    }
+
     // 2. Get a Course by ID
 
     @Override
@@ -188,6 +207,14 @@ public class CourseServiceImpl implements CourseService {
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> new EntityNotFoundException("User", teacherId));
 
+        ensureMayTeach(teacher);
+
+        course.setTeacher(teacher);
+        return courseRepository.save(course);
+    }
+
+    /** An active admin or an active, approved teacher; otherwise IllegalArgumentException. */
+    private static void ensureMayTeach(User teacher) {
         boolean mayTeach = teacher.getRole() == UserRole.ADMIN
                 || (teacher.getRole() == UserRole.TEACHER && teacher.isTeacherApproved());
 
@@ -200,9 +227,6 @@ public class CourseServiceImpl implements CourseService {
             throw new IllegalArgumentException(
                     "A deactivated user cannot be assigned to a course.");
         }
-
-        course.setTeacher(teacher);
-        return courseRepository.save(course);
     }
 
     // 5. Delete a Course

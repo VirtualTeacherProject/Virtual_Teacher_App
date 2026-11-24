@@ -20,6 +20,13 @@ public interface CourseService {
     //  1. Create a New Course
     Course createCourse(Course course);
 
+    /**
+     * Creates a draft course on behalf of the logged-in user (REST API, issue 11).
+     * The creator becomes the course's teacher; only an admin may name another
+     * teacher (teacher.userId), who must be an active admin or approved teacher.
+     */
+    Course createCourseAs(Course course, String creatorEmail);
+
     // 2. Get a Course by ID
     Optional<Course> getCourseById(Long id);
 

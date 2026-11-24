@@ -3,12 +3,12 @@ package com.MarianFinweFeanor.Virtual_Teacher.Controller.RestController;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.UserService;
 import jakarta.validation.Valid;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -22,24 +22,27 @@ public class CourseRestController {
 
     private final CourseService courseService;
     private final CourseAccessService courseAccessService;
+    private final UserService userService;
 
     @Autowired
     public CourseRestController(CourseService courseService,
-                                CourseAccessService courseAccessService) {
+                                CourseAccessService courseAccessService,
+                                UserService userService) {
         this.courseService = courseService;
         this.courseAccessService = courseAccessService;
+        this.userService = userService;
     }
 
-    //Create or Update a course
+    /**
+     * Creates a draft course owned by the caller (issue 11, found in SCRUM-52):
+     * a teacher cannot create a course for another teacher; only an admin may name one.
+     * Approved teachers and admins only.
+     */
     @PostMapping
-    public ResponseEntity<?> createCourse(@Valid @RequestBody Course course, BindingResult br) {
-            try {
-            Course saveCourse = courseService.createCourse(course);
-            return ResponseEntity.status(HttpStatus.CREATED).body(saveCourse);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error: " + e.getMessage());
-        }
+    public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course, Principal principal) {
+        userService.ensureApprovedTeacher(principal.getName());
+        Course saved = courseService.createCourseAs(course, principal.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     // SCRUM-22: same visibility as the /courses page — published courses,

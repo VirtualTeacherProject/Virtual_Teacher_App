@@ -187,6 +187,48 @@
         </div>
     </div>
 
+    <!-- SCRUM-29: the enrolled user's own attendance -->
+    <div class="card shadow-sm mt-3" id="own-attendance" th:if="${!#lists.isEmpty(ownAttendance)}">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h6 mb-0">Your attendance</h2>
+                <span class="text-muted small">
+                    <span id="own-present-count" th:text="${ownPresentCount}">0</span> present,
+                    <span id="own-absent-count" th:text="${ownAbsentCount}">0</span> absent
+                </span>
+            </div>
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Lecture</th>
+                    <th>Session</th>
+                    <th class="text-end">Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${ownAttendance}">
+                    <td>
+                        <a th:href="@{/courses/{c}/lectures/{l}(c=${course.courseId},l=${row.lecture().lectureId})}"
+                           th:text="${row.lecture().title}">Lecture</a>
+                    </td>
+                    <td class="text-muted small">
+                        <span th:if="${row.lecture().liveStart != null}"
+                              th:text="${#temporals.format(row.lecture().liveStart, 'dd MMM yyyy HH:mm')}">01 Jan 2025 10:00</span>
+                        <span th:if="${row.lecture().liveStart == null}"
+                              th:text="${row.lecture().live ? 'Live, time not set' : 'Self-paced'}">Self-paced</span>
+                    </td>
+                    <td class="text-end">
+                        <span class="badge text-bg-success" th:if="${row.isPresent()}">Present</span>
+                        <span class="badge text-bg-danger" th:if="${row.isAbsent()}">Absent</span>
+                        <span class="badge text-bg-light border" th:if="${row.upcoming()}">Upcoming</span>
+                        <span class="text-muted small" th:if="${!row.isRecorded() and !row.upcoming()}">Not recorded yet</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Additional resources (SCRUM-34): only after enrollment, or for course managers -->
     <div class="card shadow-sm mt-3" id="course-resources" th:if="${canAccessContent}">
         <div class="card-body">

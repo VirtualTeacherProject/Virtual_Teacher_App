@@ -3,8 +3,10 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceEntry;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceStatus;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureAttendance;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.StudentAttendanceEntry;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureAttendanceRepository;
@@ -382,5 +384,85 @@ class AttendanceServiceImplTest {
                 () -> attendanceService.recordAttendance(1L, 5L, TEACHER, List.of()));
         verifyNoInteractions(enrollmentService);
         verify(attendanceRepository, never()).saveAll(any());
+    }
+
+    // --- SCRUM-29: a student's own attendance ---------------------------------
+
+    private Lecture lecture(Long id, boolean live, LocalDateTime start) {
+        Lecture l = new Lecture();
+        l.setLectureId(id);
+        l.setCourse(course);
+        l.setLive(live);
+        l.setLiveStart(start);
+        return l;
+    }
+
+    private Enrollment enrollment(User student, LocalDateTime enrolledAt) {
+        Enrollment enrollment = new Enrollment();
+        enrollment.setStudent(student);
+        enrollment.setCourse(course);
+        enrollment.setEnrolledAt(enrolledAt);
+        return enrollment;
+    }
+
+    @Test
+    void getOwnAttendance_shouldBeEmpty_withoutAnEnrollment() {
+        assertTrue(attendanceService.getOwnAttendance(null).isEmpty());
+        verifyNoInteractions(attendanceRepository, lectureService);
+    }
+
+    @Test
+    void getOwnAttendance_shouldListOwnRecordsUpcomingAndMissingSessions_inLectureOrder() {
+        LocalDateTime enrolled = START.minusDays(10);
+        Lecture beforeEnrolment = lecture(1L, true, enrolled.minusDays(1));
+        Lecture attended = lecture(2L, true, START.minusDays(2));
+        Lecture missed = lecture(3L, true, START.minusDays(1));
+        Lecture notTaken = lecture(4L, true, START);
+        Lecture selfPaced = lecture(5L, false, null);
+        Lecture upcoming = lecture(6L, true, LocalDateTime.now().plusDays(1));
+        Lecture noTime = lecture(7L, true, null);
+
+        when(attendanceRepository.findByStudent_UserIdAndLecture_Course_CourseId(10L, 1L)).thenReturn(List.of(
+                record(attended, anna, AttendanceStatus.PRESENT),
+                record(missed, anna, AttendanceStatus.ABSENT)));
+        when(lectureService.getByCourseId(1L)).thenReturn(List.of(
+                beforeEnrolment, attended, missed, notTaken, selfPaced, upcoming, noTime));
+
+        List<StudentAttendanceEntry> rows = attendanceService.getOwnAttendance(enrollment(anna, enrolled));
+
+        assertEquals(List.of(attended, missed, notTaken, upcoming, noTime),
+                rows.stream().map(StudentAttendanceEntry::lecture).toList());
+        assertTrue(rows.get(0).isPresent());
+        assertTrue(rows.get(1).isAbsent());
+        assertFalse(rows.get(2).isRecorded());
+        assertFalse(rows.get(2).upcoming());
+        assertTrue(rows.get(3).upcoming());
+        assertTrue(rows.get(4).upcoming());
+        verify(attendanceRepository, never()).findByLecture_LectureId(any());
+    }
+
+    @Test
+    void getOwnAttendance_shouldBeEmpty_whenTheCourseDoesNotRequireAttendanceAndNothingWasRecorded() {
+        course.setAttendanceRequired(false);
+        when(attendanceRepository.findByStudent_UserIdAndLecture_Course_CourseId(10L, 1L)).thenReturn(List.of());
+
+        assertTrue(attendanceService.getOwnAttendance(enrollment(anna, START.minusDays(1))).isEmpty());
+        verifyNoInteractions(lectureService);
+    }
+
+    @Test
+    void getOwnAttendance_shouldShowOnlyRecords_whenTheCourseNoLongerRequiresAttendance() {
+        course.setAttendanceRequired(false);
+        Lecture old = lecture(2L, false, null);
+        Lecture liveWithoutRecord = lecture(3L, true, START);
+        when(attendanceRepository.findByStudent_UserIdAndLecture_Course_CourseId(10L, 1L))
+                .thenReturn(List.of(record(old, anna, AttendanceStatus.ABSENT)));
+        when(lectureService.getByCourseId(1L)).thenReturn(List.of(old, liveWithoutRecord));
+
+        List<StudentAttendanceEntry> rows = attendanceService.getOwnAttendance(enrollment(anna, START.minusDays(5)));
+
+        assertEquals(1, rows.size());
+        assertSame(old, rows.get(0).lecture());
+        assertTrue(rows.get(0).isAbsent());
     }
 }

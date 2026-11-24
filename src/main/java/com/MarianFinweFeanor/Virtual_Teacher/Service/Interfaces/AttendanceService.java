@@ -1,7 +1,9 @@
 package com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceEntry;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.StudentAttendanceEntry;
 
 import java.util.Collection;
 import java.util.List;
@@ -45,4 +47,13 @@ public interface AttendanceService {
      */
     List<AttendanceEntry> recordAttendance(Long courseId, Long lectureId, String managerEmail,
                                            Collection<Long> absentStudentIds);
+
+    /**
+     * SCRUM-29: the enrolled student's own attendance in the enrolment's course,
+     * in lecture order. Only that student's records are read. Lists every lecture
+     * with a record, and, when the course requires attendance, the live lectures
+     * still to come (upcoming) and those held since the student enrolled that have
+     * no record yet. Empty for a null enrolment.
+     */
+    List<StudentAttendanceEntry> getOwnAttendance(Enrollment enrollment);
 }

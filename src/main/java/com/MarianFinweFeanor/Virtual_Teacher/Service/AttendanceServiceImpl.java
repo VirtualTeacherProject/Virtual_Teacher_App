@@ -2,8 +2,10 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceEntry;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceStatus;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.LectureAttendance;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.StudentAttendanceEntry;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureAttendanceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService;
@@ -147,6 +149,49 @@ public class AttendanceServiceImpl implements AttendanceService {
                         absent.contains(student.getUserId())
                                 ? AttendanceStatus.ABSENT
                                 : AttendanceStatus.PRESENT))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudentAttendanceEntry> getOwnAttendance(Enrollment enrollment) {
+        if (enrollment == null || enrollment.getStudent() == null || enrollment.getCourse() == null) {
+            return List.of();
+        }
+        Long studentId = enrollment.getStudent().getUserId();
+        Long courseId = enrollment.getCourse().getCourseId();
+        boolean required = enrollment.getCourse().isAttendanceRequired();
+
+        Map<Long, AttendanceStatus> own = attendanceRepository
+                .findByStudent_UserIdAndLecture_Course_CourseId(studentId, courseId).stream()
+                .collect(Collectors.toMap(r -> r.getLecture().getLectureId(), LectureAttendance::getStatus));
+
+        if (!required && own.isEmpty()) {
+            return List.of();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime enrolledAt = enrollment.getEnrolledAt();
+
+        return lectureService.getByCourseId(courseId).stream()
+                .map(lecture -> {
+                    AttendanceStatus status = own.get(lecture.getLectureId());
+                    if (status != null) {
+                        return new StudentAttendanceEntry(lecture, status, false);
+                    }
+                    if (!required || !lecture.isLive()) {
+                        return null;
+                    }
+                    if (!lecture.liveSessionStartedBy(now)) {
+                        return new StudentAttendanceEntry(lecture, null, true);
+                    }
+                    // A session held before the student enrolled was not theirs to attend.
+                    if (enrolledAt != null && lecture.getLiveStart().isBefore(enrolledAt)) {
+                        return null;
+                    }
+                    return new StudentAttendanceEntry(lecture, null, false);
+                })
+                .filter(Objects::nonNull)
                 .toList();
     }
 

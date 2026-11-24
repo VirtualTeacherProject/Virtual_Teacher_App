@@ -734,4 +734,79 @@ class CourseServiceImplTest {
 
         verify(courseRepository, never()).save(any(Course.class));
     }
+
+    // --- issue 11 (found in SCRUM-52): createCourseAs -------------------------
+
+    private static User user(Long id, String email, UserRole role, boolean approved, String status) {
+        User user = new User();
+        user.setUserId(id);
+        user.setEmail(email);
+        user.setRole(role);
+        user.setTeacherApproved(approved);
+        user.setStatus(status);
+        return user;
+    }
+
+    @Test
+    void createCourseAs_shouldMakeTheTeacherTheOwner_evenWhenTheBodyNamesAnotherTeacher() {
+        User caller = user(2L, "caller@test.com", UserRole.TEACHER, true, "ACTIVE");
+        when(userRepository.findByEmail("caller@test.com")).thenReturn(Optional.of(caller));
+        when(courseRepository.save(course)).thenReturn(course);
+
+        Course result = courseService.createCourseAs(course, "caller@test.com");   // body names teacher 1
+
+        assertSame(caller, result.getTeacher());
+        assertEquals("DRAFT", result.getStatus());
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    void createCourseAs_shouldMakeTheCallerTheOwner_whenNoTeacherIsGiven() {
+        User admin = user(3L, "admin@test.com", UserRole.ADMIN, false, "ACTIVE");
+        course.setTeacher(null);
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(courseRepository.save(course)).thenReturn(course);
+
+        assertSame(admin, courseService.createCourseAs(course, "admin@test.com").getTeacher());
+    }
+
+    @Test
+    void createCourseAs_shouldLetAnAdminNameAnApprovedTeacher() {
+        User admin = user(3L, "admin@test.com", UserRole.ADMIN, false, "ACTIVE");
+        User named = user(1L, "teacher@test.com", UserRole.TEACHER, true, "ACTIVE");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(named));
+        when(courseRepository.save(course)).thenReturn(course);
+
+        assertSame(named, courseService.createCourseAs(course, "admin@test.com").getTeacher());
+    }
+
+    @Test
+    void createCourseAs_shouldRefuse_whenAnAdminNamesAnUnapprovedTeacher() {
+        User admin = user(3L, "admin@test.com", UserRole.ADMIN, false, "ACTIVE");
+        User pending = user(1L, "teacher@test.com", UserRole.TEACHER, false, "ACTIVE");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(pending));
+
+        assertThrows(IllegalArgumentException.class, () -> courseService.createCourseAs(course, "admin@test.com"));
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
+    @Test
+    void createCourseAs_shouldRefuse_whenAnAdminNamesAMissingUser() {
+        User admin = user(3L, "admin@test.com", UserRole.ADMIN, false, "ACTIVE");
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> courseService.createCourseAs(course, "admin@test.com"));
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
+    @Test
+    void createCourseAs_shouldThrow_whenTheCallerDoesNotExist() {
+        when(userRepository.findByEmail("ghost@test.com")).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> courseService.createCourseAs(course, "ghost@test.com"));
+        verify(courseRepository, never()).save(any(Course.class));
+    }
 }

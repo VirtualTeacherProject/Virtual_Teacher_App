@@ -1,7 +1,10 @@
 package com.MarianFinweFeanor.Virtual_Teacher;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Controller.EnrollmentMvcController;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceStatus;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.StudentAttendanceEntry;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
@@ -61,6 +64,7 @@ class CourseDetailPageTest {
     @MockBean private CourseAccessService courseAccessService;
     @MockBean private CourseResourceService courseResourceService;
     @MockBean private ResourceRequestService resourceRequestService;
+    @MockBean private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService attendanceService;   // SCRUM-29
 
     private Course course;
 
@@ -514,5 +518,58 @@ class CourseDetailPageTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/courses/10/resource-requests/3/status")))
                 .andExpect(content().string(not(containsString("/resource-requests/3/assign"))));
+    }
+
+    // --- SCRUM-29: the enrolled student's own attendance -----------------------
+
+    private Lecture liveLecture(Long id, String title, LocalDateTime start) {
+        Lecture lecture = new Lecture();
+        lecture.setLectureId(id);
+        lecture.setTitle(title);
+        lecture.setCourse(course);
+        lecture.setLive(true);
+        lecture.setLiveStart(start);
+        return lecture;
+    }
+
+    @Test
+    @WithMockUser(username = STUDENT, roles = "STUDENT")
+    void courseDetail_shouldShowTheStudentsOwnAttendance() throws Exception {
+        Principal principal = loggedIn(STUDENT, UserRole.STUDENT);
+        Enrollment enrollment = new Enrollment();
+        enrollment.setCourse(course);
+        given(enrollmentRepository.findByStudent_EmailAndCourse_CourseId(STUDENT, 10L))
+                .willReturn(Optional.of(enrollment));
+        given(attendanceService.getOwnAttendance(enrollment)).willReturn(List.of(
+                new StudentAttendanceEntry(liveLecture(1L, "Week 1 live", LocalDateTime.of(2026, 11, 2, 10, 0)),
+                        AttendanceStatus.PRESENT, false),
+                new StudentAttendanceEntry(liveLecture(2L, "Week 2 live", LocalDateTime.of(2026, 11, 9, 10, 0)),
+                        AttendanceStatus.ABSENT, false),
+                new StudentAttendanceEntry(liveLecture(3L, "Week 3 live", LocalDateTime.of(2026, 11, 16, 10, 0)),
+                        null, false),
+                new StudentAttendanceEntry(liveLecture(4L, "Week 4 live", LocalDateTime.of(2030, 1, 1, 10, 0)),
+                        null, true)));
+
+        mockMvc.perform(get("/courses/10").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("id=\"own-attendance\"")))
+                .andExpect(content().string(containsString("Your attendance")))
+                .andExpect(content().string(containsString("Week 1 live")))
+                .andExpect(content().string(containsString("02 Nov 2026 10:00")))
+                .andExpect(content().string(containsString("<span id=\"own-present-count\">1</span>")))
+                .andExpect(content().string(containsString("<span id=\"own-absent-count\">1</span>")))
+                .andExpect(content().string(containsString(">Present<")))
+                .andExpect(content().string(containsString(">Absent<")))
+                .andExpect(content().string(containsString("Not recorded yet")))
+                .andExpect(content().string(containsString(">Upcoming<")));
+    }
+
+    @Test
+    void courseDetail_shouldNotShowAttendance_withoutAnEnrollment() throws Exception {
+        mockMvc.perform(get("/courses/10"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("own-attendance"))));
+
+        verify(attendanceService).getOwnAttendance(null);
     }
 }

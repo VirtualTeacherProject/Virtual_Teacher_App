@@ -55,6 +55,7 @@ class CourseAttendanceRequiredTest {
     @MockBean private CourseAccessService courseAccessService;
     @MockBean private CourseResourceService courseResourceService;
     @MockBean private ResourceRequestService resourceRequestService;
+    @MockBean private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService attendanceService;   // SCRUM-29
 
     private User teacher;
     private Course course;

@@ -6,6 +6,8 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.UserRole;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.EnrollmentRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.StudentAttendanceEntry;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseResourceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
@@ -43,6 +45,7 @@ public class EnrollmentMvcController {
     private final CourseAccessService courseAccessService;      // SCRUM-34 resource gate
     private final CourseResourceService courseResourceService;  // SCRUM-34
     private final ResourceRequestService resourceRequestService; // SCRUM-35
+    private final AttendanceService attendanceService;           // SCRUM-29
 
     public EnrollmentMvcController(UserService userService,
                                    CourseService courseService,
@@ -50,7 +53,8 @@ public class EnrollmentMvcController {
                                    EnrollmentService enrollmentService,
                                    CourseAccessService courseAccessService,
                                    CourseResourceService courseResourceService,
-                                   ResourceRequestService resourceRequestService) {
+                                   ResourceRequestService resourceRequestService,
+                                   AttendanceService attendanceService) {
         this.userService = userService;
         this.courseService = courseService;
         this.enrollmentService = enrollmentService;
@@ -58,6 +62,7 @@ public class EnrollmentMvcController {
         this.courseAccessService = courseAccessService;
         this.courseResourceService = courseResourceService;
         this.resourceRequestService = resourceRequestService;
+        this.attendanceService = attendanceService;
     }
 
     // --- List Courses (public) ----------------------------------------------
@@ -291,6 +296,14 @@ public class EnrollmentMvcController {
         model.addAttribute("maxRequestLength", ResourceRequest.MAX_MESSAGE_LENGTH);
 
         model.addAttribute("enrollment", enrollment);
+
+        // SCRUM-29: an enrolled user sees only their own attendance
+        List<StudentAttendanceEntry> ownAttendance = attendanceService.getOwnAttendance(enrollment);
+        model.addAttribute("ownAttendance", ownAttendance);
+        model.addAttribute("ownPresentCount",
+                ownAttendance.stream().filter(StudentAttendanceEntry::isPresent).count());
+        model.addAttribute("ownAbsentCount",
+                ownAttendance.stream().filter(StudentAttendanceEntry::isAbsent).count());
 
         model.addAttribute("course", course);
         model.addAttribute("enrolled", enrolled);
