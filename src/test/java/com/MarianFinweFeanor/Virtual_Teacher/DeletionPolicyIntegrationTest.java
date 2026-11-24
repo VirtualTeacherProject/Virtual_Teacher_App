@@ -61,7 +61,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @ActiveProfiles("test")
 @Import({CourseServiceImpl.class, LectureServiceImpl.class, UserServiceImpl.class,
-        EnrollmentServiceImpl.class, ContentCleanupServiceImpl.class})
+        EnrollmentServiceImpl.class, ContentCleanupServiceImpl.class,
+        com.MarianFinweFeanor.Virtual_Teacher.Service.CoursePrerequisiteServiceImpl.class,   // SCRUM-48
+        com.MarianFinweFeanor.Virtual_Teacher.Service.CourseAccessServiceImpl.class})
 @TestPropertySource(properties = "app.upload.dir=target/test-uploads")
 class DeletionPolicyIntegrationTest {
 
@@ -167,6 +169,33 @@ class DeletionPolicyIntegrationTest {
         assertThat(requestRepository.count()).isEqualTo(1);
         assertThat(attendanceRepository.findByLecture_Course_CourseId(course.getCourseId())).isEmpty();
         assertThat(attendanceRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void deletingACourse_shouldRemoveItsPrerequisiteLinks_onBothSides() {   // SCRUM-48
+        Course advanced = course("Advanced Java", teacher);
+        prerequisite(course, otherCourse, false);     // the deleted course has a prerequisite
+        prerequisite(advanced, course, true);         // and is the prerequisite of another course
+        prerequisite(advanced, otherCourse, false);   // unrelated link stays
+        flushAndClear();
+
+        courseService.deleteCourse(course.getCourseId());
+        flushAndClear();
+
+        assertThat(courseRepository.findById(advanced.getCourseId())).isPresent();
+        assertThat(courseRepository.findById(otherCourse.getCourseId())).isPresent();
+        assertThat(em.getEntityManager()
+                .createQuery("select p.prerequisiteCourse.title from CoursePrerequisite p", String.class)
+                .getResultList()).containsExactly("Python");
+    }
+
+    private void prerequisite(Course of, Course prerequisite, boolean required) {
+        com.MarianFinweFeanor.Virtual_Teacher.Model.CoursePrerequisite link =
+                new com.MarianFinweFeanor.Virtual_Teacher.Model.CoursePrerequisite();
+        link.setCourse(em.find(Course.class, of.getCourseId()));
+        link.setPrerequisiteCourse(em.find(Course.class, prerequisite.getCourseId()));
+        link.setRequired(required);
+        em.persist(link);
     }
 
     // --- deleting a lecture --------------------------------------------------

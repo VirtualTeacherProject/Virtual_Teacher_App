@@ -154,6 +154,23 @@ class SecurityRulesTest {
         mockMvc.perform(delete("/api/users/1")).andExpect(status().isForbidden());
     }
 
+    // --- SCRUM-48: prerequisite courses ---------------------------------------
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void managingPrerequisites_shouldBeForbidden_forStudent() throws Exception {
+        mockMvc.perform(post("/courses/1/prerequisites").param("prerequisiteCourseId", "2"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/courses/1/prerequisites/2/delete")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void managingPrerequisites_shouldRedirectAnonymousVisitorToLogin() throws Exception {
+        mockMvc.perform(post("/courses/1/prerequisites").param("prerequisiteCourseId", "2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/login"));
+    }
+
     // --- SCRUM-28: attendance tracker ----------------------------------------
 
     @Test

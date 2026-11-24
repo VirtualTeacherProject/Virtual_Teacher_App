@@ -2,6 +2,7 @@ package com.MarianFinweFeanor.Virtual_Teacher;
 
 import com.MarianFinweFeanor.Virtual_Teacher.Model.AttendanceStatus;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
+import com.MarianFinweFeanor.Virtual_Teacher.Model.CoursePrerequisite;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.CourseResource;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Lecture;
@@ -173,6 +174,18 @@ class PostgresMigrationTest {
         attendance.setRecordedAt(LocalDateTime.now());
         em.persist(attendance);
 
+        Course basics = new Course();   // SCRUM-48 (V9)
+        basics.setTitle("Java basics");
+        basics.setTopic("Programming");
+        basics.setStatus("PUBLISHED");
+        basics.setTeacher(teacher);
+        em.persist(basics);
+        CoursePrerequisite prerequisite = new CoursePrerequisite();
+        prerequisite.setCourse(course);
+        prerequisite.setPrerequisiteCourse(basics);
+        prerequisite.setRequired(true);
+        em.persist(prerequisite);
+
         em.flush();
         em.clear();
 
@@ -196,5 +209,9 @@ class PostgresMigrationTest {
         assertThat(em.find(Course.class, course.getCourseId()).isLecturesInOrder()).isTrue();
         assertThat(em.find(LectureProgress.class, progress.getProgressId()).getStudent().getUserId())
                 .isEqualTo(teacher.getUserId());
+        CoursePrerequisite storedPrerequisite =
+                em.find(CoursePrerequisite.class, prerequisite.getPrerequisiteId());
+        assertThat(storedPrerequisite.isRequired()).isTrue();
+        assertThat(storedPrerequisite.getPrerequisiteCourse().getTitle()).isEqualTo("Java basics");
     }
 }

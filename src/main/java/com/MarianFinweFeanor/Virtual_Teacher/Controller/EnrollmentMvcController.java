@@ -9,6 +9,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Service.CourseServiceImpl;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.StudentAttendanceEntry;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseAccessService;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CoursePrerequisiteService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseResourceService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CourseService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.ResourceRequestService;
@@ -46,6 +47,7 @@ public class EnrollmentMvcController {
     private final CourseResourceService courseResourceService;  // SCRUM-34
     private final ResourceRequestService resourceRequestService; // SCRUM-35
     private final AttendanceService attendanceService;           // SCRUM-29
+    private final CoursePrerequisiteService prerequisiteService; // SCRUM-48
 
     public EnrollmentMvcController(UserService userService,
                                    CourseService courseService,
@@ -54,7 +56,8 @@ public class EnrollmentMvcController {
                                    CourseAccessService courseAccessService,
                                    CourseResourceService courseResourceService,
                                    ResourceRequestService resourceRequestService,
-                                   AttendanceService attendanceService) {
+                                   AttendanceService attendanceService,
+                                   CoursePrerequisiteService prerequisiteService) {
         this.userService = userService;
         this.courseService = courseService;
         this.enrollmentService = enrollmentService;
@@ -63,6 +66,7 @@ public class EnrollmentMvcController {
         this.courseResourceService = courseResourceService;
         this.resourceRequestService = resourceRequestService;
         this.attendanceService = attendanceService;
+        this.prerequisiteService = prerequisiteService;
     }
 
     // --- List Courses (public) ----------------------------------------------
@@ -305,6 +309,16 @@ public class EnrollmentMvcController {
         model.addAttribute("ownAbsentCount",
                 ownAttendance.stream().filter(StudentAttendanceEntry::isAbsent).count());
 
+        // SCRUM-48: prerequisites; the required ones still to complete block enrolling
+        var prerequisites = prerequisiteService.getPrerequisites(id);
+        model.addAttribute("prerequisites", prerequisites);
+        model.addAttribute("missingRequiredIds", prerequisites.isEmpty() ? Set.of()
+                : prerequisiteService.getMissingRequired(id, email).stream()
+                        .map(Course::getCourseId)
+                        .collect(Collectors.toSet()));
+        model.addAttribute("prerequisiteCandidates",
+                canManage ? prerequisiteService.getCandidates(id) : List.of());
+
         model.addAttribute("course", course);
         model.addAttribute("enrolled", enrolled);
         return "course-detail";
@@ -350,10 +364,48 @@ public class EnrollmentMvcController {
         if (enrollmentService.isEnrolled(email, id)) {
             ra.addFlashAttribute("msg", "You’re already enrolled in this course.");
         } else {
-            enrollmentService.enroll(email, id);
-            ra.addFlashAttribute("msg", "Enrolled successfully!");
+            try {
+                enrollmentService.enroll(email, id);
+                ra.addFlashAttribute("msg", "Enrolled successfully!");
+            } catch (IllegalStateException ex) {   // SCRUM-48: required courses not completed
+                ra.addFlashAttribute("error", ex.getMessage());
+            }
         }
 
+        return "redirect:/courses/" + id;
+    }
+
+    // --- Prerequisites (SCRUM-48): the course's own teacher or an admin --------
+
+    /** POST /courses/{id}/prerequisites (TEACHER/ADMIN) */
+    @PostMapping("/{id}/prerequisites")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public String addPrerequisite(@PathVariable Long id,
+                                  @RequestParam Long prerequisiteCourseId,
+                                  @RequestParam(defaultValue = "false") boolean required,
+                                  Principal principal,
+                                  RedirectAttributes ra) {
+        userService.ensureApprovedTeacher(principal.getName());
+        try {
+            var link = prerequisiteService.addPrerequisite(id, prerequisiteCourseId, required, principal.getName());
+            ra.addFlashAttribute("msg", "\"" + link.getPrerequisiteCourse().getTitle() + "\" added as "
+                    + (required ? "a required" : "a recommended") + " prerequisite.");
+        } catch (IllegalArgumentException ex) {
+            ra.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/courses/" + id;
+    }
+
+    /** POST /courses/{id}/prerequisites/{prerequisiteCourseId}/delete (TEACHER/ADMIN) */
+    @PostMapping("/{id}/prerequisites/{prerequisiteCourseId}/delete")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public String removePrerequisite(@PathVariable Long id,
+                                     @PathVariable Long prerequisiteCourseId,
+                                     Principal principal,
+                                     RedirectAttributes ra) {
+        userService.ensureApprovedTeacher(principal.getName());
+        prerequisiteService.removePrerequisite(id, prerequisiteCourseId, principal.getName());
+        ra.addFlashAttribute("msg", "Prerequisite removed.");
         return "redirect:/courses/" + id;
     }
 

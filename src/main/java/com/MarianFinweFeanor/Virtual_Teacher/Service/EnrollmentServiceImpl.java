@@ -4,6 +4,7 @@ import com.MarianFinweFeanor.Virtual_Teacher.Model.Course;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Enrollment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.User;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.*;
+import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CoursePrerequisiteService;
 import com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.EnrollmentService;
 import com.MarianFinweFeanor.Virtual_Teacher.exceptions.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final AssignmentRepository assignmentRepo;
     private final LectureRepository lectureRepository;
     private final LectureProgressRepository progressRepository;   // SCRUM-51 part B
+    private final CoursePrerequisiteService prerequisiteService;  // SCRUM-48
 
     @Autowired
     public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepo,
@@ -32,13 +34,15 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                                  AssignmentRepository assignmentRepo,
                                  LectureRepository lectureRepository,
                                  CourseRepository courseRepo,
-                                 LectureProgressRepository progressRepository) {
+                                 LectureProgressRepository progressRepository,
+                                 CoursePrerequisiteService prerequisiteService) {
         this.enrollmentRepo = enrollmentRepo;
         this.userRepo       = userRepo;
         this.courseRepo     = courseRepo;
         this.assignmentRepo = assignmentRepo;
         this.lectureRepository = lectureRepository;
         this.progressRepository = progressRepository;
+        this.prerequisiteService = prerequisiteService;
     }
 
     @Override
@@ -206,6 +210,9 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .orElseThrow(() -> new EntityNotFoundException("User", userEmail));
         Course course = courseRepo.findById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course", courseId));
+
+        // SCRUM-48: required prerequisite courses must be completed first
+        prerequisiteService.ensurePrerequisitesMet(userEmail, courseId);
 
         Enrollment e = new Enrollment();
         e.setStudent(user);

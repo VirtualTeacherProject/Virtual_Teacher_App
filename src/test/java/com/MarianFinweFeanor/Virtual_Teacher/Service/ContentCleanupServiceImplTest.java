@@ -54,6 +54,10 @@ class ContentCleanupServiceImplTest {
     @Mock
     private LectureProgressRepository lectureProgressRepository;   // SCRUM-51 part B
 
+    @Mock
+    private com.MarianFinweFeanor.Virtual_Teacher.Repositories.CoursePrerequisiteRepository
+            coursePrerequisiteRepository;   // SCRUM-48
+
     @TempDir
     Path uploadDir;
 
@@ -67,7 +71,7 @@ class ContentCleanupServiceImplTest {
         cleanupService = new ContentCleanupServiceImpl(
                 assignmentRepository, lectureCommentRepository, lectureNoteRepository,
                 courseResourceRepository, resourceRequestRepository, lectureAttendanceRepository,
-                lectureProgressRepository, uploadDir.toString());
+                lectureProgressRepository, coursePrerequisiteRepository, uploadDir.toString());
     }
 
     private Assignment submission(Path file) {
@@ -126,6 +130,10 @@ class ContentCleanupServiceImplTest {
         when(lectureAttendanceRepository.findByLecture_Course_CourseId(10L)).thenReturn(attendance);
         List<LectureProgress> progress = List.of(new LectureProgress());
         when(lectureProgressRepository.findByLecture_Course_CourseId(10L)).thenReturn(progress);
+        var ownPrerequisites = List.of(new com.MarianFinweFeanor.Virtual_Teacher.Model.CoursePrerequisite());
+        var asPrerequisite = List.of(new com.MarianFinweFeanor.Virtual_Teacher.Model.CoursePrerequisite());
+        when(coursePrerequisiteRepository.findByCourse_CourseId(10L)).thenReturn(ownPrerequisites);
+        when(coursePrerequisiteRepository.findByPrerequisiteCourse_CourseId(10L)).thenReturn(asPrerequisite);
 
         cleanupService.deleteCourseContent(10L);
 
@@ -136,6 +144,8 @@ class ContentCleanupServiceImplTest {
         verify(resourceRequestRepository).deleteAll(requests);
         verify(lectureAttendanceRepository).deleteAll(attendance);   // SCRUM-28
         verify(lectureProgressRepository).deleteAll(progress);      // SCRUM-51
+        verify(coursePrerequisiteRepository).deleteAll(ownPrerequisites);   // SCRUM-48
+        verify(coursePrerequisiteRepository).deleteAll(asPrerequisite);
         assertFalse(Files.exists(first));
         assertFalse(Files.exists(second));
     }

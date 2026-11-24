@@ -29,7 +29,7 @@ class FlywayMigrationTest {
     private static final List<String> TABLES = List.of(
             "USERS", "COURSES", "LECTURES", "ENROLLMENTS",
             "ASSIGNMENTS", "LECTURE_COMMENTS", "LECTURE_NOTES", "COURSE_RESOURCES", "RESOURCE_REQUESTS",
-            "LECTURE_ATTENDANCE", "LECTURE_PROGRESS");
+            "LECTURE_ATTENDANCE", "LECTURE_PROGRESS", "COURSE_PREREQUISITES");
 
     private DataSource dataSource;
     private JdbcTemplate jdbc;
@@ -113,6 +113,14 @@ class FlywayMigrationTest {
         jdbc.update(progress);
         assertThat(jdbc.queryForObject("select count(*) from lecture_progress", Integer.class)).isEqualTo(1);
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update(progress))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+
+        // SCRUM-48 (V9): prerequisite links, recommended by default, one per pair
+        String prerequisite = "insert into course_prerequisites (course_id, required_course_id) "
+                + "values ((select course_id from courses), (select course_id from courses))";
+        jdbc.update(prerequisite);
+        assertThat(jdbc.queryForObject("select required from course_prerequisites", Boolean.class)).isFalse();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update(prerequisite))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 

@@ -58,6 +58,7 @@ class CourseOwnershipMvcTest {
     @MockBean private CourseResourceService courseResourceService;
     @MockBean private ResourceRequestService resourceRequestService;
     @MockBean private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.AttendanceService attendanceService;   // SCRUM-29
+    @MockBean private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CoursePrerequisiteService prerequisiteService;   // SCRUM-48
 
     private Course course;
 

@@ -46,6 +46,10 @@ class EnrollmentServiceImplTest {
     @Mock
     private LectureProgressRepository progressRepository;   // SCRUM-51 part B
 
+    @Mock
+    private com.MarianFinweFeanor.Virtual_Teacher.Service.Interfaces.CoursePrerequisiteService
+            prerequisiteService;   // SCRUM-48
+
     @InjectMocks
     private EnrollmentServiceImpl enrollmentService;
 
@@ -891,5 +895,32 @@ class EnrollmentServiceImplTest {
         enrollmentService.recalculateProgressForCourse(10L);
 
         verify(enrollmentRepo, never()).save(any());
+    }
+
+    // --- SCRUM-48: required prerequisites ---------------------------------------
+
+    @Test
+    void enroll_shouldCheckPrerequisites_beforeSaving() {
+        when(enrollmentRepo.existsByStudent_EmailAndCourse_CourseId("student@test.com", 10L)).thenReturn(false);
+        when(userRepo.findByEmail("student@test.com")).thenReturn(Optional.of(student));
+        when(courseRepo.findById(10L)).thenReturn(Optional.of(course));
+
+        enrollmentService.enroll("student@test.com", 10L);
+
+        var order = inOrder(prerequisiteService, enrollmentRepo);
+        order.verify(prerequisiteService).ensurePrerequisitesMet("student@test.com", 10L);
+        order.verify(enrollmentRepo).save(any(Enrollment.class));
+    }
+
+    @Test
+    void enroll_shouldNotSave_whenRequiredCoursesAreNotCompleted() {
+        when(enrollmentRepo.existsByStudent_EmailAndCourse_CourseId("student@test.com", 10L)).thenReturn(false);
+        when(userRepo.findByEmail("student@test.com")).thenReturn(Optional.of(student));
+        when(courseRepo.findById(10L)).thenReturn(Optional.of(course));
+        doThrow(new IllegalStateException("Complete these courses before enrolling: Basics."))
+                .when(prerequisiteService).ensurePrerequisitesMet("student@test.com", 10L);
+
+        assertThrows(IllegalStateException.class, () -> enrollmentService.enroll("student@test.com", 10L));
+        verify(enrollmentRepo, never()).save(any(Enrollment.class));
     }
 }

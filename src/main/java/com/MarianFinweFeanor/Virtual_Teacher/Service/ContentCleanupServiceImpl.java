@@ -3,6 +3,7 @@ package com.MarianFinweFeanor.Virtual_Teacher.Service;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.Assignment;
 import com.MarianFinweFeanor.Virtual_Teacher.Model.ResourceRequest;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.AssignmentRepository;
+import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CoursePrerequisiteRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.CourseResourceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureAttendanceRepository;
 import com.MarianFinweFeanor.Virtual_Teacher.Repositories.LectureCommentRepository;
@@ -39,6 +40,7 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
     private final ResourceRequestRepository resourceRequestRepository;
     private final LectureAttendanceRepository lectureAttendanceRepository;
     private final LectureProgressRepository lectureProgressRepository;
+    private final CoursePrerequisiteRepository coursePrerequisiteRepository;   // SCRUM-48
     private final Path uploadDir;
 
     @Autowired
@@ -49,6 +51,7 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                                      ResourceRequestRepository resourceRequestRepository,
                                      LectureAttendanceRepository lectureAttendanceRepository,
                                      LectureProgressRepository lectureProgressRepository,
+                                     CoursePrerequisiteRepository coursePrerequisiteRepository,
                                      @Value("${app.upload.dir}") String uploadDir) {
         this.assignmentRepository = assignmentRepository;
         this.lectureCommentRepository = lectureCommentRepository;
@@ -57,6 +60,7 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
         this.resourceRequestRepository = resourceRequestRepository;
         this.lectureAttendanceRepository = lectureAttendanceRepository;
         this.lectureProgressRepository = lectureProgressRepository;
+        this.coursePrerequisiteRepository = coursePrerequisiteRepository;
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
@@ -88,6 +92,11 @@ public class ContentCleanupServiceImpl implements ContentCleanupService {
                 courseResourceRepository.findByCourse_CourseId(courseId));
         resourceRequestRepository.deleteAll(
                 resourceRequestRepository.findByCourse_CourseId(courseId));
+        // SCRUM-48: the course's own prerequisites, and links where it is the prerequisite
+        coursePrerequisiteRepository.deleteAll(
+                coursePrerequisiteRepository.findByCourse_CourseId(courseId));
+        coursePrerequisiteRepository.deleteAll(
+                coursePrerequisiteRepository.findByPrerequisiteCourse_CourseId(courseId));
     }
 
     @Override
